@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 qx.Class.define("qxl.datagrid.source.Range", {
   extend: qx.core.Object,
@@ -88,6 +88,16 @@ qx.Class.define("qxl.datagrid.source.Range", {
       let column = pos.getColumn();
 
       return row >= startRow && row <= endRow && column >= startColumn && column <= endColumn;
+    },
+
+    /**
+     * Tests whether this range eclipses (ie completely overlaps) another range
+     *
+     * @param {qxl.datagrid.rource.Range} range
+     * @returns {Boolean}
+     */
+    eclipses(range) {
+      return this.contains(range.getStart()) && this.contains(range.getEnd());
     },
 
     /**
@@ -181,5 +191,11 @@ qx.Class.define("qxl.datagrid.source.Range", {
         value.addListener("change", evt => this.fireEvent("change"), this);
       }
     }
+  },
+
+  defer(statics) {
+    statics.prototype[Symbol.iterator] = function () {
+      return this.iterator();
+    };
   }
 });

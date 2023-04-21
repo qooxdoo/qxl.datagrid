@@ -1,25 +1,25 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
-qx.Class.define("qxl.datagrid.test.ui.GridSizes", {
+qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
   extend: qx.dev.unit.TestCase,
 
   members: {
@@ -57,17 +57,22 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizes", {
             height: null,
             maxHeight: height
           };
+        },
+        _size: new qxl.datagrid.source.Position(6, 9),
+        getDataSourceSize() {
+          return this._size;
         }
       };
 
       let styling = new qxl.datagrid.ui.GridStyling().set({
         horizontalSpacing: 0,
         verticalSpacing: 0,
-        minRowHeight: 10
+        minRowHeight: 10,
+        numHeaderRows: 0
       });
-      let sizeCalculator = new qxl.datagrid.ui.GridSizes(columns, widgetSizeSource, styling);
+      let sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, widgetSizeSource);
 
-      let sizes = sizeCalculator.getSizes(125, 75, 0, 0);
+      let sizes = sizeCalculator.getSizesFor(125, 75, 0, 0);
       this.assertTrue(sizes.rows.length == 4);
       this.assertTrue(sizes.rows[0].height == 30);
       this.assertTrue(sizes.rows[1].height == 20);
@@ -79,7 +84,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizes", {
       this.assertTrue(sizes.columns[1].width == 51);
       this.assertTrue(sizes.columns[2].width == 52);
 
-      sizes = sizeCalculator.getSizes(125, 75, 0, 1);
+      sizes = sizeCalculator.getSizesFor(125, 75, 0, 1);
       this.assertTrue(sizes.columns.length == 3);
       this.assertTrue(sizes.columns[0].width == 51);
       this.assertTrue(sizes.columns[1].width == 52);
@@ -87,7 +92,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizes", {
 
       styling.setNumFixedColumns(1);
       sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizes(125, 75, 0, 2);
+      sizes = sizeCalculator.getSizesFor(125, 75, 0, 2);
       this.assertArrayEquals(
         [0, 2, 3],
         sizes.columns.map(c => c.columnIndex)
@@ -106,7 +111,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizes", {
       ];
 
       sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizes(125, 75, 0, 0);
+      sizes = sizeCalculator.getSizesFor(125, 75, 0, 0);
       this.assertTrue(sizes.rows.length == 4);
       this.assertTrue(sizes.rows[0].height == 20);
       this.assertTrue(sizes.rows[1].height == 21);
@@ -114,7 +119,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizes", {
       this.assertTrue(sizes.rows[3].height == 23);
 
       sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizes(125, 75, 1, 0);
+      sizes = sizeCalculator.getSizesFor(125, 75, 1, 0);
       this.assertTrue(sizes.rows.length == 4);
       this.assertTrue(sizes.rows[0].height == 21);
       this.assertTrue(sizes.rows[1].height == 22);
@@ -123,7 +128,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizes", {
 
       styling.setNumFixedRows(1);
       sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizes(125, 75, 2, 0);
+      sizes = sizeCalculator.getSizesFor(125, 75, 2, 0);
       this.assertArrayEquals(
         [0, 2, 3, 4],
         sizes.rows.map(c => c.rowIndex)
@@ -136,7 +141,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizes", {
 
       styling.setNumHeaderRows(1);
       sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizes(125, 80, 2, 0);
+      sizes = sizeCalculator.getSizesFor(125, 80, 2, 0);
       this.assertArrayEquals(
         [0, 2, 3, -1],
         sizes.rows.map(c => c.rowIndex)

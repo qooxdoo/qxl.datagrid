@@ -19,22 +19,12 @@
  *
  * *********************************************************************** */
 
-qx.Interface.define("qxl.datagrid.ui.IWidgetSizeSource", {
+qx.Interface.define("qxl.datagrid.ui.factory.IWidgetFactory", {
   members: {
-    /**
-     * Returns the size hint for a widget in a given row and column
-     *
-     * @param {Integer} rowIndex
-     * @param {qxl.datagrid.column.Column} column
-     * @return {*} see qx.ui.core.LayoutItem.getSizeHint
-     */
-    getWidgetSize(rowIndex, column) {},
+    getWidgetFor(rowIndex, columnIndex) {},
 
-    /**
-     * Returns the size of the datasource
-     *
-     * @returns {qxl.datagrid.source.Position}
-     */
-    getDataSourceSize() {}
+    bindWidget(widget, model) {},
+
+    unbindWidget(widget) {}
   }
 });

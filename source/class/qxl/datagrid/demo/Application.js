@@ -21,7 +21,7 @@
  *
  * @asset(qxl/datagrid/*)
  */
-qx.Class.define("qxl.datagrid.Application", {
+qx.Class.define("qxl.datagrid.demo.Application", {
   extend: qx.application.Standalone,
 
   /*
@@ -40,9 +40,27 @@ qx.Class.define("qxl.datagrid.Application", {
       }
       await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.source.Position);
       await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.source.Range);
+      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.util.Labels);
       await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.column.FilteredColumns);
       await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.source.TreeDataSource);
-      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.GridSizes);
+      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.GridSizeCalculator);
+      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.DataGrid);
+
+      let dataSource = new qxl.datagrid.test.ui.DummyDataSource(1000000, 10000);
+      let columns = new qxl.datagrid.column.Columns();
+      for (let columnIndex = 0; columnIndex < dataSource.getNumColumns(); columnIndex++) {
+        let column = new qxl.datagrid.column.TextColumn().set({
+          caption: qxl.datagrid.util.Labels.getColumnLetters(columnIndex),
+          path: "label",
+          minWidth: 80
+        });
+        columns.add(column);
+      }
+      let grid = new qxl.datagrid.DataGrid(columns).set({
+        dataSource: dataSource
+      });
+      let doc = this.getRoot();
+      doc.add(grid, { left: 10, top: 10, right: 10, bottom: 10 });
     }
   }
 });

@@ -28,6 +28,7 @@
  *
  * @typedef ColumnData
  * @property {Integer} columnIndex the index in the complete list of columns
+ * @property {qxl.datagrid.column.Column} column the column object
  * @property {Integer} width
  *
  * @typedef RowData
@@ -40,22 +41,42 @@
  * @property {Integer} horizontalScrollPosition
  * @property {Integer} verticalScrollPosition
  */
-qx.Class.define("qxl.datagrid.ui.GridSizes", {
+qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
   extend: qx.core.Object,
 
   /**
    * Constructor
    *
    * @param {qxl.datagrid.ui.IColumns} columns
-   * @param {qxl.datagrid.ui.IWidgetSizeSource} widgetSizeSource
    * @param {qxl.datagrid.ui.GridStyling} styling
+   * @param {qxl.datagrid.ui.IWidgetSizeSource} widgetSizeSource
    */
-  construct(columns, widgetSizeSource, styling) {
+  construct(columns, styling, widgetSizeSource) {
     super();
     this._columns = columns;
     this._widgetSizeSource = widgetSizeSource;
-    this._styling = styling;
-    styling.addListener("change", this.invalidate, this);
+    if (styling) {
+      this.setStyling(styling);
+    }
+  },
+
+  properties: {
+    /** The columns on display in this widget */
+    columns: {
+      init: null,
+      nullable: true,
+      check: "qxl.datagrid.column.IColumns",
+      apply: "invalidate",
+      event: "changeColumns"
+    },
+
+    /** Where to get styling criteria */
+    styling: {
+      nullable: false,
+      check: "qxl.datagrid.ui.GridStyling",
+      apply: "__applyStyling",
+      event: "changeStyling"
+    }
   },
 
   events: {
@@ -69,9 +90,6 @@ qx.Class.define("qxl.datagrid.ui.GridSizes", {
 
     /** @type{qxl.datagrid.ui.IWidgetSizeSource} where to get w*/
     _widgetSizeSource: null,
-
-    /** @type{qxl.datagrid.ui.GridStyling} common styling configuration */
-    _styling: null,
 
     /** @type{SizesData} the cached sizes */
     __sizes: null,
@@ -89,11 +107,30 @@ qx.Class.define("qxl.datagrid.ui.GridSizes", {
     _startColumnIndex: null,
 
     /**
-     * Gets the sizes
+     * Gets the sizes for a given set of available size or scroll position
      *
+     * @param {Integer} width
+     * @param {Integer} height
+     * @param {Integer} startRowIndex
+     * @param {Integer} startColumnIndex
      * @returns {SizesData}
      */
-    getSizes(width, height, startRowIndex, startColumnIndex) {
+    getSizesFor(width, height, startRowIndex, startColumnIndex) {
+      this.setAvailableSize(width, height, startRowIndex, startColumnIndex);
+      return this.getSizes();
+    },
+
+    /**
+     * Sets the available sizes; this can trigger invalidation and a change event if the available
+     * size or scroll position has changed.
+     *
+     * @param {Integer} width
+     * @param {Integer} height
+     * @param {Integer} startRowIndex
+     * @param {Integer} startColumnIndex
+     * @returns {Boolean} true if the widgets need to be redrawn because the previous data is invalid
+     */
+    setAvailableSize(width, height, startRowIndex, startColumnIndex) {
       if (width !== this._width || height !== this._height || startRowIndex != this._startRowIndex || startColumnIndex != this._startColumnIndex) {
         this.invalidate();
         this._width = width;
@@ -101,7 +138,16 @@ qx.Class.define("qxl.datagrid.ui.GridSizes", {
         this._startRowIndex = startRowIndex;
         this._startColumnIndex = startColumnIndex;
       }
-      if (!this.__sizes) {
+      return !this.__sizes;
+    },
+
+    /**
+     * Gets the sizes
+     *
+     * @returns {SizesData}
+     */
+    getSizes() {
+      if (!this.__sizes && this._width && this._height) {
         this.__sizes = this._calculateSizes();
       }
       return this.__sizes;
@@ -127,8 +173,9 @@ qx.Class.define("qxl.datagrid.ui.GridSizes", {
       let columnWidths = [];
       let lastFlexColumnIndex = -1;
       let flexAvailable = this._width;
-      let horizontalSpacing = this._styling.getHorizontalSpacing();
-      let verticalSpacing = this._styling.getVerticalSpacing();
+      let styling = this.getStyling();
+      let horizontalSpacing = styling.getHorizontalSpacing();
+      let verticalSpacing = styling.getVerticalSpacing();
       let totalColumnWidth = 0;
 
       const calculateColumnWidth = columnIndex => {
@@ -165,18 +212,27 @@ qx.Class.define("qxl.datagrid.ui.GridSizes", {
         totalColumnWidth += width;
       };
 
-      let numFixedColumns = this._styling.getNumFixedColumns();
+      let numFixedColumns = styling.getNumFixedColumns();
       if (numFixedColumns > 0) {
         for (let columnIndex = 0; columnIndex < numFixedColumns; columnIndex++) {
           calculateColumnWidth(columnIndex);
         }
       }
 
-      for (let columnIndex = this._startColumnIndex; columnIndex < this._columns.getLength(); columnIndex++) {
-        if (totalColumnWidth > this._width) {
-          break;
+      if (this._startColumnIndex >= 0) {
+        for (let columnIndex = this._startColumnIndex; columnIndex < this._columns.getLength(); columnIndex++) {
+          if (totalColumnWidth > this._width) {
+            break;
+          }
+          calculateColumnWidth(columnIndex);
         }
-        calculateColumnWidth(columnIndex);
+      } else {
+        for (let columnIndex = this._columns.getLength() - 1; columnIndex >= 0; columnIndex--) {
+          if (totalColumnWidth > this._width) {
+            break;
+          }
+          calculateColumnWidth(columnIndex);
+        }
       }
 
       if (flexColumnIndexes.length) {
@@ -206,8 +262,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizes", {
         }
       }
 
-      let minRowHeight = this._styling.getMinRowHeight();
-      let maxRowHeight = this._styling.getMaxRowHeight();
+      let minRowHeight = styling.getMinRowHeight();
+      let maxRowHeight = styling.getMaxRowHeight();
       let rowHeights = [];
       let totalRowHeight = 0;
 
@@ -242,23 +298,35 @@ qx.Class.define("qxl.datagrid.ui.GridSizes", {
         totalRowHeight += largestRowHeight;
       };
 
-      for (let rowIndex = 0; rowIndex < this._styling.getNumHeaderRows(); rowIndex++) {
+      for (let rowIndex = 0; rowIndex < styling.getNumHeaderRows(); rowIndex++) {
         calculateRowHeight(-1 - rowIndex);
       }
 
-      let numFixedRows = this._styling.getNumFixedRows();
+      let numFixedRows = styling.getNumFixedRows();
       if (numFixedRows > 0) {
         for (let rowIndex = 0; rowIndex < numFixedRows; rowIndex++) {
           calculateRowHeight(rowIndex);
         }
       }
 
-      for (let rowIndex = this._startRowIndex; true; rowIndex++) {
-        if (totalRowHeight > this._height) {
-          break;
+      let numRows = this._widgetSizeSource.getDataSourceSize().getRow();
+      if (this._startRowIndex >= 0) {
+        for (let rowIndex = this._startRowIndex; rowIndex < numRows; rowIndex++) {
+          if (totalRowHeight > this._height) {
+            break;
+          }
+          if (rowHeights[rowIndex] === undefined) {
+            calculateRowHeight(rowIndex);
+          }
         }
-        if (rowHeights[rowIndex] === undefined) {
-          calculateRowHeight(rowIndex);
+      } else {
+        for (let rowIndex = numRows - 1; rowIndex >= 0; rowIndex--) {
+          if (totalRowHeight > this._height) {
+            break;
+          }
+          if (rowHeights[rowIndex] === undefined) {
+            calculateRowHeight(rowIndex);
+          }
         }
       }
 
@@ -273,6 +341,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizes", {
         columnIndex = parseInt(columnIndex, 10);
         sizesData.columns.push({
           columnIndex: columnIndex,
+          column: this._columns.getColumn(columnIndex),
           width: columnWidths[columnIndex]
         });
       }
@@ -286,6 +355,18 @@ qx.Class.define("qxl.datagrid.ui.GridSizes", {
       }
 
       return sizesData;
+    },
+
+    /**
+     * Apply for `styling`
+     */
+    __applyStyling(value, oldValue) {
+      if (oldValue) {
+        oldValue.removeListener("change", this.invalidate, this);
+      }
+      if (value) {
+        value.addListener("change", this.invalidate, this);
+      }
     }
   }
 });

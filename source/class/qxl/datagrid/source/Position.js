@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 /**
  * Wraps a position (row and column) index
@@ -94,6 +94,15 @@ qx.Class.define("qxl.datagrid.source.Position", {
     },
 
     /**
+     * Returns the row and column as an ID for use in hash keys
+     *
+     * @returns {String} row:column eg "1:2"
+     */
+    toId() {
+      return this.getRow() + ":" + this.getColumn();
+    },
+
+    /**
      * Tests whether this position matches that in the arguments; arguments are
      * interpretted like the constructor, ie it can be an array of row & column,
      * object of row & column, or row and column parameters
@@ -165,6 +174,13 @@ qx.Class.define("qxl.datagrid.source.Position", {
         column = undefined;
       }
       return { row, column };
+    },
+
+    fromId(id) {
+      let pos = id.indexOf(":");
+      let rowIndex = parseInt(id.substring(0, pos), 10);
+      let columnIndex = parseInt(id.substring(pos + 1), 10);
+      return new qxl.datagrid.source.Position(rowIndex, columnIndex);
     }
   }
 });

@@ -22,6 +22,15 @@
 qx.Interface.define("qxl.datagrid.source.IDataSource", {
   members: {
     /**
+     * Asks the datasource to whether the range of cells is available without having to make an 
+     * asynchronous call; if the return is `true` then `makeAvailable` will not be called
+     *
+     * @param {qxl.datagrid.source.Range} range
+     * @return {Boolean}
+     */
+    isAvailable(range) {},
+
+    /**
      * Tells the datasource to make sure that the range of cells is available; anything outside of the
      * range can be discarded (or cached, it's implementation dependent)
      *

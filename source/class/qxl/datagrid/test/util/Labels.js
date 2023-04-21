@@ -19,22 +19,24 @@
  *
  * *********************************************************************** */
 
-qx.Interface.define("qxl.datagrid.ui.IWidgetSizeSource", {
-  members: {
-    /**
-     * Returns the size hint for a widget in a given row and column
-     *
-     * @param {Integer} rowIndex
-     * @param {qxl.datagrid.column.Column} column
-     * @return {*} see qx.ui.core.LayoutItem.getSizeHint
-     */
-    getWidgetSize(rowIndex, column) {},
+qx.Class.define("qxl.datagrid.test.util.Labels", {
+  extend: qx.dev.unit.TestCase,
 
-    /**
-     * Returns the size of the datasource
-     *
-     * @returns {qxl.datagrid.source.Position}
-     */
-    getDataSourceSize() {}
+  members: {
+    testColumnNames() {
+      const TEST_DATA = {
+        0: "A",
+        1: "B",
+        25: "Z",
+        26: "AA",
+        52: "BA",
+        676: "ZA",
+        701: "ZZ",
+        702: "AAA"
+      };
+      for (let key in TEST_DATA) {
+        this.assertTrue(qxl.datagrid.util.Labels.getColumnLetters(parseInt(key, 10)) == TEST_DATA[key]);
+      }
+    }
   }
 });

@@ -23,8 +23,8 @@
   },
   "applications": [
     {
-      "class": "qxl.datagrid.Application",
-      "theme": "qx.theme.Simple",
+      "class": "qxl.datagrid.demo.Application",
+      "theme": "qxl.datagrid.demo.theme.Theme",
       "name": "qxl.datagrid",
       "bootPath": "source/boot"
     }
