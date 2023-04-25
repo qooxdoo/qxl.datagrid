@@ -1,4 +1,4 @@
-# qxl.datagrid -
+# qxl.datagrid
 
 DataGrid is a Qooxdoo UI component that provides a virtual, scrolling, spreadsheet-like and tree-like control; the main features are:
 
@@ -7,6 +7,8 @@ DataGrid is a Qooxdoo UI component that provides a virtual, scrolling, spreadshe
 - Grid or Tree style - operates as a spreadsheet-like control of rows and columns of data, or as a tree of data where each node
   in the tree is row and can have multiple columns
 - Fully stylable using Qooxdoo themes
+
+NOTE:: This is beta release, but will be in active use and development over he next few months.
 
 ### Coming Soon (tm)
 
