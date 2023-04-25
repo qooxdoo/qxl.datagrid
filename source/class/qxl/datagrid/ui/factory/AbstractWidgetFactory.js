@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Base implementation of `qxl.datagrid.ui.factory.IWidgetFactory`
+ */
 qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
   extend: qx.core.Object,
   type: "abstract",

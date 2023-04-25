@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * The DataGrid obtains the data it displays from an `qxl.datagrid.source.IDataSource`
+ */
 qx.Interface.define("qxl.datagrid.source.IDataSource", {
   members: {
     /**

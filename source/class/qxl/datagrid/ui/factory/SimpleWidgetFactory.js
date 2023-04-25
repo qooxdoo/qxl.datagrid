@@ -19,6 +19,10 @@
  *
  * *********************************************************************** */
 
+/**
+ * Basic implementation of `qxl.datagrid.ui.factory.IWidgetFactory` for widgets in
+ * the widget pane
+ */
 qx.Class.define("qxl.datagrid.ui.factory.SimpleWidgetFactory", {
   extend: qxl.datagrid.ui.factory.AbstractWidgetFactory,
 

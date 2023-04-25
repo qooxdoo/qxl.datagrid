@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Implementation of `qxl.datagrid.ui.factory.IWidgetFactory` for widgets in header rows
+ */
 qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
   extend: qxl.datagrid.ui.factory.AbstractWidgetFactory,
 

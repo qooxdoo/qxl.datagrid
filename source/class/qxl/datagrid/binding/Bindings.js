@@ -1,3 +1,24 @@
+/* ************************************************************************
+*
+*    Qooxdoo DataGrid
+*
+*    https://github.com/qooxdoo/qooxdoo
+*
+*    Copyright:
+*      2022-23 Zenesis Limited, https://www.zenesis.com
+*
+*    License:
+*      MIT: https://opensource.org/licenses/MIT
+*
+*      This software is provided under the same licensing terms as Qooxdoo,
+*      please see the LICENSE file in the Qooxdoo project's top-level directory
+*      for details.
+*
+*    Authors:
+*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+*
+* *********************************************************************** */
+
 /**
  * Instead of just an opaque "binding id" as returned by `qx.core.Object.bind`, which can only be
  * used to unbind one thing provided that you know the correct object to unbind from, the contract of an

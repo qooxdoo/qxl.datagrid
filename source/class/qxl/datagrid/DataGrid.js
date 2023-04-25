@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * The DataGrid control
+ */
 qx.Class.define("qxl.datagrid.DataGrid", {
   extend: qx.ui.core.Widget,
   implement: [qxl.datagrid.ui.IWidgetSizeSource],

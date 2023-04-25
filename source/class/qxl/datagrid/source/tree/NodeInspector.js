@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Base implementation of `qxl.datagrid.source.tree.INodeInspector`
+ */
 qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
   extend: qx.core.Object,
   implement: [qxl.datagrid.source.tree.INodeInspector],

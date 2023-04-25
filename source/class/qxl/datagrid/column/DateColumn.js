@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Formats the data as a date/time
+ */
 qx.Class.define("qxl.datagrid.column.DateColumn", {
   extend: qxl.datagrid.column.Column,
 

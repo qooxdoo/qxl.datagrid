@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Basic appearances needed for the datagrid; this is for the Tangible theme
+ */
 qx.Theme.define("qxl.datagrid.theme.MAppearance", {
   appearances: {
     "qxl-datagrid": "widget",

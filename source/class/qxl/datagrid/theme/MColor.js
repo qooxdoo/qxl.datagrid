@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Basic colors needed for the datagrid; this is for the Tangible theme
+ */
 qx.Theme.define("qxl.datagrid.theme.MColor", {
   colors: {
     "qxl-datagrid-row-background-even": "surface",

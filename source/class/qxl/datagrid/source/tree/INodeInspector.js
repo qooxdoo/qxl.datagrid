@@ -1,3 +1,28 @@
+/* ************************************************************************
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
+
+/**
+ * In order for a `qxl.datagrid.source.tree.TreeDataSource` to navigate the data, it uses
+ * an instance of this class
+ */
 qx.Interface.define("qxl.datagrid.source.tree.INodeInspector", {
   members: {
     /**

@@ -19,6 +19,10 @@
  *
  * *********************************************************************** */
 
+/**
+ * Provides an implementation of `qxl.datagrid.source.IDataSource` which navigates a tree
+ * structure to provide the tree as a flat array of rows
+ */
 qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
   extend: qxl.datagrid.source.AbstractDataSource,
   implement: [qxl.datagrid.source.tree.ITreeDataSource],

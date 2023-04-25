@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Basic decorations needed for the datagrid; this is for the Tangible theme
+ */
 qx.Theme.define("qxl.datagrid.theme.MDecoration", {
   decorations: {
     "qxl-datagrid-row": {

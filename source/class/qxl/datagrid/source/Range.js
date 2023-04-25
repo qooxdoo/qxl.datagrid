@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Represents a range of coordinates, eg x1,y1 -> x2,y2
+ */
 qx.Class.define("qxl.datagrid.source.Range", {
   extend: qx.core.Object,
 
