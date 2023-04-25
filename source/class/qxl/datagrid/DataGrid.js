@@ -32,6 +32,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
    */
   construct(columns, styling) {
     super();
+    this.__debounceUpdateWidgets = new qxl.datagrid.util.Debounce(() => this.updateWidgets(), 50);
+    this.__selectionManager = new qxl.datagrid.ui.SelectionManager();
+
     columns = columns || null;
     styling = styling || new qxl.datagrid.ui.GridStyling();
     this.__sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, this);
@@ -72,6 +75,11 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     // Roll listener for scrolling
     this._addRollHandling();
+  },
+
+  events: {
+    /** Fired when the `selection` pseudo property changes */
+    changeSelection: "qx.event.type.Data"
   },
 
   properties: {
@@ -158,6 +166,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     /** @type{Promise} if the widgets is being updated but pending a promise completion */
     __updatingPromise: null,
 
+    /** @type{qxl.datagrid.util.Debounce} debounced call to updateWidgets */
+    __debounceUpdateWidgets: null,
+
+    /** @type{qxl.datagrid.selection.SelectionManager} the selection manager */
+    __selectionManager: null,
+
     /**
      * Apply for `columns`
      */
@@ -177,8 +191,25 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     /**
      * Apply for `dataSource`
      */
-    _applyDataSource(value) {
-      this.getQxObject("widgetPane").setDataSource(value);
+    _applyDataSource(value, oldValue) {
+      if (oldValue) {
+        oldValue.removeListener("changeSize", this.__onDataSourceChangeSize, this);
+      }
+      this.__selectionManager.resetSelection();
+      ["headerWidgetFactory", "paneWidgetFactory", "widgetPane", "oddEvenRows"].forEach(id => this.getQxObject(id).setDataSource(value));
+      this.__selectionManager.setDataSource(value);
+      this.updateWidgets();
+      if (value) {
+        value.addListener("changeSize", this.__onDataSourceChangeSize, this);
+      }
+    },
+
+    /**
+     * Event handler for changes in the data source's size
+     */
+    __onDataSourceChangeSize() {
+      this.getQxObject("widgetPane").invalidateAll();
+      this.__sizeCalculator.invalidate();
       this.updateWidgets();
     },
 
@@ -259,7 +290,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         } else {
           percent = Math.floor((this.getStartColumnIndex() / columns.getLength()) * 100);
         }
-        console.log(`_computeScrollbars: x=${scrollbarX.getPosition()}, columns.length=${columns.getLength()}, sizeData.columns.length=${sizeData.columns.length}, percent=${percent}`);
         scrollbarX.set({
           pageStep: sizeData.columns.length,
           position: percent
@@ -280,7 +310,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         } else {
           percent = Math.floor((this.getStartRowIndex() / size.getRow()) * 100);
         }
-        console.log(`_computeScrollbars: y=${scrollbarY.getPosition()}, num rows=${size.getRow()}, sizeData.rows.length=${sizeData.rows.length}, percent=${percent}`);
         scrollbarY.set({
           pageStep: sizeData.rows.length,
           position: percent
@@ -302,7 +331,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           control.exclude();
           control.addListener("scroll", e => {
             let position = e.getData();
-            console.log("scrollbar-x: position=" + position);
             let size = this.getDataSource().getSize();
             if (position == 100) {
               this.setStartColumnIndex(-1);
@@ -323,7 +351,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           control.exclude();
           control.addListener("scroll", e => {
             let position = e.getData();
-            console.log("scrollbar-y: position=" + position);
             let size = this.getDataSource().getSize();
             if (position == 100) {
               this.setStartRowIndex(-1);
@@ -352,9 +379,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     _createQxObjectImpl(id) {
       switch (id) {
         case "dataPane":
-          var comp = new qx.ui.container.Composite(new qxl.datagrid.ui.layout.Layered());
+          var comp = new qx.ui.container.Composite(new qx.ui.layout.VBox());
           comp.add(this.getQxObject("header"));
-          comp.add(this.getQxObject("widgetPane"));
+          var comp2 = new qx.ui.container.Composite(new qxl.datagrid.ui.layout.Layered());
+          comp2.add(this.getQxObject("widgetPane"), { layer: 0 });
+          comp2.add(this.getQxObject("oddEvenRows"), { layer: 1 });
+          comp.add(comp2);
           return comp;
 
         case "headerWidgetFactory":
@@ -363,11 +393,14 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         case "header":
           return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
 
+        case "oddEvenRows":
+          return new qxl.datagrid.ui.OddEvenRowBackgrounds(this.__sizeCalculator, this.getDataSource(), this.__selectionManager);
+
         case "paneWidgetFactory":
           return new qxl.datagrid.ui.factory.SimpleWidgetFactory(this.getColumns(), "qxl-datagrid-cell");
 
         case "widgetPane":
-          return new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource());
+          return new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource(), this.__selectionManager);
       }
       return super._createQxObjectImpl(id);
     },
@@ -380,6 +413,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         return;
       }
       this.getQxObject("header").updateWidgets();
+      this.getQxObject("oddEvenRows").updateWidgets();
       const onPaneUpdated = () => {
         this._computeScrollbars();
         this.scheduleLayoutUpdate();
@@ -391,6 +425,14 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       } else {
         onPaneUpdated();
       }
+    },
+
+    /**
+     * Schedules the `updateWidgets` call to happen in the near future, debounced
+     * @async
+     */
+    scheduleUpdateWidgets() {
+      return this.__debounceUpdateWidgets.run();
     },
 
     /**
@@ -425,6 +467,40 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         height: height,
         maxHeight: maxHeight
       };
+    },
+
+    /**
+     * Returns an array of currently selected model items
+     *
+     * @return {*[]} List of items.
+     */
+    getSelection() {
+      return this.__selectionManager.getSelection();
+    },
+
+    /**
+     * Replaces current model selection with the given items.
+     *
+     * @param items {*[]} Items to select.
+     */
+    setSelection(items) {
+      this.__selectionManager.setSelection(items);
+    },
+
+    /**
+     * Clears the whole selection at once.
+     */
+    resetSelection() {
+      this.__selectionManager.resetSelection();
+    },
+
+    /**
+     * Returns the selection manager
+     *
+     * @returns {qxl.datagrid.ui.SelectionManager}
+     */
+    getSelectionManager() {
+      return this.__selectionManager;
     }
   }
 });

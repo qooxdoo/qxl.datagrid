@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
   extend: qx.core.Object,
@@ -39,6 +39,13 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
   },
 
   properties: {
+    /** The data source */
+    dataSource: {
+      init: null,
+      check: "qxl.datagrid.source.IDataSource",
+      event: "changeDataSource"
+    },
+
     /** The columns on display in this widget */
     columns: {
       init: null,
@@ -80,15 +87,24 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
       let id = rowIndex + ":" + columnIndex;
       let widget = this.__widgets[id];
       if (!widget) {
-        widget = this.__widgets[id] = this._createWidget();
+        let column = this.getColumns().getColumn(columnIndex);
+        widget = this.__widgets[id] = this._createWidget(column);
         widget.setAppearance(this.__widgetAppearance);
         widget.setUserData("qxl.datagrid.factory.AbstractWidgetFactory.bindingData", {
           rowIndex: rowIndex,
           columnIndex: columnIndex,
-          column: this.getColumns().getColumn(columnIndex)
+          column: column
         });
       }
       return widget;
+    },
+
+    /**
+     * @override
+     */
+    getModelForWidget(widget) {
+      let bindingData = widget.getUserData("qxl.datagrid.factory.AbstractWidgetFactory.bindingData");
+      return bindingData?.model || null;
     },
 
     /**
@@ -108,9 +124,10 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
     /**
      * Called to create a widget
      *
+     * @param {qxl.datagrid.column.Column} column the column to create for
      * @return {qx.ui.core.Widget}
      */
-    _createWidget() {
+    _createWidget(column) {
       throw new Error("No such method " + this.classname + "._createWidget");
     },
 

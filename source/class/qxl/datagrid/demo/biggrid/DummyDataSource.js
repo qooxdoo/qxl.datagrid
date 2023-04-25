@@ -1,25 +1,25 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
-qx.Class.define("qxl.datagrid.test.ui.DummyDataSource", {
+qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
   extend: qx.core.Object,
   implement: [qxl.datagrid.source.IDataSource],
 
@@ -45,6 +45,11 @@ qx.Class.define("qxl.datagrid.test.ui.DummyDataSource", {
       event: "changeNumColumns",
       apply: "_applyNumXxx"
     }
+  },
+
+  events: {
+    /** Fired when the size changes */
+    changeSize: "qx.event.type.Data"
   },
 
   members: {
@@ -92,7 +97,7 @@ qx.Class.define("qxl.datagrid.test.ui.DummyDataSource", {
         let id = pos.toId();
         let model = oldData[id];
         if (!model) {
-          model = new qxl.datagrid.test.ui.DummyModel().set({
+          model = new qxl.datagrid.demo.biggrid.DummyModel().set({
             rowIndex: pos.getRow(),
             columnIndex: pos.getColumn()
           });
@@ -108,15 +113,22 @@ qx.Class.define("qxl.datagrid.test.ui.DummyDataSource", {
       this.__range = range;
     },
 
-    /*
+    /**
      * @override
      */
-    getValueAt(pos) {
+    getModelForPosition(pos) {
       let model = this.__data[pos.toId()];
       return model;
     },
 
-    /*
+    /**
+     * @override
+     */
+    getPositionOfModel(value) {
+      return new qxl.datagrid.source.Position(value.getRowIndex(), value.getColumnIndex());
+    },
+
+    /**
      * @override
      */
     getSize() {

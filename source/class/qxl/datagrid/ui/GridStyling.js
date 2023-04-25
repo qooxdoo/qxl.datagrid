@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Collects all the styling information of together
+ */
 qx.Class.define("qxl.datagrid.ui.GridStyling", {
   extend: qx.core.Object,
 
@@ -27,21 +30,24 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
     numHeaderRows: {
       init: 1,
       check: "Integer",
-      apply: "__applyXxx"
+      apply: "__applyXxx",
+      event: "changeNumHeaderRows"
     },
 
     /** Number of fixed rows that dont scroll */
     numFixedRows: {
       init: 0,
       check: "Integer",
-      apply: "__applyXxx"
+      apply: "__applyXxx",
+      event: "changeNumFixedRows"
     },
 
     /* Number of fixed columns that dont scroll */
     numFixedColumns: {
       init: 0,
       check: "Integer",
-      apply: "__applyXxx"
+      apply: "__applyXxx",
+      event: "changeNumFixedColumns"
     },
 
     /** Minimum height of each row */
@@ -49,7 +55,8 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
       init: 28,
       nullable: true,
       check: "Integer",
-      apply: "__applyXxx"
+      apply: "__applyXxx",
+      event: "changeMinRowHeight"
     },
 
     /** Maximum height of each row */
@@ -57,7 +64,8 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
       init: null,
       nullable: true,
       check: "Integer",
-      apply: "__applyXxx"
+      apply: "__applyXxx",
+      event: "changeMaxRowHeight"
     },
 
     /** Minimum column width */
@@ -65,7 +73,8 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
       init: null,
       nullable: true,
       check: "Integer",
-      apply: "__applyXxx"
+      apply: "__applyXxx",
+      event: "changeMinColumnWidth"
     },
 
     /** Maximum column width */
@@ -73,7 +82,8 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
       init: null,
       nullable: true,
       check: "Integer",
-      apply: "__applyXxx"
+      apply: "__applyXxx",
+      event: "changeMaxColumnWidth"
     },
 
     /** How much space to leave between columns */
@@ -81,7 +91,8 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
       init: 3,
       themeable: true,
       check: "Integer",
-      apply: "__applyXxx"
+      apply: "__applyXxx",
+      event: "changeHorizontalSpacing"
     },
 
     /** How much space to leave between rows */
@@ -89,7 +100,8 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
       init: 2,
       themeable: true,
       check: "Integer",
-      apply: "__applyXxx"
+      apply: "__applyXxx",
+      event: "changeVerticalSpacing"
     }
   },
 

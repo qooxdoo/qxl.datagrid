@@ -19,6 +19,9 @@
  *
  * *********************************************************************** */
 
+/**
+ * Provides size information
+ */
 qx.Interface.define("qxl.datagrid.ui.IWidgetSizeSource", {
   members: {
     /**

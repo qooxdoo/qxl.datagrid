@@ -21,6 +21,7 @@
 
 qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
   extend: qxl.datagrid.source.AbstractDataSource,
+  implement: [qxl.datagrid.source.tree.ITreeDataSource],
 
   construct(nodeInspectorFactory, columns) {
     super();
@@ -48,8 +49,18 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     }
   },
 
+  events: {
+    /** Fired when the size changes */
+    changeSize: "qx.event.type.Data"
+  },
+
   members: {
-    /** @type{Object} array of objects for each row */
+    /**
+     * @typedef RowData
+     * @property {qx.core.Object} node the node object for the row
+     * @property {Integer} level indentation level
+     *
+     * @type{RowData[]} array of objects for each row */
     __rows: null,
 
     /** @type{Map<String,Object>} map of rows indexed by hash code of the node */
@@ -69,38 +80,41 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         await this.queue(async () => {
           for (let i = 0, nodes = await inspector.getChildrenOf(value); i < nodes.length; i++) {
             let node = nodes.getItem(i);
-            let row = this.__createRow(node);
+            let row = this.__createRow(node, 0);
+            row.canHaveChildren = inspector.canHaveChildren(node);
             this.__rows.push(row);
             this.__rowsByNode[node.toHashCode()] = row;
           }
         });
       }
-      this.fireEvent("change");
+      this.fireDataEvent("changeSize", this.getSize());
     },
 
     /**
      * Creates a row entry object
      *
-     * @param {*} node
-     * @returns
+     * @param {qx.core.Object} node
+     * @param {Integer} level the indentation level
+     * @returns {RowData}
      */
-    __createRow(node) {
+    __createRow(node, level) {
       return {
-        node: node
+        node: node,
+        level: level
       };
     },
 
     /**
      * Expands a node
      *
-     * @param {*} node
+     * @param {qx.core.Object} node
      */
     async expandNode(node) {
       let row = this.__rowsByNode[node.toHashCode()];
       if (!row) {
         throw new Error(`Cannot find ${node} in rows`);
       }
-      if (node.childRows) {
+      if (row.childRows) {
         return;
       }
 
@@ -114,38 +128,50 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         let parentRowIndex = this.__rows.indexOf(row);
         let childRows = [];
         for (let childNode of children) {
-          let row = this.__createRow(childNode);
-          childRows.push(row);
-          this.__rowsByNode[node.toHashCode()] = row;
+          let childRow = this.__createRow(childNode, row.level + 1);
+          childRow.canHaveChildren = inspector.canHaveChildren(childNode);
+          childRows.push(childRow);
+          this.__rowsByNode[childNode.toHashCode()] = childRow;
         }
-        let before = parentRowIndex == 0 ? [] : this.__rows.slice(0, parentRowIndex + 1);
+        let before = this.__rows.slice(0, parentRowIndex + 1);
         let after = parentRowIndex == this.__rows.length - 1 ? [] : this.__rows.slice(parentRowIndex + 1);
         qx.lang.Array.append(before, childRows);
         qx.lang.Array.append(before, after);
         row.childRows = childRows;
         this.__rows = before;
-        this.fireEvent("change");
+        this.fireDataEvent("changeSize", this.getSize());
       });
     },
 
     /**
      * Collapses a node
      *
-     * @param {*} node
+     * @param {qx.core.Object} node
      */
     async collapseNode(node) {
       let row = this.__rowsByNode[node.toHashCode()];
       if (!row) {
         throw new Error(`Cannot find ${node} in rows`);
       }
-      if (!node.childRows) {
+      if (!row.childRows) {
         return;
       }
-      for (let childRow of node.childRows) {
+      let toRemove = [];
+      const removeChildRows = row => {
+        if (row.childRows) {
+          for (let childRow of row.childRows) {
+            toRemove.push(childRow);
+            removeChildRows(childRow);
+          }
+        }
+      };
+      removeChildRows(row);
+      delete row.childRows;
+      for (let childRow of toRemove) {
         delete this.__rowsByNode[childRow.node.toHashCode()];
         qx.lang.Array.remove(this.__rows, childRow);
       }
-      this.fireEvent("change");
+      this.fireDataEvent("changeSize", this.getSize());
     },
 
     /**
@@ -196,24 +222,35 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     /**
      * @Override
      */
-    getValueAt(pos) {
+    getModelForPosition(pos) {
       let node = this.getNode(pos.getRow());
-      if (node == null) {
+      return node || null;
+    },
+
+    /**
+     * @override
+     */
+    getPositionOfModel(node) {
+      let row = this.__rowsByNode[node.toHashCode()] || null;
+      if (row !== null) {
+        let rowIndex = this.__rows.indexOf(row);
+        return new qxl.datagrid.source.Position(rowIndex, 0);
+      }
+      return null;
+    },
+
+    /**
+     * @override
+     */
+    getNodeStateFor(node) {
+      let row = this.__rowsByNode[node.toHashCode()] || null;
+      if (!row) {
         return null;
       }
-
-      let columnIndex = pos.getColumn();
-      let columns = this.getColumns();
-      if (columnIndex == -1) {
-        return node;
-      }
-      if (columns == null || columnIndex >= columns.getLength()) {
-        return null;
-      }
-
-      let column = columns.getColumn(columnIndex);
-      let value = node["get" + qx.lang.String.firstUp(column.getPath())]();
-      return value;
+      return {
+        level: row.level,
+        state: row.canHaveChildren ? (row.childRows ? "open" : "closed") : "none"
+      };
     },
 
     /**
@@ -234,7 +271,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @Override
      */
     getSize() {
-      return this.__rows?.length || 0;
+      return new qxl.datagrid.source.Position(this.__rows?.length || 0, 1);
     }
   }
 });

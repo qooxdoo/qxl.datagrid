@@ -1,24 +1,27 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
+/**
+ * Manages the widgets in the header
+ */
 qx.Class.define("qxl.datagrid.ui.HeaderRows", {
   extend: qx.ui.core.Widget,
 
@@ -27,6 +30,13 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
     this.__sizeCalculator = sizeCalculator;
     this.__widgetFactory = widgetFactory;
     this._setLayout(new qxl.datagrid.ui.layout.Fixed());
+  },
+
+  properties: {
+    appearance: {
+      init: "qxl-datagrid-header",
+      refine: true
+    }
   },
 
   members: {
@@ -99,6 +109,7 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
             top: top,
             height: rowSizeData.height
           });
+          child.getSizeHint(true);
           left += columnSizeData.width + horizontalSpacing;
         }
         top += rowSizeData.height + verticalSpacing;

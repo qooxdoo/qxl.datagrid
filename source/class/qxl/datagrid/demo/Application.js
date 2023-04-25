@@ -31,6 +31,9 @@ qx.Class.define("qxl.datagrid.demo.Application", {
   */
 
   members: {
+    /**
+     * @override
+     */
     async main() {
       super.main();
 
@@ -46,21 +49,55 @@ qx.Class.define("qxl.datagrid.demo.Application", {
       await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.GridSizeCalculator);
       await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.DataGrid);
 
-      let dataSource = new qxl.datagrid.test.ui.DummyDataSource(1000000, 10000);
-      let columns = new qxl.datagrid.column.Columns();
-      for (let columnIndex = 0; columnIndex < dataSource.getNumColumns(); columnIndex++) {
-        let column = new qxl.datagrid.column.TextColumn().set({
-          caption: qxl.datagrid.util.Labels.getColumnLetters(columnIndex),
-          path: "label",
-          minWidth: 80
-        });
-        columns.add(column);
-      }
-      let grid = new qxl.datagrid.DataGrid(columns).set({
-        dataSource: dataSource
-      });
       let doc = this.getRoot();
-      doc.add(grid, { left: 10, top: 10, right: 10, bottom: 10 });
+      let tv = new qx.ui.tabview.TabView();
+      doc.add(tv, { left: 0, top: 0, right: 0, bottom: 0 });
+
+      let storage = qx.bom.Storage.getSession();
+      let lastPageId = storage.getItem(this.classname + ".lastPageId") || null;
+
+      tv.add(this.getQxObject("pgBigGridDemo"));
+      tv.add(this.getQxObject("pgTreeDemo"));
+      if (lastPageId) {
+        let page = this.getQxObject(lastPageId);
+        if (page) {
+          tv.setSelection([page]);
+        }
+      }
+
+      tv.addListener("changeSelection", evt => {
+        let page = tv.getSelection()[0] || null;
+        let id = page.getQxObjectId();
+        storage.setItem(this.classname + ".lastPageId", id);
+      });
+    },
+
+    /**
+     * @override
+     */
+    _createQxObjectImpl(id) {
+      switch (id) {
+        case "pgBigGridDemo":
+          var page = new qx.ui.tabview.Page("Big Grid Demo");
+          page.setLayout(new qx.ui.layout.Grow());
+          page.addListenerOnce("appear", async () => {
+            let demo = new qxl.datagrid.demo.biggrid.BigGridDemo();
+            page.add(demo);
+            await demo.init();
+          });
+          return page;
+
+        case "pgTreeDemo":
+          var page = new qx.ui.tabview.Page("Tree Demo");
+          page.setLayout(new qx.ui.layout.Grow());
+          page.addListenerOnce("appear", async () => {
+            let demo = new qxl.datagrid.demo.tree.TreeDemo();
+            page.add(demo);
+            await demo.init();
+          });
+          return page;
+      }
+      return super._createQxObjectImpl(id);
     }
   }
 });

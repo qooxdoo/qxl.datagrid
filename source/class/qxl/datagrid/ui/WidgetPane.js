@@ -19,17 +19,33 @@
  *
  * *********************************************************************** */
 
+/**
+ * Manages the widgets for each of the cells, ie not including the header
+ */
 qx.Class.define("qxl.datagrid.ui.WidgetPane", {
   extend: qx.ui.core.Widget,
 
-  construct(sizeCalculator, widgetFactory, dataSource) {
+  construct(sizeCalculator, widgetFactory, dataSource, selectionManager) {
     super();
     this.__sizeCalculator = sizeCalculator;
     this.__widgetFactory = widgetFactory;
+    this.__selectionManager = selectionManager;
+    selectionManager.addListener("changeSelectionStyle", () => this.updateWidgets());
+    selectionManager.addListener("changeSelection", () => {
+      if (selectionManager.getSelectionStyle() == "cell") {
+        this.updateWidgets();
+      }
+    });
+    selectionManager.addListener("changeFocused", () => {
+      if (selectionManager.getSelectionStyle() == "cell") {
+        this.updateWidgets();
+      }
+    });
     if (dataSource) {
       this.setDataSource(dataSource);
     }
     this._setLayout(new qxl.datagrid.ui.layout.Fixed());
+    this.addListener("tap", this.__onTap, this);
   },
 
   properties: {
@@ -38,6 +54,11 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       init: null,
       check: "qxl.datagrid.source.IDataSource",
       event: "changeDataSource"
+    },
+
+    appearance: {
+      init: "qxl-datagrid-widgetpane",
+      refine: true
     }
   },
 
@@ -47,6 +68,19 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     /** @type{qxl.datagrid.ui.factory.IWidgetFactory} */
     __widgetFactory: null,
+
+    /** @type{qxl.datagrid.selection.SelectionManager} */
+    __selectionManager: null,
+
+    /** @type{Boolean} */
+    __invalidateAll: false,
+
+    /**
+     * Invalidates all widgets, meaning that they will be recalculated next time `updateWidget` is called
+     */
+    invalidateAll() {
+      this.__invalidateAll = true;
+    },
 
     /**
      * Called to update the widgets and synchronise the sizes, creating widgets via the factory
@@ -91,11 +125,15 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         return promise;
       }
 
+      let invalidateAll = this.__invalidateAll;
+      this.__invalidateAll = false;
+
       let children = {};
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         // prettier-ignore
-        if (cellData.row < minDataRowIndex || 
+        if (invalidateAll ||
+            cellData.row < minDataRowIndex || 
             cellData.row > maxRowIndex || 
             cellData.column < minColumnIndex || 
             cellData.column > maxColumnIndex) {
@@ -125,6 +163,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           let id = rowSizeData.rowIndex + ":" + columnSizeData.columnIndex;
 
           let child = children[id];
+          let model = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, columnSizeData.columnIndex));
           if (!child) {
             child = this.__widgetFactory.getWidgetFor(rowSizeData.rowIndex, columnSizeData.columnIndex);
             children[id] = child;
@@ -133,8 +172,24 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
               column: columnSizeData.columnIndex
             });
             this._add(child);
-            let model = dataSource.getValueAt(new qxl.datagrid.source.Position(rowSizeData.rowIndex, columnSizeData.columnIndex));
             this.__widgetFactory.bindWidget(child, model);
+          }
+
+          let isSelected = false;
+          let isFocused = false;
+          if (this.__selectionManager.getSelectionStyle() == "cell") {
+            isSelected = this.__selectionManager.isSelected(model);
+            isFocused = this.__selectionManager.getFocused() === model;
+          }
+          if (isSelected) {
+            child.addState("selected");
+          } else {
+            child.removeState("selected");
+          }
+          if (isFocused) {
+            child.addState("focused");
+          } else {
+            child.removeState("focused");
           }
 
           child.setLayoutProperties({
@@ -148,6 +203,62 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         }
         top += rowSizeData.height + verticalSpacing;
       }
+    },
+
+    /**
+     * Event handler for tap events
+     */
+    __onTap(evt) {
+      let widget = qx.ui.core.Widget.getWidgetByElement(evt.getOriginalTarget());
+      while (widget && widget.isAnonymous()) {
+        widget = widget.getLayoutParent();
+      }
+      let model = this.__widgetFactory.getModelForWidget(widget);
+      let manager = this.__selectionManager;
+      let mode = manager.getSelectionMode();
+      let selection = qx.lang.Array.clone(manager.getSelection().toArray());
+      if (mode == "single") {
+        selection = model ? [model] : [];
+      } else if (mode == "one") {
+        if (model) {
+          selection = model ? [model] : [];
+        }
+      } else if (mode == "multi") {
+        if (model) {
+          if ((evt.getModifiers() & qx.event.type.Dom.CTRL_MASK) != 0) {
+            if (selection.indexOf(model) < 0) {
+              selection.push(model);
+            } else {
+              qx.lang.Array.remove(selection, model);
+            }
+          } else {
+            selection = model ? [model] : [];
+          }
+        }
+      } else if (mode == "additive") {
+        if (model) {
+          if (selection.indexOf(model) < 0) {
+            selection.push(model);
+          } else {
+            qx.lang.Array.remove(selection, model);
+          }
+        }
+      }
+      this.__selectionManager.setSelection(selection);
+      this.__selectionManager.setFocused(model);
+    },
+
+    /**
+     * Event handler for double taps (starts editing)
+     *
+     * @param {*} evt
+     */
+    __onDoubleTap(evt) {
+      let widget = qx.ui.core.Widget.getWidgetByElement(evt.getOriginalTarget());
+      while (widget && widget.isAnonymous()) {
+        widget = widget.getLayoutParent();
+      }
+      let model = this.__widgetFactory.getModelForWidget(widget);
     }
   }
 });

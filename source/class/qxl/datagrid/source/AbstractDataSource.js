@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 /**
  * Base implementation of an IDataSource, which gets data on demand and caches the result
@@ -40,6 +40,11 @@ qx.Class.define("qxl.datagrid.source.AbstractDataSource", {
       check: "qxl.datagrid.column.IColumns",
       event: "changeColumns"
     }
+  },
+
+  events: {
+    /** Fired when the size changes */
+    changeSize: "qx.event.type.Data"
   },
 
   members: {
@@ -73,7 +78,7 @@ qx.Class.define("qxl.datagrid.source.AbstractDataSource", {
     /**
      * @Override
      */
-    getValueAt(pos) {
+    getModelForPosition(pos) {
       let key = this._createDataKey(pos.getRow(), pos.getColumn());
       return this._data[key];
     }

@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 /**
  * A vertical layout fpor the datagrid, which supports layering via a `layer` layout property
@@ -49,15 +49,20 @@ qx.Class.define("qxl.datagrid.ui.layout.Layered", {
     __getChildrenInLayers() {
       let layers = [];
 
+      let maxLayerId = 0;
       this._getLayoutChildren().forEach(child => {
         let props = child.getLayoutProperties();
         let layerId = props.layer || 0;
+        if (layerId > maxLayerId) {
+          maxLayerId = layerId;
+        }
         let layer = layers[layerId];
         if (!layer) {
-          layer = layers[layerId] = { children: [] };
+          layer = layers[layerId] = { layerId: layerId, children: [] };
         }
         layer.children.push(child);
       });
+      layers.forEach(layer => (layer.zIndex = maxLayerId - layer.layerId));
 
       return layers;
     },
@@ -89,6 +94,9 @@ qx.Class.define("qxl.datagrid.ui.layout.Layered", {
           }
 
           let left = padding.left + child.getMarginLeft();
+
+          let elem = child.getContentElement();
+          elem.setStyle("zIndex", layer.zIndex);
 
           child.renderLayout(left, top + child.getMarginTop(), availWidth, height);
           top += child.getMarginTop() + height + child.getMarginBottom();

@@ -152,7 +152,7 @@ qx.Class.define("qxl.datagrid.source.Position", {
      *
      * (a) two integers, the row and the column
      * (b) one array, which is the row and the column
-     * (c) one objectm which has `row` and `column` properties
+     * (c) one object which has `row` and `column` properties
      *
      * Nulls are mapped to be `undefined`
      *
@@ -176,6 +176,12 @@ qx.Class.define("qxl.datagrid.source.Position", {
       return { row, column };
     },
 
+    /**
+     * Parses a string id in the form "row:column"
+     *
+     * @param {String} id
+     * @returns {qxl.datagrid.source.Position}
+     */
     fromId(id) {
       let pos = id.indexOf(":");
       let rowIndex = parseInt(id.substring(0, pos), 10);

@@ -19,15 +19,14 @@
  *
  * *********************************************************************** */
 
-qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
-  extend: qx.core.Object,
-  implement: [qxl.datagrid.source.tree.INodeInspector],
+qx.Class.define("qxl.datagrid.column.DateColumn", {
+  extend: qxl.datagrid.column.Column,
 
   properties: {
-    /** Where to find the children of the node */
-    childrenPath: {
-      init: "children",
-      check: "String"
+    dateFormat: {
+      init: null,
+      check: "qx.util.format.DateFormat",
+      event: "changeDateFormat"
     }
   },
 
@@ -35,20 +34,21 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
     /**
      * @override
      */
-    async getChildrenOf(node) {
-      if (node) {
-        let upname = qx.lang.String.firstUp(this.getChildrenPath());
-        let children = await node["get" + upname]();
-        return children;
-      }
-      return null;
+    _convertValueForDisplay(value) {
+      let format = this.getDateFormat() || qx.util.format.DateFormat.getDateInstance();
+      return !value ? "" : format.format(value);
     },
 
     /**
      * @override
      */
-    canHaveChildren(node) {
-      return true;
+    _getBindingOptions(widget, model) {
+      return {
+        converter: (data, model, source, target) => {
+          let format = this.getDateFormat() || qx.util.format.DateFormat.getDateInstance();
+          return !data ? "" : format.format(data);
+        }
+      };
     }
   }
 });

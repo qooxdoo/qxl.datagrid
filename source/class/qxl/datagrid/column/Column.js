@@ -111,7 +111,56 @@ qx.Class.define("qxl.datagrid.column.Column", {
       }
       let upname = qx.lang.String.firstUp(path);
       let value = node["get" + upname]();
+      value = this._convertValueForDisplay(value);
       return value;
+    },
+
+    /**
+     * Helper method that converts the model into a text value for display, used by bindings and `getDisplayValue`
+     * @param {*} value returned by the binding, according to the path
+     * @returns {String}
+     */
+    _convertValueForDisplay(value) {
+      return value;
+    },
+
+    /**
+     * Called to implement the binding
+     *
+     * @param {qx.ui.core.Widget} widget
+     * @param {qx.core.Object} model
+     * @param {qxl.datagrid.ui.factory.IWidgetFactory} factory
+     * @returns {qxl.datagrid.binding.IBinding} the object to dispose of to remove the binding
+     */
+    bindWidget(widget, model, factory) {
+      let path = this.getPath();
+      if (path) {
+        if (model) {
+          let bindingId = model.bind(path, widget, "value", this._getBindingOptions(widget, model));
+          return new qxl.datagrid.binding.Bindings(model, bindingId);
+        }
+      } else {
+        widget.setLabel(model);
+      }
+    },
+
+    /**
+     * Creates a widget for displaying a value for for a single cell
+     * @returns {qx.ui.core.Widget}
+     */
+    createWidgetForDisplay() {
+      return new qx.ui.basic.Label();
+    },
+
+    /**
+     * Returns options for the binding
+     *
+     * @param {qx.ui.core.Widget} widget
+     * @param {qx.core.Object} model
+     * @returns {*?}
+     */
+    _getBindingOptions(widget, model) {
+      return undefined;
     },
 
     /**

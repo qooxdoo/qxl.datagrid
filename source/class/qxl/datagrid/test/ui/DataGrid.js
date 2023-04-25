@@ -24,7 +24,7 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
 
   members: {
     async testCellSizes() {
-      let dataSource = new qxl.datagrid.test.ui.DummyDataSource(100, 100);
+      let dataSource = new qxl.datagrid.demo.biggrid.DummyDataSource(100, 100);
       let styling = new qxl.datagrid.ui.GridStyling().set({
         horizontalSpacing: 0,
         verticalSpacing: 0,
@@ -65,7 +65,7 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
       let headerWidgetFactory = new qxl.datagrid.ui.factory.HeaderWidgetFactory(columns, "qxl-datagrid-header-cell");
       let header = new qxl.datagrid.ui.HeaderRows(sizeCalculator, headerWidgetFactory, dataSource);
       let paneWidgetFactory = new qxl.datagrid.ui.factory.SimpleWidgetFactory(columns, "qxl-datagrid-cell");
-      let widgetPane = new qxl.datagrid.ui.WidgetPane(sizeCalculator, paneWidgetFactory, dataSource);
+      let widgetPane = new qxl.datagrid.ui.WidgetPane(sizeCalculator, paneWidgetFactory, dataSource, new qxl.datagrid.ui.SelectionManager());
       header.updateWidgets();
       await widgetPane.updateWidgets();
 
@@ -86,7 +86,7 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
       widgets = paneWidgetFactory.getWidgets();
       this.assertTrue(widgets["0:0"] === undefined);
       this.assertTrue(widgets["6:1"] === undefined);
-      this.assertTrue(widgets["2:2"].getLabel() === "C2");
+      this.assertTrue(widgets["2:2"].getValue() === "C2");
       assertMapEquals(widgets["2:2"].getLayoutProperties(), { top: 40, height: 40, left: 40, width: 40 });
       assertMapEquals(widgets["3:3"].getLayoutProperties(), { top: 80, height: 40, left: 80, width: 40 });
     }
