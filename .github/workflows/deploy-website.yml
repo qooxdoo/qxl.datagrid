@@ -19,4 +19,4 @@ jobs:
 
       - name: Build and Deploy
         run: |
-          ./.github/workflows/build-demo-website.sh "${{ secrets.WEBSITE_DEPLOY_PK }}"
+          ./.github/workflows/build-website.sh "${{ secrets.WEBSITE_DEPLOY_PK }}"
