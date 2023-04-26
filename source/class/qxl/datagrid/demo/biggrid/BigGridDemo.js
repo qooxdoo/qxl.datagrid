@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
   extend: qx.ui.container.Composite,
@@ -28,7 +28,7 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
 
     let grid = this.getQxObject("grid");
 
-    (() => {
+    {
       let comp = new qx.ui.container.Composite(new qx.ui.layout.Grid(5, 3));
       comp.add(new qx.ui.basic.Label("Selection Style : "), { row: 0, column: 0 });
       let rbComp = new qx.ui.container.Composite(new qx.ui.layout.HBox(5));
@@ -44,9 +44,9 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       });
       manager.setSelection([rbCell]);
       this.add(comp);
-    })();
+    }
 
-    (() => {
+    {
       let comp = new qx.ui.container.Composite(new qx.ui.layout.Grid(5, 3));
       comp.add(new qx.ui.basic.Label("Selection Mode : "), { row: 0, column: 0 });
       let rbComp = new qx.ui.container.Composite(new qx.ui.layout.HBox(5));
@@ -71,7 +71,7 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       });
       manager.setSelection([rbMulti]);
       this.add(comp);
-    })();
+    }
 
     this.add(grid, { flex: 1 });
   },
