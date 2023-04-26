@@ -17,10 +17,13 @@ NOTE:: This is beta release, but will be in active use and development over he n
 
 ## Trying the Demos
 
-The included demo application will create a tabview showing both styles of DataGrid usage (ie spreadsheet or tree); the easiest way
-to try it out is to check out this repo and:
+Included in this repo is a demo application - it's running live at http://qooxdoo.org/qxl-datagrid.qooxdoo.github.io/
+
+The included demo application will create a tabview showing both styles of DataGrid usage (ie spreadsheet or tree); if you would like
+to try it out for yourself, check out this repo and:
 
 ```
+
 $ cd qxl.datagrid
 $ qx serve
 ```

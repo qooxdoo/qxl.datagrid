@@ -99,7 +99,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
           }
         }
         let model = this.getFocused();
-        model = this.__forceRowModel(model);
+        model = model ? this.__forceRowModel(model) : null;
         if (model !== this.getFocused()) {
           this.setFocused(model);
         }
