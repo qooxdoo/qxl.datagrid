@@ -20,10 +20,10 @@ NOTE:: This is beta release, but will be in active use and development over he n
 Included in this repo is a demo application - it's running live at http://qooxdoo.org/qxl-datagrid.qooxdoo.github.io/
 
 The included demo application will create a tabview showing both styles of DataGrid usage (ie spreadsheet or tree); if you would like
-to try it out for yourself, check out this repo and:
+to try it out on your own computer, check out this repo and run it:
 
 ```
-
+$ git clone https://github.com/qooxdoo/qxl.datagrid.git
 $ cd qxl.datagrid
 $ qx serve
 ```
@@ -34,17 +34,17 @@ and browse to http://localhost:8080
 
 To create and use a DataGrid, you must:
 
-- a list of one or more columns - these will be instances of classes in `qxl.datagrid.column.*`
-- to create an instance of `qxl.datagrid.DataGrid` and give it your list of columns
-- provide a DataSource (see below) for the DatGrid to get your data from
+- create a list of one or more columns - these will be instances of classes in `qxl.datagrid.column.*`
+- create an instance of `qxl.datagrid.DataGrid` and give it your list of columns
+- provide a DataSource (see below) for the DataGrid to get your data from
 
 There are two styles of grid - spreadsheet-style and tree-style; which you have depends on the type of DataSource you choose
-(although if yiou have a tree-tyle, you will probably want to use the special `qxl.datagrid.column.tree.ExpansionColumn` as
+(although if you have a tree-style, you will probably want to use the special `qxl.datagrid.column.tree.ExpansionColumn` as
 your first column so that the user can click to expand/collapse parts of the tree).
 
 For an example of a spreadsheet-like DataGrid, take a look at [qxl.datagrid.demo.biggrid.BigGridDemo](source/class/qxl/datagrid/demo/biggrid/BigGridDemo.js)
 
-For an example of a tree-like DataGrid, take a look at [qxl.datagrid.demo.tree.TreeDemo](source/class/qxl/datagrid/demo/tree.TreeDemo.js)
+For an example of a tree-like DataGrid, take a look at [qxl.datagrid.demo.tree.TreeDemo](source/class/qxl/datagrid/demo/tree/TreeDemo.js)
 
 ### Theming
 
@@ -70,7 +70,10 @@ may have some more work to do. Please consider contributing your appearances for
 
 A key concept to get to grips with is the DataSource, which provides your data to the DataGrid in a two dimensional
 array; this data is expected to be fetched asynchronously and on demand, which means that you can have truely massive
-amounts of data stored on a slow server somewhere, and only get those parts of the data that are visible to the user.
+amounts of data stored on a slow server somewhere, and only spend time loading those parts of the data that are visible
+to the user. The DataSource is expected to cache the data which is on display so that it can be obtained immediately
+and synchronously - although whether the DataSource chooses to cache data which is _not_ on display is entirely up
+to the implementation of the DataSource.
 
 To create a DataSource, you have to write your own implementation of `qxl.datagrid.source.IDataSource` - but that's quite
 straightforward and you can see an example in [qxl.datagrid.demo.biggrid.DummyDataSource](source/class/qxl/datagrid/demo/biggrid/DummyDataSource.js).

@@ -19,6 +19,14 @@
  *
  * *********************************************************************** */
 
+/**
+ * This model object represents a piece of fabricated data for one of the cells
+ * in the massive spreadsheet demo in `qxl.datagrid.demo.biggrid.BigGridDemo`,
+ * i.e. one instance of this object relates to one row/column combination.
+ *
+ * The `DummyDataSource` will create and dispose of these on demand, out of a
+ * fabricated data set of 10 billion model objects
+ */
 qx.Class.define("qxl.datagrid.demo.biggrid.DummyModel", {
   extend: qx.core.Object,
 
@@ -55,6 +63,9 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyModel", {
   },
 
   members: {
+    /**
+     * Apply for various properties
+     */
     __applyXxx() {
       let label = qxl.datagrid.util.Labels.getColumnLetters(this.getColumnIndex()) + this.getRowIndex();
       let text = (this.getText() || "").trim();
@@ -67,6 +78,9 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyModel", {
       this.setLabel(label);
     },
 
+    /**
+     * @Override
+     */
     toString() {
       return this.getRowIndex() + ":" + this.getColumnIndex();
     }

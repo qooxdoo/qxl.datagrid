@@ -17,18 +17,12 @@
 ************************************************************************ */
 
 /**
- * This is the main application class of "qxl.datagrid"
+ * This is the demo application class of "qxl.datagrid"
  *
  * @asset(qxl/datagrid/*)
  */
 qx.Class.define("qxl.datagrid.demo.Application", {
   extend: qx.application.Standalone,
-
-  /*
-  *****************************************************************************
-     MEMBERS
-  *****************************************************************************
-  */
 
   members: {
     /**

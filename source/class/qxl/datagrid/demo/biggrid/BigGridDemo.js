@@ -77,6 +77,9 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
   },
 
   members: {
+    /**
+     * Called once to get the demo running
+     */
     async init() {
       let dataSource = this.getQxObject("dataSource");
       await dataSource.makeAvailable(new qxl.datagrid.source.Range([0, 0], [10, 10]));
@@ -87,6 +90,9 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       grid.getSelectionManager().setFocused(valueAt(4, 4));
     },
 
+    /**
+     * @override
+     */
     _createQxObjectImpl(id) {
       switch (id) {
         case "dataSource":
