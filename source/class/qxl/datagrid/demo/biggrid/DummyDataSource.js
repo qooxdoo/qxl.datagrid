@@ -96,7 +96,8 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
     async makeAvailable(range) {
       let oldData = this.__data;
       let newData = {};
-      for (let pos of range) {
+
+      const allocate = pos => {
         let id = pos.toId();
         let model = oldData[id];
         if (!model) {
@@ -108,13 +109,12 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
           delete oldData[id];
         }
         newData[id] = model;
+      };
+      for (let pos of range) {
+        allocate(pos);
       }
       for (let pos of range.rowsIterator()) {
-        let id = pos.toId();
-        if (!newData[id]) {
-          newData[id] = oldData[id];
-          delete oldData[id];
-        }
+        allocate(pos);
       }
       for (let id in oldData) {
         oldData[id].dispose();
