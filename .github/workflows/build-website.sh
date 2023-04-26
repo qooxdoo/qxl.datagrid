@@ -15,7 +15,7 @@ git clone -c core.sshCommand="/usr/bin/ssh -i $ABSOLUTE_TMP/deploy-key" git@gith
 
 echo
 echo ">>> Building website..."
-qx deploy --out=./tmp/qxl-datagrid.qooxdoo.github.io
+npx qx deploy --out=./tmp/qxl-datagrid.qooxdoo.github.io
 
 cd ./tmp/qxl-datagrid.qooxdoo.github.io
 if [[ ! -d .git ]] ; then
