@@ -20,7 +20,7 @@
  * *********************************************************************** */
 
 /**
- * A vertical layout fpor the datagrid, which supports layering via a `layer` layout property
+ * A vertical layout for the datagrid, which supports layering via a `layer` layout property
  */
 qx.Class.define("qxl.datagrid.ui.layout.Layered", {
   extend: qx.ui.layout.Abstract,
@@ -108,46 +108,9 @@ qx.Class.define("qxl.datagrid.ui.layout.Layered", {
      * @override
      */
     _computeSizeHint() {
-      let neededWidth = 0;
-      let neededHeight = 0;
-      let layers = this.__getChildrenInLayers();
-
-      for (let layerId in layers) {
-        let layer = layers[layerId];
-        let layerHeight = 0;
-        layer.children.forEach(child => {
-          let hint = child.getSizeHint();
-          let height = hint.height || 0;
-
-          if (hint.minHeight !== null && height < hint.minHeight) {
-            height = hint.minHeight;
-          } else if (hint.maxHeight !== null && height > hint.maxHeight) {
-            height = hint.maxHeight;
-          }
-          height += child.getMarginTop() + child.getMarginBottom();
-
-          let width = hint.width || 0;
-          if (hint.minWidth !== null && width < hint.minWidth) {
-            width = hint.minWidth;
-          } else if (hint.maxWidth !== null && width > hint.maxWidth) {
-            width = hint.maxWidth;
-          }
-          width += child.getMarginLeft() + child.getMarginRight();
-          if (width > neededWidth) {
-            neededWidth = width;
-          }
-
-          layerHeight += child.getMarginTop() + height + child.getMarginBottom();
-        });
-        if (layerHeight > neededHeight) {
-          neededHeight = layerHeight;
-        }
-      }
-
-      // Return hint
       return {
-        width: neededWidth,
-        height: neededHeight
+        width: 10,
+        height: 10
       };
     }
   }

@@ -294,7 +294,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           percent = Math.floor((this.getStartColumnIndex() / columns.getLength()) * 100);
         }
         scrollbarX.set({
-          pageStep: sizeData.columns.length,
           position: percent
         });
       }
@@ -314,7 +313,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           percent = Math.floor((this.getStartRowIndex() / size.getRow()) * 100);
         }
         scrollbarY.set({
-          pageStep: sizeData.rows.length,
           position: percent
         });
       }
@@ -387,7 +385,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           var comp2 = new qx.ui.container.Composite(new qxl.datagrid.ui.layout.Layered());
           comp2.add(this.getQxObject("widgetPane"), { layer: 0 });
           comp2.add(this.getQxObject("oddEvenRows"), { layer: 1 });
-          comp.add(comp2);
+          comp.add(comp2, { flex: 1 });
           return comp;
 
         case "headerWidgetFactory":
