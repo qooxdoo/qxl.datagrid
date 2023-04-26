@@ -76,6 +76,9 @@ The TL;DR is that you provide an asynchronous method `makeAvailable` which will 
 range of data available; `isAvailable` is synchronous and tests whether a range is already available; and then methods
 to say how big the data is and get values from your array.
 
+One crucial point to note is that although `makeAvailable` is called with a range of columns & rows, your DataSource
+MUST always also provide a model for column 0 (zero) for each row in that range - this is to allow selection by row.
+
 ### Tree Data Sources
 
 For a spreadsheet-style datagrid, your data is already in a two-dimensional array, but tree-style datagrid has a heirarchy

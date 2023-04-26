@@ -24,6 +24,6 @@ if [[ ! -d .git ]] ; then
 fi
 
 git add .
-git commit -m 'automatic deployment from qooxdoo/qxl-datagrid.qooxdoo.github.io/.github/workflows/build-website.sh'
+git commit -m 'automatic deployment from qooxdoo/qxl.datagrid/.github/workflows/build-website.sh'
 git push
 

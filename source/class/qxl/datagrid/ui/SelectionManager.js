@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 /**
  * Manages selection and focus
@@ -29,7 +29,12 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     super();
     this.__batchSelectionChange = new qxl.datagrid.util.Batch(() => this.__fireSelectionChange());
     this.__selection = new qx.data.Array();
-    this.__selection.addListener("change", () => this.__batchSelectionChange.run());
+    this.__selection.addListener("change", () => {
+      if (qx.core.Environment.get("qx.debug")) {
+        this.__selection.forEach(item => this.assertTrue(!!item));
+      }
+      this.__batchSelectionChange.run();
+    });
   },
 
   properties: {

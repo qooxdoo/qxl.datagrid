@@ -177,6 +177,90 @@ qx.Class.define("qxl.datagrid.source.Range", {
     },
 
     /**
+     * Returns an iterator/iterable for all cells
+     *
+     * @return {*} see Javascript Iterable and Iterator protocols for details
+     */
+    rowsIterator() {
+      let startRow = this.getStart().getRow();
+      let endRow = this.getEnd().getRow();
+
+      let pos = new qxl.datagrid.source.Position(-1, 0);
+
+      return {
+        next() {
+          if (pos.getRow() == -1) {
+            pos.setRow(startRow);
+            return {
+              value: pos
+            };
+          }
+          if (pos.getRow() < endRow) {
+            pos.increment(1, 0);
+            return {
+              value: pos
+            };
+          } else {
+            return {
+              done: true
+            };
+          }
+        },
+        [Symbol.iterator]() {
+          return this;
+        }
+      };
+    },
+
+    /**
+     * Returns an iterator/iterable for all cells
+     *
+     * @return {*} see Javascript Iterable and Iterator protocols for details
+     */
+    columnsIterator() {
+      let startColumn = this.getStart().getColumn();
+      let endColumn = this.getEnd().getColumn();
+
+      let pos = new qxl.datagrid.source.Position(0, -1);
+
+      return {
+        next() {
+          if (pos.getRow() == -1) {
+            pos.setColumn(startColumn);
+            return {
+              value: pos
+            };
+          }
+          if (pos.getColumn() < endColumn) {
+            pos.increment(0, 1);
+            return {
+              value: pos
+            };
+          } else {
+            return {
+              done: true
+            };
+          }
+        },
+        [Symbol.iterator]() {
+          return this;
+        }
+      };
+    },
+
+    /**
+     * Creates a copy of the range but with the column set to 0 (zero)
+     *
+     * @returns {qxl.datagrid.source.Range}
+     */
+    columnZero() {
+      let startRow = this.getStart().getRow();
+      let endRow = this.getEnd().getRow();
+      let clone = new qxl.datagrid.source.Range([startRow, 0], [endRow, 0]);
+      return clone;
+    },
+
+    /**
      * Transform for `start` and `end`
      */
     __transformXxx(value, oldValue) {

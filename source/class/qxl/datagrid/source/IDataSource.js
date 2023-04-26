@@ -21,6 +21,10 @@
 
 /**
  * The DataGrid obtains the data it displays from an `qxl.datagrid.source.IDataSource`
+ *
+ * The method `makeAvailable` will asynchronously obtain all the data required for the necessary
+ * range - however, it is important to note that in addition to the range of cells, the
+ * DataSource MUST also provide a model for column 0 of each row in that range.
  */
 qx.Interface.define("qxl.datagrid.source.IDataSource", {
   members: {

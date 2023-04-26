@@ -84,7 +84,10 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
      * @override
      */
     isAvailable(range) {
-      return this.__range && this.__range.eclipses(range);
+      if (!this.__range) {
+        return false;
+      }
+      return this.__range.eclipses(range) || this.__range.columnZero().eclipses(range);
     },
 
     /*
@@ -105,6 +108,13 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
           delete oldData[id];
         }
         newData[id] = model;
+      }
+      for (let pos of range.rowsIterator()) {
+        let id = pos.toId();
+        if (!newData[id]) {
+          newData[id] = oldData[id];
+          delete oldData[id];
+        }
       }
       for (let id in oldData) {
         oldData[id].dispose();

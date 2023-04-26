@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 qx.Class.define("qxl.datagrid.test.source.Range", {
   extend: qx.dev.unit.TestCase,
@@ -46,6 +46,12 @@ qx.Class.define("qxl.datagrid.test.source.Range", {
       exclude = new qxl.datagrid.source.Range([1, 1], [3, 4]);
       str = toString(range.iteratorExcept(exclude));
       this.assertTrue(str == "2:5 3:5 4:3 4:4 4:5");
+
+      str = toString(range.rowsIterator());
+      this.assertTrue(str == "2:0 3:0 4:0");
+
+      str = toString(range.columnsIterator());
+      this.assertTrue(str == "0:3 0:4 0:5");
     },
 
     testContains() {
