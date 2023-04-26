@@ -225,7 +225,7 @@ qx.Class.define("qxl.datagrid.source.Range", {
 
       return {
         next() {
-          if (pos.getRow() == -1) {
+          if (pos.getColumn() == -1) {
             pos.setColumn(startColumn);
             return {
               value: pos

@@ -62,6 +62,11 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     }
   },
 
+  events: {
+    /** Fired when the user double clicks on a model item */
+    modelDoubleTap: "qx.event.type.Data"
+  },
+
   members: {
     /** @type{qxl.datagrid.ui.GridSizeCalculator} */
     __sizeCalculator: null,
@@ -213,7 +218,13 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       while (widget && widget.isAnonymous()) {
         widget = widget.getLayoutParent();
       }
+      if (!widget) {
+        return;
+      }
       let model = this.__widgetFactory.getModelForWidget(widget);
+      if (!model) {
+        return;
+      }
       let manager = this.__selectionManager;
       let mode = manager.getSelectionMode();
       let selection = qx.lang.Array.clone(manager.getSelection().toArray());
@@ -258,7 +269,14 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       while (widget && widget.isAnonymous()) {
         widget = widget.getLayoutParent();
       }
+      if (!widget) {
+        return;
+      }
       let model = this.__widgetFactory.getModelForWidget(widget);
+      if (!model) {
+        return;
+      }
+      this.fireDataEvent("modelDoubleTap", model);
     }
   }
 });

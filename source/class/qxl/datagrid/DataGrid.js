@@ -45,6 +45,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       this.setColumns(columns);
     }
 
+    this.getQxObject("widgetPane").addListener("modelDoubleTap", evt => this.fireDataEvent("modelDoubleTap", evt.getData()));
+
     if (qx.core.Environment.get("os.scrollBarOverlayed")) {
       // use a plain canvas to overlay the scroll bars
       this._setLayout(new qx.ui.layout.Canvas());
@@ -78,11 +80,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     // Roll listener for scrolling
     this._addRollHandling();
-  },
-
-  events: {
-    /** Fired when the `selection` pseudo property changes */
-    changeSelection: "qx.event.type.Data"
   },
 
   properties: {
@@ -160,6 +157,14 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     scrollbar: {
       group: ["scrollbarX", "scrollbarY"]
     }
+  },
+
+  events: {
+    /** Fired when the `selection` pseudo property changes */
+    changeSelection: "qx.event.type.Data",
+
+    /** Fired when the user double clicks on a model item */
+    modelDoubleTap: "qx.event.type.Data"
   },
 
   members: {
