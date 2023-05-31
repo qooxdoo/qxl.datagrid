@@ -44,6 +44,7 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
     this.setLayout(new qx.ui.layout.VBox());
 
     let grid = this.getQxObject("grid");
+    this.add(this.getQxObject("toolbar"));
     this.add(grid, { flex: 1 });
   },
 
@@ -63,6 +64,31 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
         case "dataSource":
           var inspector = new qxl.datagrid.demo.tree.TreeDemoNodeInspector();
           return new qxl.datagrid.source.tree.TreeDataSource(() => inspector, this.getQxObject("columns"));
+        case "toolbar":
+          var tb = new qx.ui.toolbar.ToolBar();
+          tb.add(this.getQxObject("btnAdd"));
+          tb.add(this.getQxObject("btnRemoveChild"));
+          return tb;
+        case "btnAdd":
+          var btn = new qx.ui.toolbar.Button("Add child");
+          btn.addListener("execute", () => {
+            let node = new qxl.datagrid.demo.tree.TreeDemoFileNode().set({
+              name: "cat pictures",
+              permissions: null,
+              lastModified: new Date()
+            });
+            (this.getQxObject("grid").getSelection().getItem(0) ?? this.getQxObject("dataSource").getRoot()).getChildren().push(node);
+            (this.getQxObject("grid").getSelection().getItem(0) ?? this.getQxObject("dataSource").getRoot()).getChildren().push(node);
+            // (this.getQxObject("grid").getSelection().getItem(0) ?? this.getQxObject("dataSource").getRoot()).getChildren().insertAt(1, node);
+          });
+          return btn;
+        case "btnRemoveChild":
+          var btn = new qx.ui.toolbar.Button("Remove last child");
+          btn.addListener("execute", () => {
+            let selectedNode = this.getQxObject("grid").getSelection().getItem(0);
+            selectedNode?.getChildren().removeAt(selectedNode.getChildren().length - 1);
+          });
+          return btn;
 
         case "columns":
           var columns = new qxl.datagrid.column.Columns();

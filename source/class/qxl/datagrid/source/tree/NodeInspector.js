@@ -52,6 +52,17 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
      */
     canHaveChildren(node) {
       return true;
+    },
+
+    /**
+     * @override
+     */
+    addChildrenChangeListener(node, fn, context) {
+      return node.get(this.getChildrenPath()).addListener("change", fn, context);
+    },
+
+    removeChildrenChangeListener(node, id) {
+      return node.get(this.getChildrenPath()).removeListenerById(id);
     }
   }
 });
