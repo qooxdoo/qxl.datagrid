@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 /**
  * Defines the additional methods for a datasource for trees (eg specifies what the `qxl.datagrid.*.tree.*`
@@ -36,6 +36,20 @@ qx.Interface.define("qxl.datagrid.source.tree.ITreeDataSource", {
      * @param {qx.core.Object} model
      * @return {NodeState}
      */
-    getNodeStateFor(model) {}
+    getNodeStateFor(model) {},
+
+    /**
+     * Expands a node
+     *
+     * @param {qx.core.Object} node
+     */
+    async expandNode(node) {},
+
+    /**
+     * Collapses a node
+     *
+     * @param {qx.core.Object} node
+     */
+    async collapseNode(node) {}
   }
 });

@@ -44,6 +44,7 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
     this.setLayout(new qx.ui.layout.VBox());
 
     let grid = this.getQxObject("grid");
+    this.add(this.getQxObject("toolbar"));
     this.add(grid, { flex: 1 });
   },
 
@@ -63,6 +64,31 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
         case "dataSource":
           var inspector = new qxl.datagrid.demo.tree.TreeDemoNodeInspector();
           return new qxl.datagrid.source.tree.TreeDataSource(() => inspector, this.getQxObject("columns"));
+        case "toolbar":
+          var tb = new qx.ui.toolbar.ToolBar();
+          tb.add(this.getQxObject("btnAdd"));
+          tb.add(this.getQxObject("btnRemoveChild"));
+          return tb;
+        case "btnAdd":
+          var btn = new qx.ui.toolbar.Button("Add child");
+          btn.addListener("execute", () => {
+            let node = new qxl.datagrid.demo.tree.TreeDemoFileNode().set({
+              name: "Cat pictures",
+              permissions: "-rw-",
+              lastModified: new Date()
+            });
+            this._getSelectedNode().getChildren().push(node);
+            this._updateUi();
+          });
+          return btn;
+        case "btnRemoveChild":
+          var btn = new qx.ui.toolbar.Button("Remove last child");
+          btn.addListener("execute", () => {
+            let selectedNode = this._getSelectedNode();
+            selectedNode.getChildren().removeAt(selectedNode.getChildren().length - 1);
+            this._updateUi();
+          });
+          return btn;
 
         case "columns":
           var columns = new qxl.datagrid.column.Columns();
@@ -104,12 +130,19 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
           var grid = new qxl.datagrid.DataGrid(this.getQxObject("columns")).set({
             dataSource: dataSource
           });
-          grid.addListener("changeSelection", evt => {
-            let sel = evt.getData();
-            console.log("Selection changed to " + sel.map(model => model.toString().join(",")));
-          });
+          const sel = grid.getSelection();
+          sel.addListener("change", this._updateUi, this);
           return grid;
       }
+    },
+
+    _getSelectedNode() {
+      return this.getQxObject("grid").getSelection().getItem(0) ?? this.getQxObject("dataSource").getRoot();
+    },
+    _updateUi() {
+      let selectedNode = this._getSelectedNode();
+      this.getQxObject("btnRemoveChild").setEnabled(!!selectedNode.getChildren() && selectedNode.getChildren()?.length > 0);
+      this.getQxObject("btnAdd").setEnabled(this.getQxObject("dataSource").getNodeInspectorFactory()().canHaveChildren(selectedNode));
     }
   }
 });

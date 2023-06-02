@@ -38,6 +38,15 @@ qx.Interface.define("qxl.datagrid.source.tree.INodeInspector", {
      * @param {qx.core.Object?} node
      * @return {Boolean}
      */
-    canHaveChildren(node) {}
+    canHaveChildren(node) {},
+
+    /**
+     *
+     * @param {qx.core.Object} node
+     * @param {Function} fn
+     * @param {Object?} context
+     * @return {qxl.datagrid.binding.Bindings}
+     */
+    addChildrenChangeListener(node, fn, context) {}
   }
 });
