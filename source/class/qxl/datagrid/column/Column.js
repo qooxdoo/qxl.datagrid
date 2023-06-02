@@ -89,6 +89,23 @@ qx.Class.define("qxl.datagrid.column.Column", {
       check: "Boolean",
       apply: "_applyReadOnly",
       event: "changeReadOnly"
+    },
+
+    /**
+     * A user-specifiable function which can apply additional modifications on the table widget.
+     * The function is called every time the tree is-redrawn
+     */
+    widgetModifier: {
+      init: null,
+      nullable: true,
+      event: "changeWidgetModifier"
+    },
+
+    displayValueConverter: {
+      init: null,
+      nullable: true,
+      event: "changeDisplayValueConverter",
+      apply: "_applyDisplayValueConverter"
     }
   },
 
@@ -98,6 +115,15 @@ qx.Class.define("qxl.datagrid.column.Column", {
   },
 
   members: {
+    /**
+     *
+     * @param {qx.ui.Widget} widget The widget to which apply the modifications
+     */
+    modifyWidget(widget, model) {
+      if (this.getWidgetModifier()) {
+        this.getWidgetModifier()(widget, model);
+      }
+    },
     /**
      * Returns a value for displaying the value for the column
      *
