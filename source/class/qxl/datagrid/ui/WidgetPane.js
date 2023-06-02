@@ -179,6 +179,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             this._add(child);
             this.__widgetFactory.bindWidget(child, model);
           }
+          this.__widgetFactory.getColumns().getColumn(columnSizeData.columnIndex).modifyWidget(child, model);
 
           let isSelected = false;
           let isFocused = false;
