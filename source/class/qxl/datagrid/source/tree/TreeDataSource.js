@@ -169,14 +169,13 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     },
 
     /**
-     * Evcent handler for changes to a row's children
+     * This function is called when the children of a node in the tree changes.
+     * It causes the grid view to update.
+     * @param {qx.data.Event} evt Event for a change in the node's children array
+     * @param {qx.core.Object} node The node object for which the children changed
      */
     async _onNodeChildrenChange(evt, node) {
-      // removeStart = parenVtindex + 1 + evt.start
-      // removeend = parentindex + 1 + evt.end
-      // metadatas.remove between start and end
-      // metadatas.insert new children at start
-      rowMetadata = this.__rowMetaDataByNode[node.toHashCode()]; // In case the index has changed
+      let rowMetadata = this.__rowMetaDataByNode[node.toHashCode()];
       let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
       let changeStart = parentRowIndex + 1;
       let changeEnd = changeStart + rowMetadata.childRows.length;
@@ -206,7 +205,6 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @override
      */
     async collapseNode(node) {
-      //!todo release binding
       let row = this.__rowMetaDataByNode[node.toHashCode()];
       if (!row) {
         throw new Error(`Cannot find ${node} in rows`);
