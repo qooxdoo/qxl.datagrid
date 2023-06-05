@@ -1,23 +1,23 @@
 /* ************************************************************************
-*
-*    Qooxdoo DataGrid
-*
-*    https://github.com/qooxdoo/qooxdoo
-*
-*    Copyright:
-*      2022-23 Zenesis Limited, https://www.zenesis.com
-*
-*    License:
-*      MIT: https://opensource.org/licenses/MIT
-*
-*      This software is provided under the same licensing terms as Qooxdoo,
-*      please see the LICENSE file in the Qooxdoo project's top-level directory
-*      for details.
-*
-*    Authors:
-*      * John Spackman (john.spackman@zenesis.com, @johnspackman)
-*
-* *********************************************************************** */
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *
+ * *********************************************************************** */
 
 /**
  * Instead of just an opaque "binding id" as returned by `qx.core.Object.bind`, which can only be
@@ -29,18 +29,34 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
   extend: qx.core.Object,
   implement: [qx.core.IDisposable],
 
-  construct(model, bindingId) {
+  /**
+   *
+   * @param {qx.data.Object} model The model to add the binding to
+   * @param {String} bindingId Id of binding
+   * @param {String} bindingType The type of the binding. Either "binding" or "listener". Defaults to binding. Set to "binding " if this is a binding to a property, or "listener" if it's for a listener added with "addListener".
+   */
+  construct(model, bindingId, bindingType) {
     super();
+    if (bindingType === undefined) bindingType = "binding";
     this.__bindingData = [];
     if (model && bindingId) {
-      this.add(model, bindingId);
+      this.add(model, bindingId, bindingType);
     }
   },
 
   destruct() {
     this.__bindingData.forEach(data => {
       if (!data.model.isDisposed() && !data.model.isDisposing()) {
-        data.model.removeBinding(data.bindingId);
+        switch (data.bindingType) {
+          case "binding":
+            data.model.removeBinding(data.bindingId);
+            break;
+          case "listener":
+            data.model.removeListenerById(data.bindingId);
+            break;
+          default:
+            throw new Error("Invalid binding type" + data.bindingType);
+        }
       }
     });
   },
@@ -60,10 +76,17 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
      * @param {qx.core.Object} model the object with a binding
      * @param {*} bindingId the binding ID to release
      */
-    add(model, bindingId) {
+    add(model, bindingId, bindingType) {
       this.__bindingData.push({
         model,
-        bindingId
+        bindingId,
+        bindingType
+      });
+    },
+
+    release() {
+      this.__bindingData.forEach(data => {
+        data.model.removeBinding(data.bindingId);
       });
     }
   }

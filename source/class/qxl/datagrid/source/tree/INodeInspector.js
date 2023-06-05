@@ -38,6 +38,15 @@ qx.Interface.define("qxl.datagrid.source.tree.INodeInspector", {
      * @param {qx.core.Object?} node
      * @return {Boolean}
      */
-    canHaveChildren(node) {}
+    canHaveChildren(node) {},
+
+    /**
+     * Adds a change listener to the node's children and returns a binding object for that listener
+     * @param {qx.core.Object} node The node of the tree of which the children the listener should be added to
+     * @param {Function} fn Listener function
+     * @param {Object?} context Context for listener function
+     * @return {qxl.datagrid.binding.Bindings} The bindings object
+     */
+    createChildrenChangeBinding(node, fn, context) {}
   }
 });
