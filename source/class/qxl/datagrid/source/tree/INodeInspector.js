@@ -47,6 +47,11 @@ qx.Interface.define("qxl.datagrid.source.tree.INodeInspector", {
      * @param {Object?} context Context for listener function
      * @return {qxl.datagrid.binding.Bindings} The bindings object
      */
-    createChildrenChangeBinding(node, fn, context) {}
+    createChildrenChangeBinding(node, fn, context) {},
+    /**
+     * @param {qx.core.Object} node The node to look at
+     * @returns {qx.core.Object} The parent of the node, or null if it has no parent.
+     */
+    getParentOf(node) {}
   }
 });

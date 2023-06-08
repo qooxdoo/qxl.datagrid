@@ -167,6 +167,35 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         this.fireDataEvent("changeSize", this.getSize());
       });
     },
+    /**
+     * Reveals node in tree, even if it's not current shown.
+     * All ancestors of node are expanded.
+     * @param {qx.data.Object} node
+     */
+    async revealNode(node) {
+      /**
+       * returns the path to a node (target) in the tree;
+       * @param {qx.data.Object} node The node to return the path for
+       * @returns {qx.data.Array} The path. It does not include the root and the node itself.
+       */
+      const getPathToNode = node => {
+        let path = new qx.data.Array();
+        let inspector = this.getNodeInspectorFactory()();
+        var parent = inspector.getParentOf(node);
+        while (inspector.getParentOf(parent)) {
+          path.insertAt(0, parent);
+          parent = inspector.getParentOf(parent);
+        }
+        return path;
+      };
+      await this.queue(async () => {
+        let ancestors = getPathToNode(node);
+        if (!ancestors) throw new Error("Cannot find node in tree");
+        for (var a = 0; a < ancestors.length; a++) {
+          await this.expandNode(ancestors.getItem(a));
+        }
+      });
+    },
 
     /**
      * This function is called when the children of a node in the tree changes.
