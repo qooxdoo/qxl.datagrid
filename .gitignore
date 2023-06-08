@@ -4,3 +4,4 @@
 .package-cache.json
 /node_modules/
 /tmp/
+launch.json
