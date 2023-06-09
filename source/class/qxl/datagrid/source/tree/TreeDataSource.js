@@ -32,6 +32,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     this.__rowMetaDatas = [];
     this.__rowMetaDataByNode = {};
     this.__queue = [];
+    this.__promiseRootChildrenChange = qx.Promise.resolve();
     if (nodeInspectorFactory) {
       this.setNodeInspectorFactory(nodeInspectorFactory);
     }
@@ -74,6 +75,8 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
 
     /* @type{Promise[]?} queue of promises of background actions, eg loading nodes */
     __queue: null,
+    __promiseQueueEmpty: null,
+    __promiseRootChildrenChange: null,
 
     /**
      * Apply for root
@@ -100,11 +103,18 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
               this.__rowMetaDataByNode[node.toHashCode()] = childRow;
               row.childRows.push(childRow);
             }
+            // console.log("treebug: added child rows, no. displayed rows:", this.__rowMetaDatas.length);
             this.fireDataEvent("changeSize", this.getSize());
           };
           let onRootChildrenChange = async () => {
+            await this.__promiseRootChildrenChange;
+            this.__promiseRootChildrenChange = null;
+            console.log("treebug: root children change listener start");
             this._removeChildRows(row);
+            // console.log("treebug: Removed child rows.");
             await addChildRows();
+            console.log("treebug: root children change listener end");
+            this.__promiseRootChildrenChange = qx.Promise.resolve();
           };
           row.canHaveChildren = inspector.canHaveChildren(value);
           if (!row.childrenChangeBinding) row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, onRootChildrenChange);
@@ -134,19 +144,15 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @override
      */
     async expandNode(node) {
-      let rowMetadata = this.__rowMetaDataByNode[node.toHashCode()];
-      if (!rowMetadata) {
-        throw new Error(`Cannot find ${node} in rows`);
-      }
-      if (rowMetadata.childRows || !rowMetadata.canHaveChildren) {
-        return;
-      }
-
       let inspector = this.getNodeInspectorFactory()(node);
       await this.queue(async () => {
+        console.log("treebug: expandnode start");
         let children = await inspector.getChildrenOf(node);
-        rowMetadata = this.__rowMetaDataByNode[node.toHashCode()]; // In case the index has changed
+        let rowMetadata = this.__rowMetaDataByNode[node.toHashCode()];
         if (!rowMetadata) {
+          throw new Error(`Cannot find ${node} in rows`);
+        }
+        if (rowMetadata.childRows || !rowMetadata.canHaveChildren) {
           return;
         }
         rowMetadata.childrenChangeBinding = inspector.createChildrenChangeBinding(node, evt => this._onNodeChildrenChange(evt, node));
@@ -165,6 +171,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         rowMetadata.childRows = childRows;
         this.__rowMetaDatas = before;
         this.fireDataEvent("changeSize", this.getSize());
+        console.log("treebug: expandnode end");
       });
     },
     /**
@@ -279,28 +286,42 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @returns {*} whatever the function returns
      */
     async queue(fn) {
-      let promise = fn();
-      if (!qx.lang.Type.isPromise(promise)) {
-        return promise;
+      this.__queue.push(fn);
+      if (this.__queue.length == 1) {
+        await this.__executeNextQueue();
       }
-      promise = promise.then(result => {
-        qx.lang.Array.remove(this.__queue, promise);
-        return result;
-      });
-      this.__queue.push(promise);
-      return await promise;
+    },
+
+    /**
+     * Executes the next function in the queue
+     */
+    async __executeNextQueue() {
+      if (this.__queue.length == 0) {
+        if (this.__promiseQueueEmpty) {
+          this.__promiseQueueEmpty.resolve();
+          this.__promiseQueueEmpty = null;
+        }
+        return;
+      }
+      let fn = this.__queue[0];
+      this.__queue.shift();
+      console.log("qxpromisestart");
+      // await qx.Promise.resolve(fn());
+      await fn();
+      console.log("qxpromiseend");
+      await this.__executeNextQueue();
     },
 
     /**
      * Called to flush the queue and wait for all the promises to be complete
      */
     async flushQueue() {
-      while (this.__queue.length) {
-        let queue = qx.lang.Array.clone(this.__queue);
-        await qx.Promise.all(queue);
+      if (this.__promiseQueueEmpty) {
+        await this.__promiseQueueEmpty;
+      } else if (this.__queue.length) {
+        this.__promiseQueueEmpty = new qx.Promise();
       }
     },
-
     /**
      * @Override
      */
