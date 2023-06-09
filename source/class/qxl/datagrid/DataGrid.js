@@ -507,6 +507,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     getSelectionManager() {
       return this.__selectionManager;
-    }
+    },
+    scrollToX() {},
+    scrollToY() {}
   }
 });
