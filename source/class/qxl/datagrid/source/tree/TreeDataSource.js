@@ -32,7 +32,6 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     this.__rowMetaDatas = [];
     this.__rowMetaDataByNode = {};
     this.__queue = [];
-    this.__promiseRootChildrenChange = qx.Promise.resolve();
     if (nodeInspectorFactory) {
       this.setNodeInspectorFactory(nodeInspectorFactory);
     }
@@ -107,14 +106,16 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
             this.fireDataEvent("changeSize", this.getSize());
           };
           let onRootChildrenChange = async () => {
-            await this.__promiseRootChildrenChange;
-            this.__promiseRootChildrenChange = null;
+            if (!this.__promiseRootChildrenChange) this.__promiseRootChildrenChange = new qx.Promise();
+            else await this.__promiseRootChildrenChange;
+
             console.log("treebug: root children change listener start");
             this._removeChildRows(row);
             // console.log("treebug: Removed child rows.");
             await addChildRows();
             console.log("treebug: root children change listener end");
-            this.__promiseRootChildrenChange = qx.Promise.resolve();
+            if (this.__promiseRootChildrenChanges) this.__promiseRootChildrenChange.resolve();
+            this.__promiseRootChildrenChange = null;
           };
           row.canHaveChildren = inspector.canHaveChildren(value);
           if (!row.childrenChangeBinding) row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, onRootChildrenChange);
