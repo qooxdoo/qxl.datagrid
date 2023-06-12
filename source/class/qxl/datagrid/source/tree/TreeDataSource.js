@@ -250,25 +250,37 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @returns {*} whatever the function returns
      */
     async queue(fn) {
-      let promise = fn();
-      if (!qx.lang.Type.isPromise(promise)) {
-        return promise;
+      this.__queue.push(fn);
+      if (this.__queue.length == 1) {
+        await this.__executeNextQueue();
       }
-      promise = promise.then(result => {
-        qx.lang.Array.remove(this.__queue, promise);
-        return result;
-      });
-      this.__queue.push(promise);
-      return await promise;
+    },
+
+    /**
+     * Executes the next function in the queue
+     */
+    async __executeNextQueue() {
+      if (this.__queue.length == 0) {
+        if (this.__promiseQueueEmpty) {
+          this.__promiseQueueEmpty.resolve();
+          this.__promiseQueueEmpty = null;
+        }
+        return;
+      }
+      let fn = this.__queue[0];
+      this.__queue.shift();
+      await qx.Promise.resolve(fn());
+      await this.__executeNextQueue();
     },
 
     /**
      * Called to flush the queue and wait for all the promises to be complete
      */
     async flushQueue() {
-      while (this.__queue.length) {
-        let queue = qx.lang.Array.clone(this.__queue);
-        await qx.Promise.all(queue);
+      if (this.__promiseQueueEmpty) {
+        await this.__promiseQueueEmpty;
+      } else if (this.__queue.length) {
+        this.__promiseQueueEmpty = new qx.Promise();
       }
     },
 
@@ -298,6 +310,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @override
      */
     getPositionOfModel(node) {
+      let promise = new qx.Promise();
+      /* ...do stuff */
+      promise.resolve(); // or promise.reject()
       let row = this.__rowMetaDataByNode[node.toHashCode()] || null;
       if (row !== null) {
         let rowIndex = this.__rowMetaDatas.indexOf(row);
