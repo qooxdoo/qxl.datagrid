@@ -31,6 +31,12 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
     childrenPath: {
       init: "children",
       check: "String"
+    },
+
+    /** Where to find the parent of the node */
+    parentPath: {
+      init: "parent",
+      check: "String"
     }
   },
 
@@ -59,6 +65,13 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
      */
     createChildrenChangeBinding(node, fn, context) {
       return new qxl.datagrid.binding.Bindings(node.get(this.getChildrenPath()), node.get(this.getChildrenPath()).addListener("change", fn, context), "listener");
+    },
+
+    /**
+     * @override
+     */
+    async getParentOf(node) {
+      return node.get(this.getParentPath());
     }
   }
 });

@@ -74,6 +74,8 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
 
     /* @type{Promise[]?} queue of promises of background actions, eg loading nodes */
     __queue: null,
+    __promiseQueueEmpty: null,
+    __promiseRootChildrenChange: null,
 
     /**
      * Apply for root
@@ -100,14 +102,19 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
               this.__rowMetaDataByNode[node.toHashCode()] = childRow;
               row.childRows.push(childRow);
             }
+            // console.log("treebug: added child rows, no. displayed rows:", this.__rowMetaDatas.length);
             this.fireDataEvent("changeSize", this.getSize());
           };
           let onRootChildrenChange = async () => {
-            this._removeChildRows(row);
-            await addChildRows();
+            await this.queue(async () => {
+              this._removeChildRows(row);
+              await addChildRows();
+            });
           };
           row.canHaveChildren = inspector.canHaveChildren(value);
-          if (!row.childrenChangeBinding) row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, onRootChildrenChange);
+          if (!row.childrenChangeBinding) {
+            row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, onRootChildrenChange);
+          }
           await addChildRows();
         });
       }
@@ -134,22 +141,18 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @override
      */
     async expandNode(node) {
-      let rowMetadata = this.__rowMetaDataByNode[node.toHashCode()];
-      if (!rowMetadata) {
-        throw new Error(`Cannot find ${node} in rows`);
-      }
-      if (rowMetadata.childRows || !rowMetadata.canHaveChildren) {
-        return;
-      }
-
       let inspector = this.getNodeInspectorFactory()(node);
       await this.queue(async () => {
         let children = await inspector.getChildrenOf(node);
-        rowMetadata = this.__rowMetaDataByNode[node.toHashCode()]; // In case the index has changed
+        let rowMetadata = this.__rowMetaDataByNode[node.toHashCode()];
         if (!rowMetadata) {
+          throw new Error(`Cannot find ${node} in rows`);
+        }
+        if (rowMetadata.childRows || !rowMetadata.canHaveChildren) {
           return;
         }
         rowMetadata.childrenChangeBinding = inspector.createChildrenChangeBinding(node, evt => this._onNodeChildrenChange(evt, node));
+
         let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
         let childRows = [];
         for (let childNode of children) {
@@ -158,13 +161,51 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
           childRows.push(childRow);
           this.__rowMetaDataByNode[childNode.toHashCode()] = childRow;
         }
+
         let before = this.__rowMetaDatas.slice(0, parentRowIndex + 1);
         let after = parentRowIndex == this.__rowMetaDatas.length - 1 ? [] : this.__rowMetaDatas.slice(parentRowIndex + 1);
         qx.lang.Array.append(before, childRows);
         qx.lang.Array.append(before, after);
         rowMetadata.childRows = childRows;
         this.__rowMetaDatas = before;
+
         this.fireDataEvent("changeSize", this.getSize());
+      });
+    },
+
+    /**
+     * Reveals node in tree, even if it's not current shown.
+     * All ancestors of node are expanded.
+     * @param {qx.data.Object} node
+     */
+    async revealNode(node) {
+      /**
+       * returns the path to a node (target) in the tree;
+       * @param {qx.data.Object} node The node to return the path for
+       * @returns {qx.data.Array} The path. It does not include the root and the node itself.
+       */
+      const getPathToNode = async node => {
+        let path = new qx.data.Array();
+        let inspector = this.getNodeInspectorFactory()();
+        var parent = await inspector.getParentOf(node);
+        while (true) {
+          let tmp = await inspector.getParentOf(parent);
+          if (!tmp) {
+            break;
+          }
+          path.insertAt(0, parent);
+          parent = tmp;
+        }
+        return path;
+      };
+      await this.queue(async () => {
+        let ancestors = await getPathToNode(node);
+        if (!ancestors) {
+          throw new Error("Cannot find node in tree");
+        }
+        for (var a = 0; a < ancestors.length; a++) {
+          await this.expandNode(ancestors.getItem(a));
+        }
       });
     },
 
@@ -269,7 +310,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       }
       let fn = this.__queue[0];
       this.__queue.shift();
-      await qx.Promise.resolve(fn());
+      console.log("qxpromisestart");
+      await fn();
+      console.log("qxpromiseend");
       await this.__executeNextQueue();
     },
 
@@ -283,7 +326,6 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         this.__promiseQueueEmpty = new qx.Promise();
       }
     },
-
     /**
      * @Override
      */

@@ -116,6 +116,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       event: "changeStartColumnIndex"
     },
 
+    /** @override */
     appearance: {
       init: "qxl-datagrid",
       refine: true
@@ -269,6 +270,24 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
 
       showX && showY ? this._showChildControl("corner") : this._excludeChildControl("corner");
+    },
+
+    /**
+     * Called to set the position of the horizontal scroll bar
+     *
+     * @param {Integer} pos
+     */
+    scrollToX(pos) {
+      // TODO
+    },
+
+    /**
+     * Called to set the position of the vertical scroll bar
+     *
+     * @param {Integer} pos
+     */
+    scrollToY(pos) {
+      //TODO
     },
 
     /**

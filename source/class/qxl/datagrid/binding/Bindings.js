@@ -45,20 +45,7 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
   },
 
   destruct() {
-    this.__bindingData.forEach(data => {
-      if (!data.model.isDisposed() && !data.model.isDisposing()) {
-        switch (data.bindingType) {
-          case "binding":
-            data.model.removeBinding(data.bindingId);
-            break;
-          case "listener":
-            data.model.removeListenerById(data.bindingId);
-            break;
-          default:
-            throw new Error("Invalid binding type" + data.bindingType);
-        }
-      }
-    });
+    this.removeAll();
   },
 
   members: {
@@ -75,6 +62,7 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
      *
      * @param {qx.core.Object} model the object with a binding
      * @param {*} bindingId the binding ID to release
+     * @param {String} bindingType The type of the binding. Either "binding" or "listener". Defaults to binding. Set to "binding " if this is a binding to a property, or "listener" if it's for a listener added with "addListener".
      */
     add(model, bindingId, bindingType) {
       this.__bindingData.push({
@@ -84,10 +72,48 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
       });
     },
 
-    release() {
-      this.__bindingData.forEach(data => {
-        data.model.removeBinding(data.bindingId);
-      });
+    /**
+     * Removes a binding
+     *
+     * @param {*} bindingId the binding ID to release
+     */
+    remove(bindingId) {
+      let index = this.__bindingData.find(data => data.bindingId === bindingId);
+      if (index > -1) {
+        let data = this.__bindingData[index];
+        qx.lang.Array.removeAt(this.__bindingData, index);
+        this.__releaseData(data);
+      }
+    },
+
+    /**
+     * Releases the data
+     * @param {BindingData} data
+     */
+    __releaseData(data) {
+      if (!data.model.isDisposed() && !data.model.isDisposing()) {
+        switch (data.bindingType) {
+          case "binding":
+            data.model.removeBinding(data.bindingId);
+            break;
+
+          case "listener":
+            data.model.removeListenerById(data.bindingId);
+            break;
+
+          default:
+            throw new Error("Invalid binding type" + data.bindingType);
+        }
+      }
+    },
+
+    /**
+     * Releases all bindings
+     */
+    removeAll() {
+      let arr = this.__bindingData;
+      this.__bindingData = [];
+      arr.forEach(data => this.__releaseData(data));
     }
   }
 });
