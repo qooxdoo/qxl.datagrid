@@ -64,11 +64,13 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
         case "dataSource":
           var inspector = new qxl.datagrid.demo.tree.TreeDemoNodeInspector();
           return new qxl.datagrid.source.tree.TreeDataSource(() => inspector, this.getQxObject("columns"));
+
         case "toolbar":
           var tb = new qx.ui.toolbar.ToolBar();
           tb.add(this.getQxObject("btnAdd"));
           tb.add(this.getQxObject("btnRemoveChild"));
           return tb;
+
         case "btnAdd":
           var btn = new qx.ui.toolbar.Button("Add child");
           btn.addListener("execute", () => {
@@ -81,6 +83,7 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
             this._updateUi();
           });
           return btn;
+
         case "btnRemoveChild":
           var btn = new qx.ui.toolbar.Button("Remove last child");
           btn.addListener("execute", () => {
@@ -139,6 +142,7 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
     _getSelectedNode() {
       return this.getQxObject("grid").getSelection().getItem(0) ?? this.getQxObject("dataSource").getRoot();
     },
+
     _updateUi() {
       let selectedNode = this._getSelectedNode();
       this.getQxObject("btnRemoveChild").setEnabled(!!selectedNode.getChildren() && selectedNode.getChildren()?.length > 0);
