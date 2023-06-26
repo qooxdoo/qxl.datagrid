@@ -89,6 +89,10 @@ qx.Class.define("qxl.datagrid.column.Column", {
       check: "Boolean",
       apply: "_applyReadOnly",
       event: "changeReadOnly"
+    },
+
+    bindingOptionsFactory: {
+      init: () => undefined
     }
   },
 
@@ -160,7 +164,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * @returns {*?}
      */
     _getBindingOptions(widget, model) {
-      return undefined;
+      return this.getBindingOptionsFactory()(widget, model);
     },
 
     /**
