@@ -77,6 +77,7 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
      * @param {*} bindingId the binding ID to release
      */
     add(model, bindingId, bindingType) {
+      if (bindingType === undefined) bindingType = "binding";
       this.__bindingData.push({
         model,
         bindingId,
