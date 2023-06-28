@@ -32,26 +32,15 @@ qx.Class.define("qxl.datagrid.column.DateColumn", {
       event: "changeDateFormat"
     }
   },
-
-  members: {
-    /**
-     * @override
-     */
-    _convertValueForDisplay(value) {
-      let format = this.getDateFormat() || qx.util.format.DateFormat.getDateInstance();
-      return !value ? "" : format.format(value);
-    },
-
-    /**
-     * @override
-     */
-    _getBindingOptions(widget, model) {
+  construct() {
+    super();
+    this.setBindingOptions((widget, model) => {
       return {
         converter: (data, model, source, target) => {
           let format = this.getDateFormat() || qx.util.format.DateFormat.getDateInstance();
           return !data ? "" : format.format(data);
         }
       };
-    }
+    });
   }
 });

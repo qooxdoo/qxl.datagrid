@@ -103,32 +103,6 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
   members: {
     /**
-     * Returns a value for displaying the value for the column
-     *
-     * @param {*} node
-     * @return {String}
-     */
-    getDisplayValue(node) {
-      let path = this.getPath();
-      if (!path) {
-        return node;
-      }
-      let upname = qx.lang.String.firstUp(path);
-      let value = node["get" + upname]();
-      value = this._convertValueForDisplay(value);
-      return value;
-    },
-
-    /**
-     * Helper method that converts the model into a text value for display, used by bindings and `getDisplayValue`
-     * @param {*} value returned by the binding, according to the path
-     * @returns {String}
-     */
-    _convertValueForDisplay(value) {
-      return value;
-    },
-
-    /**
      * Called to implement the binding
      *
      * @param {qx.ui.core.Widget} widget
