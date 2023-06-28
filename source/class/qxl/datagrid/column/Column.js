@@ -91,7 +91,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
       event: "changeReadOnly"
     },
 
-    bindingOptionsFactory: {
+    bindingOptions: {
       init: () => undefined
     }
   },
@@ -140,7 +140,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
       let path = this.getPath();
       if (path) {
         if (model) {
-          let bindingId = model.bind(path, widget, "value", this._getBindingOptions(widget, model));
+          let bindingId = model.bind(path, widget, "value", this.getBindingOptions()(widget, model));
           return new qxl.datagrid.binding.Bindings(model, bindingId);
         }
       } else {
@@ -154,17 +154,6 @@ qx.Class.define("qxl.datagrid.column.Column", {
      */
     createWidgetForDisplay() {
       return new qx.ui.basic.Label();
-    },
-
-    /**
-     * Returns options for the binding
-     *
-     * @param {qx.ui.core.Widget} widget
-     * @param {qx.core.Object} model
-     * @returns {*?}
-     */
-    _getBindingOptions(widget, model) {
-      return this.getBindingOptionsFactory()(widget, model);
     },
 
     /**
