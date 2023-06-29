@@ -32,11 +32,18 @@ qx.Class.define("qxl.datagrid.column.FileSizeColumn", {
       check: "Binary"
     }
   },
+  construct() {
+    super();
+    this.setBindingOptions((widget, model) => {
+      return {
+        converter: (data, model, source, target) => {
+          return !data ? "" : this._convertValueForDisplay(data);
+        }
+      };
+    });
+  },
 
   members: {
-    /**
-     * @override
-     */
     _convertValueForDisplay(value) {
       if (typeof value != "number") {
         return "";
@@ -53,17 +60,6 @@ qx.Class.define("qxl.datagrid.column.FileSizeColumn", {
         return "" + Math.round(value / (multiplier * multiplier)) + "MB";
       }
       return "" + Math.round(value / (multiplier * multiplier * multiplier)) + "GB";
-    },
-
-    /**
-     * @override
-     */
-    _getBindingOptions(widget, model) {
-      return {
-        converter: (data, model, source, target) => {
-          return !data ? "" : this._convertValueForDisplay(data);
-        }
-      };
     }
   }
 });

@@ -89,6 +89,10 @@ qx.Class.define("qxl.datagrid.column.Column", {
       check: "Boolean",
       apply: "_applyReadOnly",
       event: "changeReadOnly"
+    },
+
+    bindingOptions: {
+      init: () => undefined
     }
   },
 
@@ -98,32 +102,6 @@ qx.Class.define("qxl.datagrid.column.Column", {
   },
 
   members: {
-    /**
-     * Returns a value for displaying the value for the column
-     *
-     * @param {*} node
-     * @return {String}
-     */
-    getDisplayValue(node) {
-      let path = this.getPath();
-      if (!path) {
-        return node;
-      }
-      let upname = qx.lang.String.firstUp(path);
-      let value = node["get" + upname]();
-      value = this._convertValueForDisplay(value);
-      return value;
-    },
-
-    /**
-     * Helper method that converts the model into a text value for display, used by bindings and `getDisplayValue`
-     * @param {*} value returned by the binding, according to the path
-     * @returns {String}
-     */
-    _convertValueForDisplay(value) {
-      return value;
-    },
-
     /**
      * Called to implement the binding
      *
@@ -136,7 +114,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
       let path = this.getPath();
       if (path) {
         if (model) {
-          let bindingId = model.bind(path, widget, "value", this._getBindingOptions(widget, model));
+          let bindingId = model.bind(path, widget, "value", this.getBindingOptions()(widget, model));
           return new qxl.datagrid.binding.Bindings(model, bindingId);
         }
       } else {
@@ -150,17 +128,6 @@ qx.Class.define("qxl.datagrid.column.Column", {
      */
     createWidgetForDisplay() {
       return new qx.ui.basic.Label();
-    },
-
-    /**
-     * Returns options for the binding
-     *
-     * @param {qx.ui.core.Widget} widget
-     * @param {qx.core.Object} model
-     * @returns {*?}
-     */
-    _getBindingOptions(widget, model) {
-      return undefined;
     },
 
     /**
