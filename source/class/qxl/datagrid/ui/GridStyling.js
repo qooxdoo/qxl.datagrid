@@ -52,7 +52,7 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
 
     /** Minimum height of each row */
     minRowHeight: {
-      init: 28,
+      init: 22,
       nullable: true,
       check: "Integer",
       apply: "__applyXxx",
