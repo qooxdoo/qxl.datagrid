@@ -72,10 +72,11 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     /** @type{Map<String,RowMetaData>} map of rows indexed by hash code of the node */
     __rowMetaDataByNode: null,
 
-    /* @type{Promise[]?} queue of promises of background actions, eg loading nodes */
+    /** @type{Promise[]?} queue of promises of background actions, eg loading nodes */
     __queue: null,
+
+    /** @type{Promise} resolves when the queue empties, is null if the queue is already empty */
     __promiseQueueEmpty: null,
-    __promiseRootChildrenChange: null,
 
     /**
      * Apply for root
@@ -105,20 +106,16 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
             // console.log("treebug: added child rows, no. displayed rows:", this.__rowMetaDatas.length);
             this.fireDataEvent("changeSize", this.getSize());
           };
-          let onRootChildrenChange = async () => {
-            if (!this.__promiseRootChildrenChange) this.__promiseRootChildrenChange = new qx.Promise();
-            else await this.__promiseRootChildrenChange;
-
-            console.log("treebug: root children change listener start");
-            this._removeChildRows(row);
-            // console.log("treebug: Removed child rows.");
-            await addChildRows();
-            console.log("treebug: root children change listener end");
-            if (this.__promiseRootChildrenChanges) this.__promiseRootChildrenChange.resolve();
-            this.__promiseRootChildrenChange = null;
-          };
           row.canHaveChildren = inspector.canHaveChildren(value);
-          if (!row.childrenChangeBinding) row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, onRootChildrenChange);
+          if (!row.childrenChangeBinding)
+            row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, evt => {
+              this.queue(async () => {
+                this._removeChildRows(row);
+
+                // console.log("treebug: Removed child rows.");
+                await addChildRows();
+              });
+            });
           await addChildRows();
         });
       }
@@ -156,7 +153,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         if (rowMetadata.childRows || !rowMetadata.canHaveChildren) {
           return;
         }
-        rowMetadata.childrenChangeBinding = inspector.createChildrenChangeBinding(node, evt => this._onNodeChildrenChange(evt, node));
+        rowMetadata.childrenChangeBinding = inspector.createChildrenChangeBinding(node, evt => {
+          this._onNodeChildrenChange(evt, node);
+        });
         let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
         let childRows = [];
         for (let childNode of children) {
@@ -242,20 +241,23 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @override
      */
     async collapseNode(node) {
-      let row = this.__rowMetaDataByNode[node.toHashCode()];
-      if (!row) {
-        throw new Error(`Cannot find ${node} in rows`);
-      }
-      if (!row.childRows) {
-        return;
-      }
-      if (row.childrenChangeBinding) {
-        row.childrenChangeBinding.dispose();
-        delete row.childrenChangeBinding;
-      }
-      this._removeChildRows(row);
-      this.fireDataEvent("changeSize", this.getSize());
+      await this.queue(async () => {
+        let row = this.__rowMetaDataByNode[node.toHashCode()];
+        if (!row) {
+          throw new Error(`Cannot find ${node} in rows`);
+        }
+        if (!row.childRows) {
+          return;
+        }
+        if (row.childrenChangeBinding) {
+          row.childrenChangeBinding.dispose();
+          delete row.childrenChangeBinding;
+        }
+        this._removeChildRows(row);
+        this.fireDataEvent("changeSize", this.getSize());
+      });
     },
+
     /**
      * Recursively removes metatdats of children of specified row, from this.__rowMetaDatas
      * @param {JavaScript Object} row Metadata for row for which to remove children
@@ -305,11 +307,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         return;
       }
       let fn = this.__queue[0];
-      this.__queue.shift();
-      console.log("qxpromisestart");
       // await qx.Promise.resolve(fn());
       await fn();
-      console.log("qxpromiseend");
+      this.__queue.shift();
       await this.__executeNextQueue();
     },
 
