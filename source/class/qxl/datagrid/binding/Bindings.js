@@ -65,6 +65,9 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
      * @param {String} bindingType The type of the binding. Either "binding" or "listener". Defaults to binding. Set to "binding " if this is a binding to a property, or "listener" if it's for a listener added with "addListener".
      */
     add(model, bindingId, bindingType) {
+      if (bindingType === undefined) {
+        bindingType = "binding";
+      }
       this.__bindingData.push({
         model,
         bindingId,

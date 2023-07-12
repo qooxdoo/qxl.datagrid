@@ -108,7 +108,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * @param {qx.ui.core.Widget} widget
      * @param {qx.core.Object} model
      * @param {qxl.datagrid.ui.factory.IWidgetFactory} factory
-     * @returns {qxl.datagrid.binding.IBinding} the object to dispose of to remove the binding
+     * @returns {qxl.datagrid.binding.Bindings} the object to dispose of to remove the binding
      */
     bindWidget(widget, model, factory) {
       let path = this.getPath();
