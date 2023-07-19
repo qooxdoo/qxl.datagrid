@@ -81,9 +81,17 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     /**
      * Apply for root
      */
-    async __applyRoot(value) {
+    async __applyRoot(value, oldValue) {
       this._data = {};
       this.__rowMetaDatas = [];
+      if (oldValue) {
+        let oldRowMetaDatas = this.__rowMetaDatas;
+        this.__rowMetaDataByNode = {};
+        this.__rowMetaDatas = [];
+        for (let rowMeta in oldRowMetaDatas) {
+          this.__disposeRowMetaData(rowMeta);
+        }
+      }
       if (value) {
         let inspector = this.getNodeInspectorFactory()(value);
 
@@ -137,6 +145,18 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     },
 
     /**
+     * Disposes of a row meta data obect
+     *
+     * @param {RowMetaData} rowMeta
+     */
+    __disposeRowMetaData(rowMeta) {
+      if (rowMeta.childrenChangeBinding) {
+        rowMeta.childrenChangeBinding.dispose();
+        delete rowMeta.childrenChangeBinding;
+      }
+    },
+
+    /**
      * @override
      */
     async expandNode(node) {
@@ -170,6 +190,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         this.fireDataEvent("changeSize", this.getSize());
       });
     },
+
     /**
      * Reveals node in tree, even if it's not current shown.
      * All ancestors of node are expanded.
@@ -185,7 +206,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         let path = new qx.data.Array();
         let inspector = this.getNodeInspectorFactory()();
         var parent = inspector.getParentOf(node);
-        while (inspector.getParentOf(parent)) {
+        while (parent && inspector.getParentOf(parent)) {
           path.insertAt(0, parent);
           parent = inspector.getParentOf(parent);
         }
@@ -233,23 +254,21 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         this.fireDataEvent("changeSize", this.getSize());
       });
     },
+
     /**
      * @override
      */
     async collapseNode(node) {
       await this.queue(async () => {
-        let row = this.__rowMetaDataByNode[node.toHashCode()];
-        if (!row) {
+        let rowMetaData = this.__rowMetaDataByNode[node.toHashCode()];
+        if (!rowMetaData) {
           throw new Error(`Cannot find ${node} in rows`);
         }
-        if (!row.childRows) {
+        if (!rowMetaData.childRows) {
           return;
         }
-        if (row.childrenChangeBinding) {
-          row.childrenChangeBinding.dispose();
-          delete row.childrenChangeBinding;
-        }
-        this._removeChildRows(row);
+        this.__disposeRowMetaData(rowMetaData);
+        this._removeChildRows(rowMetaData);
         this.fireDataEvent("changeSize", this.getSize());
       });
     },
@@ -265,6 +284,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
           for (let childRow of row.childRows) {
             toRemove.push(childRow);
             removeChildRows(childRow);
+            this.__disposeRowMetaData(childRow);
           }
         }
       };
@@ -303,7 +323,6 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         return;
       }
       let fn = this.__queue[0];
-      // await qx.Promise.resolve(fn());
       await fn();
       this.__queue.shift();
       await this.__executeNextQueue();
