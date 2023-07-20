@@ -166,7 +166,6 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      */
     async _expandNode(node) {
       let inspector = this.getNodeInspectorFactory()(node);
-      console.log("treebug: expandnode start");
       let children = await inspector.getChildrenOf(node);
       let rowMetadata = this._getNodeMetaData(node);
       if (!rowMetadata) {
@@ -191,7 +190,6 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       rowMetadata.childRows = childRows;
       this.__rowMetaDatas = before;
       this.fireDataEvent("changeSize", this.getSize());
-      console.log("treebug: expandnode end");
     },
 
     /**
