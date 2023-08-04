@@ -220,6 +220,18 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       this.__sizeCalculator.invalidate();
       this.updateWidgets();
     },
+    /**
+     * Scrolls the tree such that the selected item is in the center.
+     * If it's not possible to center the item, it is shown as close to the center as possible.
+     */
+
+    scrollToSelection() {
+      let selectedModel = this.getSelection().getItem(0);
+      let selectionIndex = this.getDataSource().getPositionOfModel(selectedModel).getRow();
+      const styling = this.__sizeCalculator.getStyling();
+      let maxRowCount = this.getBounds().height / (styling.getMinRowHeight() || styling.getMaxRowHeight());
+      this.setStartRowIndex(Math.max(0, selectionIndex - Math.floor(maxRowCount / 2)));
+    },
 
     /**
      * @override
