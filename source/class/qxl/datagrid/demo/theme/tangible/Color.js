@@ -19,13 +19,7 @@
  *
  * *********************************************************************** */
 
-/**
- * Basic colors needed for the datagrid; this is for the Tangible theme
- */
-qx.Theme.define("qxl.datagrid.theme.MColor", {
-  colors: {
-    "qxl-datagrid-row-background-even": "surface",
-    "qxl-datagrid-row-background-odd": "primary-alpha-5",
-    "qxl-datagrid-row-selected": "primary-alpha-10"
-  }
+qx.Theme.define("qxl.datagrid.demo.theme.tangible.Color", {
+  extend: uk.co.spar.client.theme.v2.ColorLight,
+  include: [qxl.datagrid.theme.tangible.MColor]
 });

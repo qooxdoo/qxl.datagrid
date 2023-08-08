@@ -19,8 +19,12 @@
 *
 * *********************************************************************** */
 
-qx.Theme.define("qxl.datagrid.demo.theme.Appearance", {
-  extend: qx.theme.tangible.Appearance,
-
-  include: [qxl.datagrid.theme.MAppearance]
+qx.Theme.define( "qxl.datagrid.demo.theme.tangible.Theme", {
+  meta: {
+    color: qxl.datagrid.demo.theme.tangible.Color,
+    decoration: qxl.datagrid.demo.theme.tangible.Decoration,
+    font: uk.co.spar.client.theme.v2.Font,
+    icon: qx.theme.icon.Tango,
+    appearance: qxl.datagrid.demo.theme.tangible.Appearance
+  }
 });

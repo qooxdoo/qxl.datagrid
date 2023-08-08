@@ -24,7 +24,7 @@
   "applications": [
     {
       "class": "qxl.datagrid.demo.Application",
-      "theme": "qxl.datagrid.demo.theme.Theme",
+      "theme": "qxl.datagrid.demo.theme.tangible.Theme",
       "name": "qxl.datagrid",
       "bootPath": "source/boot"
     }
