@@ -137,11 +137,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         // prettier-ignore
-        if (invalidateAll ||
-            cellData.row < minDataRowIndex || 
-            cellData.row > maxRowIndex || 
-            cellData.column < minColumnIndex || 
-            cellData.column > maxColumnIndex) {
+        if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
           this.__widgetFactory.unbindWidget(child);
           child.setUserData("qxl.datagrid.cellData", null);
           this._remove(child);
@@ -185,6 +181,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           if (this.__selectionManager.getSelectionStyle() == "cell") {
             isSelected = this.__selectionManager.isSelected(model);
             isFocused = this.__selectionManager.getFocused() === model;
+          } else {
+            let rowModel = this.getDataSource().getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
+            isSelected = this.__selectionManager.isSelected(rowModel);
           }
           if (isSelected) {
             child.addState("selected");

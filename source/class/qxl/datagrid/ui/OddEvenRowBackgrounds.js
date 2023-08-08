@@ -93,7 +93,7 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         // prettier-ignore
-        if (cellData.row < minDataRowIndex || 
+        if (cellData.row < minDataRowIndex ||
             cellData.row > maxRowIndex) {
           child.setUserData("qxl.datagrid.cellData", null);
           this._remove(child);

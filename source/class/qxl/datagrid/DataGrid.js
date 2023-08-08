@@ -37,6 +37,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     super();
     this.__debounceUpdateWidgets = new qxl.datagrid.util.Debounce(() => this.updateWidgets(), 50);
     this.__selectionManager = new qxl.datagrid.ui.SelectionManager();
+    this.__selectionManager.addListener("changeSelection", () => this.scheduleUpdateWidgets());
 
     columns = columns || null;
     styling = styling || new qxl.datagrid.ui.GridStyling();
