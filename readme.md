@@ -13,7 +13,6 @@ NOTE:: This is beta release, but will be in active use and development over he n
 ### Coming Soon (tm)
 
 - The current version is read only, but it will be possible to add edit cells inline in the near future.
-- The theme additions are only really compatible with Tangible - it would be easy to add mixins for other themes, but it's not been done yet
 
 ## Trying the Demos
 
@@ -55,14 +54,17 @@ into your own application's theme. For example, if you app is called `myapp`, yo
 qx.Theme.define("myapp.theme.Appearance", {
   extend: qx.theme.tangible.Appearance,
 
-  include: [qxl.datagrid.theme.MAppearance]
+  include: [qxl.datagrid.theme.tangible.MAppearance]
 });
 ```
 
 Do the same for your `Decoration` and `Color`.
 
-NOTE:: the theming for DataGrid is only really compatible with the Tangible theme at the moment, so if you use another theme you
-may have some more work to do. Please consider contributing your appearances for other themes back to this project!
+Currently, the following themes are supported:
+
+- Tangible (light & dark)
+- Indigo & Indigo Dark
+- Simple
 
 ## Key Concepts
 
