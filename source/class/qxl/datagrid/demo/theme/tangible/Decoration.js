@@ -20,6 +20,6 @@
 * *********************************************************************** */
 
 qx.Theme.define("qxl.datagrid.demo.theme.tangible.Decoration", {
-  extend: uk.co.spar.client.theme.v2.Decoration,
+  extend: qx.theme.tangible.Decoration,
   include: [qxl.datagrid.theme.tangible.MDecoration]
 });

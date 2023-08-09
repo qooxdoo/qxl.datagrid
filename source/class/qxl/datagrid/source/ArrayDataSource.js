@@ -1,0 +1,99 @@
+/* ************************************************************************
+ *
+ *    Qooxdoo DataGrid
+ *
+ *    https://github.com/qooxdoo/qooxdoo
+ *
+ *    Copyright:
+ *      2022-23 Zenesis Limited, https://www.zenesis.com
+ *
+ *    License:
+ *      MIT: https://opensource.org/licenses/MIT
+ *
+ *      This software is provided under the same licensing terms as Qooxdoo,
+ *      please see the LICENSE file in the Qooxdoo project's top-level directory
+ *      for details.
+ *
+ *    Authors:
+ *      * Will Johnson (willsterjohnson)
+ *
+ * *********************************************************************** */
+
+/**
+ * Provides an implementation of `qxl.datagrid.source.IDataSource` for displaying a simple
+ * 1-dimensional array of data.
+ */
+qx.Class.define( "qxl.datagrid.source.ArrayDataSource", {
+  extend: qx.core.Object,
+  implement: [qxl.datagrid.source.IDataSource],
+  properties: {
+    /**
+     * The columns of the data.
+     */
+    columns: {
+      init: null,
+      nullable: true,
+      check: "qxl.datagrid.column.IColumns",
+      event: "changeColumns"
+    },
+    /**
+     * The data model to display.
+     */
+    model: {
+      init: new qx.data.Array(),
+      nullable: false,
+      check: "qx.data.Array",
+      event: "changeData"
+    }
+  },
+
+  members: {
+    /**
+     * @Override
+     */
+    isAvailable(range) {
+      return true;
+    },
+
+    /**
+     * @Override
+     */
+    async makeAvailable(range) {
+      return true;
+    },
+
+    /**
+     * @Override
+     */
+    getModelForPosition(pos) {
+      if (pos.getRow() < 0 || pos.getRow() >= this.getModel().getLength()) {
+        return null;
+      }
+      return this.getModel().getItem(pos.getRow());
+    },
+
+    /**
+     * @Override
+     */
+    getPositionOfModel(value) {
+      const rowIndex = this.getModel().indexOf(value);
+      const pos = new qxl.datagrid.source.Position(rowIndex, 0);
+      return pos;
+    },
+
+    /**
+     * @Override
+     */
+    getSize() {
+      const size = new qxl.datagrid.source.Position(this.getModel().getLength(), this.getColumns().getLength());
+      return size;
+    }
+  },
+
+  events: {
+    /**
+     * @Override
+     */
+    changeSize: "qx.event.type.Data"
+  }
+});
