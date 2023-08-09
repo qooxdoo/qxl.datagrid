@@ -23,7 +23,7 @@
  * Provides an implementation of `qxl.datagrid.source.IDataSource` for displaying a simple
  * 1-dimensional array of data.
  */
-qx.Class.define( "qxl.datagrid.source.ArrayDataSource", {
+qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
   extend: qx.core.Object,
   implement: [qxl.datagrid.source.IDataSource],
   properties: {
@@ -40,14 +40,35 @@ qx.Class.define( "qxl.datagrid.source.ArrayDataSource", {
      * The data model to display.
      */
     model: {
-      init: new qx.data.Array(),
-      nullable: false,
+      init: null,
+      nullable: true,
       check: "qx.data.Array",
-      event: "changeData"
+      event: "changeModel",
+      apply: "_applyModel"
     }
   },
 
+  events: {
+    /**
+     * @Override
+     */
+    changeSize: "qx.event.type.Data"
+  },
+
   members: {
+    _applyModel(value, oldValue) {
+      if (oldValue) {
+        oldValue.removeListener("change", this.__onModelChange, this);
+      }
+      if (value) {
+        value.addListener("change", this.__onModelChange, this);
+      }
+    },
+
+    __onModelChange(evt) {
+      this.fireDataEvent("changeSize", this.getSize());
+    },
+
     /**
      * @Override
      */
@@ -88,12 +109,5 @@ qx.Class.define( "qxl.datagrid.source.ArrayDataSource", {
       const size = new qxl.datagrid.source.Position(this.getModel().getLength(), this.getColumns().getLength());
       return size;
     }
-  },
-
-  events: {
-    /**
-     * @Override
-     */
-    changeSize: "qx.event.type.Data"
   }
 });
