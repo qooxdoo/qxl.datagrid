@@ -66,10 +66,10 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @property {Boolean} canHaveChildren whether the node might have children
      * @property {qxl.datagrid.binding.Bindings} childrenChangeListener Binding object for the change listener of the node's children
      *
-     * @type{RowMetaData[]} array of objects for each row */
+     * @type{RowMetaData[]} array of objects for each visible row*/
     __rowMetaDatas: null,
 
-    /** @type{Map<String,RowMetaData>} map of rows indexed by hash code of the node */
+    /** @type{Map<String,RowMetaData>} map of row metadatas for all visible rows, indexed by hash code of the node */
     __rowMetaDataByNode: null,
 
     /** @type{Promise[]?} queue of promises of background actions, eg loading nodes */
@@ -97,35 +97,47 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
 
         await this.queue(async () => {
           let row = this.__createRowMetaData(value, -1);
-          let addChildRows = async () => {
-            row.childRows = [];
-            this.__rowMetaDataByNode[value.toHashCode()] = row;
-
-            for (let i = 0, nodes = await inspector.getChildrenOf(value); i < nodes.length; i++) {
-              let node = nodes.getItem(i);
-              let childRow = this.__createRowMetaData(node, 0);
-              let childInspector = this.getNodeInspectorFactory()(node);
-
-              childRow.canHaveChildren = childInspector.canHaveChildren(node);
-              this.__rowMetaDatas.push(childRow);
-              this.__rowMetaDataByNode[node.toHashCode()] = childRow;
-              row.childRows.push(childRow);
-            }
-
-            this.fireDataEvent("changeSize", this.getSize());
-          };
+          this.__rowMetaDataByNode[value.toHashCode()] = row;
           row.canHaveChildren = inspector.canHaveChildren(value);
-          if (!row.childrenChangeBinding)
-            row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, evt => {
-              this.queue(async () => {
-                this._removeChildRows(row);
-                await addChildRows();
-              });
-            });
-          await addChildRows();
+          if (!row.canHaveChildren) throw new Error("Root must be able to have children!");
+          if (!row.childrenChangeBinding) row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, () => this.refreshNodeChildren(value));
+          await this._insertChildRows(value);
         });
       }
       this.fireDataEvent("changeSize", this.getSize());
+    },
+    async _insertChildRows(node) {
+      let inspector = this.getNodeInspectorFactory()(node);
+      let rowMd = this._getNodeMetaData(node);
+      rowMd.childRows = [];
+      this.__rowMetaDataByNode[node.toHashCode()] = rowMd;
+      for (let i = 0, nodes = await inspector.getChildrenOf(node); i < nodes.length; i++) {
+        let node = nodes.getItem(i);
+        let childRow = this.__createRowMetaData(node, 0);
+        let childInspector = this.getNodeInspectorFactory()(node);
+
+        childRow.canHaveChildren = childInspector.canHaveChildren(node);
+        this.__rowMetaDatas.push(childRow);
+        this.__rowMetaDataByNode[node.toHashCode()] = childRow;
+        rowMd.childRows.push(childRow);
+      }
+      this.fireDataEvent("changeSize", this.getSize());
+    },
+
+    /**
+     * Refreshes node's children. Does not preserve expanded descendants.
+     * @param {*} node
+     */
+    async refreshNodeChildren(node) {
+      await this.queue(async () => {
+        await this._collapseNode(node);
+        await this._expandNode(node);
+        this.fireDataEvent("changeSize", this.getSize());
+      });
+    },
+
+    getShownChildren(node) {
+      return this._getNodeMetaData(node).childRows.map(md => md.node);
     },
 
     /**
@@ -157,42 +169,63 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     },
 
     /**
-     * @override
+     * Disposes of a row meta data obect
+     *
+     * @param {RowMetaData} rowMeta
      */
-    async expandNode(node) {
-      let inspector = this.getNodeInspectorFactory()(node);
-      await this.queue(async () => {
-        let children = await inspector.getChildrenOf(node);
-        let rowMetadata = this.__rowMetaDataByNode[node.toHashCode()];
-        if (!rowMetadata) {
-          throw new Error(`Cannot find ${node} in rows`);
-        }
-        if (rowMetadata.childRows || !rowMetadata.canHaveChildren) {
-          return;
-        }
-        rowMetadata.childrenChangeBinding = inspector.createChildrenChangeBinding(node, evt => {
-          this._onNodeChildrenChange(evt, node);
-        });
-        let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
-        let childRows = [];
-        for (let childNode of children) {
-          let childRow = this.__createRowMetaData(childNode, rowMetadata.level + 1);
-          childRow.canHaveChildren = inspector.canHaveChildren(childNode);
-          childRows.push(childRow);
-          this.__rowMetaDataByNode[childNode.toHashCode()] = childRow;
-        }
-        let before = this.__rowMetaDatas.slice(0, parentRowIndex + 1);
-        let after = parentRowIndex == this.__rowMetaDatas.length - 1 ? [] : this.__rowMetaDatas.slice(parentRowIndex + 1);
-        qx.lang.Array.append(before, childRows);
-        qx.lang.Array.append(before, after);
-        rowMetadata.childRows = childRows;
-        this.__rowMetaDatas = before;
-        this.fireDataEvent("changeSize", this.getSize());
-      });
+    __disposeRowMetaData(rowMeta) {
+      if (rowMeta.childrenChangeBinding) {
+        rowMeta.childrenChangeBinding.dispose();
+        delete rowMeta.childrenChangeBinding;
+      }
     },
 
     /**
-     * Reveals node in tree, even if it's not current shown.
+     * Returns node metadata for the node object
+     */
+    _getNodeMetaData(node) {
+      return this.__rowMetaDataByNode[node.toHashCode()];
+    },
+
+    /**@override */
+    async expandNode(node) {
+      await this.queue(() => this._expandNode(node));
+    },
+    /**
+     * Expands given node.
+     * Is called inside of this class, so its operation is not queued.
+     * @param {*} node
+     */
+    async _expandNode(node) {
+      let inspector = this.getNodeInspectorFactory()(node);
+      let children = await inspector.getChildrenOf(node);
+      let rowMetadata = this._getNodeMetaData(node);
+      if (!rowMetadata) {
+        throw new Error(`Cannot find ${node} in rows`);
+      }
+      if (rowMetadata.childRows || !rowMetadata.canHaveChildren) {
+        return;
+      }
+      rowMetadata.childrenChangeBinding = inspector.createChildrenChangeBinding(node, () => this.refreshNodeChildren(node));
+      let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
+      let childRows = [];
+      for (let childNode of children) {
+        let childRow = this.__createRowMetaData(childNode, rowMetadata.level + 1);
+        childRow.canHaveChildren = inspector.canHaveChildren(childNode);
+        childRows.push(childRow);
+        this.__rowMetaDataByNode[childNode.toHashCode()] = childRow;
+      }
+      let before = this.__rowMetaDatas.slice(0, parentRowIndex + 1);
+      let after = parentRowIndex == this.__rowMetaDatas.length - 1 ? [] : this.__rowMetaDatas.slice(parentRowIndex + 1);
+      qx.lang.Array.append(before, childRows);
+      qx.lang.Array.append(before, after);
+      rowMetadata.childRows = childRows;
+      this.__rowMetaDatas = before;
+      this.fireDataEvent("changeSize", this.getSize());
+    },
+
+    /**
+     * Reveals node in tree, even if it's not currently shown.
      * All ancestors of node are expanded.
      * @param {qx.data.Object} node
      */
@@ -216,61 +249,41 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         let ancestors = getPathToNode(node);
         if (!ancestors) throw new Error("Cannot find node in tree");
         for (var a = 0; a < ancestors.length; a++) {
-          await this.expandNode(ancestors.getItem(a));
+          await this._expandNode(ancestors.getItem(a));
         }
       });
     },
 
-    /**
-     * This function is called when the children of a node in the tree changes.
-     * It causes the grid view to update.
-     * @param {qx.data.Event} evt Event for a change in the node's children array
-     * @param {qx.core.Object} node The node object for which the children changed
-     */
-    async _onNodeChildrenChange(evt, node) {
-      let rowMetadata = this.__rowMetaDataByNode[node.toHashCode()];
-      let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
-      let changeStart = parentRowIndex + 1;
-      let changeEnd = changeStart + rowMetadata.childRows.length;
-      let before = this.__rowMetaDatas.slice(0, changeStart);
-      let after = changeEnd == this.__rowMetaDatas.length ? [] : this.__rowMetaDatas.slice(changeEnd);
-      await this.queue(async () => {
-        for (let childRow of rowMetadata.childRows) {
-          this._removeChildRows(childRow);
-        }
-        rowMetadata.childRows = [];
-        let newRowsMetaDatas = [];
-        for (let childNode of node.getChildren()) {
-          let inspector = this.getNodeInspectorFactory()(childNode);
-          let childRowMetadata = this.__createRowMetaData(childNode, rowMetadata.level + 1);
-          newRowsMetaDatas.push(childRowMetadata);
-          childRowMetadata.canHaveChildren = inspector.canHaveChildren(childNode);
-          rowMetadata.childRows.push(childRowMetadata);
-          this.__rowMetaDataByNode[childNode.toHashCode()] = childRowMetadata;
-        }
-        qx.lang.Array.append(before, newRowsMetaDatas);
-        qx.lang.Array.append(before, after);
-        this.__rowMetaDatas = before;
-        this.fireDataEvent("changeSize", this.getSize());
-      });
-    },
 
     /**
      * @override
      */
     async collapseNode(node) {
-      await this.queue(async () => {
-        let rowMetaData = this.__rowMetaDataByNode[node.toHashCode()];
-        if (!rowMetaData) {
-          throw new Error(`Cannot find ${node} in rows`);
-        }
-        if (!rowMetaData.childRows) {
-          return;
-        }
-        this.__disposeRowMetaData(rowMetaData);
-        this._removeChildRows(rowMetaData);
-        this.fireDataEvent("changeSize", this.getSize());
-      });
+      await this.queue(this._collapseNode.bind(this, node));
+    },
+
+    async _collapseNode(node) {
+      let row = this.__rowMetaDataByNode[node.toHashCode()];
+      if (!row) {
+        throw new Error(`Cannot find ${node} in rows`);
+      }
+      if (!row.childRows) {
+        return;
+      }
+      if (row.childrenChangeBinding) {
+        row.childrenChangeBinding.dispose();
+        delete row.childrenChangeBinding;
+      }
+      this._removeChildRows(row);
+      this.fireDataEvent("changeSize", this.getSize());
+    },
+
+    /**
+     * Performs a full update of the nodes in the tree,
+     * such that all the children of the expanded nodes are shown
+     */
+    async updateNodes() {
+      return this.refreshNodeChildren(this.getRoot());
     },
 
     /**
