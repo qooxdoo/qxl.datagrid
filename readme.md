@@ -93,6 +93,38 @@ to say how big the data is and get values from your array.
 One crucial point to note is that although `makeAvailable` is called with a range of columns & rows, your DataSource
 MUST always also provide a model for column 0 (zero) for each row in that range - this is to allow selection by row.
 
+### Array Data Sources
+
+Array data sources use a simple one-dimensional array of model objects, with each model in the array representing one
+row of data. This same model is then passed to each column of the corresponding row in the DataGrid, satisfying the
+requirement for two-dimensional data. Each column will display some property of that object as configured, allowing for
+a simplified list-like or table-like presentation.
+
+For most use cases, it will be sufficient to instantiate [qxl.datagrid.source.ArrayDataSource](source/class/qxl/datagrid/source/ArrayDataSource.js) and
+set it's `model` property to your array of model objects. However some cases with larger datasets may prefer to make
+trips to the server; typically this can be handled by extending [qxl.datagrid.source.ArrayDataSource](source/class/qxl/datagrid/source/ArrayDataSource.js) and overriding
+the `IsAvailable`, `makeAvailable`, and `getSize` members.
+
+For the former use case, the implementation is quite simple. Below is a snippet containing a very basic example of how
+to use an ArrayDataSource with a DataGrid - bear in mind this snippet is intended to be illustrative, not effective.
+
+```js
+const myColumns = new qxl.datagrid.column.Columns();            // create a new columns object
+myColumns.add(/* ... */);                                       // add columns to the columns object as required
+
+const myGrid = new qxl.datagrid.DataGrid(myColumns);            // create a new datagrid
+
+const myDataSource = new qxl.datagrid.source.ArrayDataSource(); // create a new array data source
+myGrid.set({ dataSource: myDataSource });                       // set the data source on the grid
+
+const myDataArray = myapp.model.MyModel.getAll();               // generate/fetch some `qx.data.Array` of model objects
+myDataSource.setModel(myDataArray);                             // set the model on the data source
+
+                                                                // Done!
+```
+
+For a more purpose-built example, take a look at [qxl.datagrid.demo.array.ArrayDemo](source/class/qxl/datagrid/demo/array/ArrayDemo.js)
+
 ### Tree Data Sources
 
 For a spreadsheet-style datagrid, your data is already in a two-dimensional array, but tree-style datagrid has a heirarchy
