@@ -18,7 +18,7 @@ NOTE:: This is beta release, but will be in active use and development over he n
 
 Included in this repo is a demo application - it's running live at http://qooxdoo.org/qxl-datagrid.qooxdoo.github.io/
 
-The included demo application will create a tabview showing both styles of DataGrid usage (ie spreadsheet or tree); if you would like
+The included demo application will create a tabview showing several styles of DataGrid usage; if you would like
 to try it out on your own computer, check out this repo and run it:
 
 ```
@@ -28,6 +28,12 @@ $ qx serve
 ```
 
 and browse to http://localhost:8080
+
+Currently the following demos are included:
+
+- Array - displays a simple array of model objects using [qxl.datagrid.source.ArrayDataSource](source/class/qxl/datagrid/source/ArrayDataSource.js)
+- Tree - displays the file system at `./source` using [qxl.datagrid.source.tree.TreeDataSource](source/class/qxl/datagrid/source/tree/TreeDataSource.js)
+- Big Grid - displays a large (10 billion entry) grid of data using a custom [qxl.datagrid.source.IDataSource](source/class/qxl/datagrid/source/IDataSource.js) implementation
 
 ## Getting Started
 
