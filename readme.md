@@ -58,13 +58,13 @@ qx.Theme.define("myapp.theme.Appearance", {
 });
 ```
 
-Do the same for your `Decoration` and `Color`.
-
 Currently, the following themes are supported:
 
-- Tangible (light & dark)
-- Indigo & Indigo Dark
-- Simple
+- Tangible (light & dark) - use `qxl.datagrid.theme.tangible.*` mixins
+- Indigo & Indigo Dark - use `qxl.datagrid.theme.indigo.*` mixins
+- Simple - use `qxl.datagrid.theme.simple.*` mixins
+
+For each theme, there are three available mixins; `*.MAppearance`, `*.MColor`, and `*.MDecoration`.
 
 ## Key Concepts
 
