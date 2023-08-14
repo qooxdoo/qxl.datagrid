@@ -484,7 +484,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           return comp;
 
         case "headerWidgetFactory":
-          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns(), "qxl-datagrid-header-cell");
+          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns())
 
         case "header":
           return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
@@ -493,7 +493,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           return new qxl.datagrid.ui.OddEvenRowBackgrounds(this.__sizeCalculator, this.getDataSource(), this.__selectionManager);
 
         case "paneWidgetFactory":
-          return new qxl.datagrid.ui.factory.SimpleWidgetFactory(this.getColumns(), "qxl-datagrid-cell");
+          return new qxl.datagrid.ui.factory.SimpleWidgetFactory(this.getColumns());
 
         case "widgetPane":
           return new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource(), this.__selectionManager);
