@@ -175,7 +175,15 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
     _createRowWidget() {
       return new qx.ui.basic.Atom().set({
         appearance: this.__widgetAppearance
-      });
+      } );
+    },
+
+    /**
+     * Allows row appearance to be set outside of the constructor
+     */
+    setRowAppearance(appearance) {
+      this.__widgetAppearance = appearance;
+      this._getChildren().forEach(child => child.setAppearance(appearance));
     }
   }
 });
