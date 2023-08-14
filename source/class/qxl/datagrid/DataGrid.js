@@ -329,7 +329,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     /**
-     * Handles changes to the visibility of eiher scrollbar
+     * Handles changes to the visibility of either scrollbar
      *
      * @param {String} side either "x" or "y"
      */
@@ -535,7 +535,16 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @Override
      */
     renderLayout(left, top, width, height) {
-      let changed = this.__sizeCalculator.setAvailableSize(width, height, this.getStartRowIndex(), this.getStartColumnIndex());
+      const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
+      const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
+      let changed = this.__sizeCalculator.setAvailableSize(
+        width - this.getChildControl("scrollbar-y").getSizeHint().width - initialOffsetLeft - this.getQxObject("widgetPane").getPaddingRight(),
+        height,
+        this.getStartRowIndex(),
+        this.getStartColumnIndex(),
+        initialOffsetLeft,
+        initialOffsetTop
+      );
       super.renderLayout(left, top, width, height);
       if (changed) {
         this.updateWidgets();
