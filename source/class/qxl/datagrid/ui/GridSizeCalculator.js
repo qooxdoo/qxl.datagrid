@@ -106,6 +106,12 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     /** @type{Integer} the first column in the data source */
     _startColumnIndex: null,
 
+    /** @type{Integer} the left scroll position */
+    _left: null,
+
+    /** @type{Integer} the top scroll position */
+    _top: null,
+
     /**
      * Gets the sizes for a given set of available size or scroll position
      *
@@ -116,7 +122,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
      * @returns {SizesData}
      */
     getSizesFor(width, height, startRowIndex, startColumnIndex) {
-      this.setAvailableSize(width, height, startRowIndex, startColumnIndex);
+      this.setAvailableSize(width, height, startRowIndex, startColumnIndex, 0, 0);
       return this.getSizes();
     },
 
@@ -128,15 +134,19 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
      * @param {Integer} height
      * @param {Integer} startRowIndex
      * @param {Integer} startColumnIndex
+     * @param {Integer} left
+     * @param {Integer} top
      * @returns {Boolean} true if the widgets need to be redrawn because the previous data is invalid
      */
-    setAvailableSize(width, height, startRowIndex, startColumnIndex) {
+    setAvailableSize(width, height, startRowIndex, startColumnIndex, left, top) {
       if (width !== this._width || height !== this._height || startRowIndex != this._startRowIndex || startColumnIndex != this._startColumnIndex) {
         this.invalidate();
         this._width = width;
         this._height = height;
         this._startRowIndex = startRowIndex;
         this._startColumnIndex = startColumnIndex;
+        this._left = left;
+        this._top = top;
       }
       return !this.__sizes;
     },
@@ -151,6 +161,18 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
         this.__sizes = this._calculateSizes();
       }
       return this.__sizes;
+    },
+
+    /**
+     * Gets the left and top initial offsets
+     *
+     * @returns {Map} with keys "left" and "top"
+     */
+    getInitialOffsets() {
+      return {
+        left: this._left,
+        top: this._top
+      };
     },
 
     /**
