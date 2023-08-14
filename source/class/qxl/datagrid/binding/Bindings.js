@@ -37,7 +37,9 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
    */
   construct(model, bindingId, bindingType) {
     super();
-    if (bindingType === undefined) bindingType = "binding";
+    if (bindingType === undefined) {
+      bindingType = "binding";
+    }
     this.__bindingData = [];
     if (model && bindingId) {
       this.add(model, bindingId, bindingType);
@@ -46,6 +48,10 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
 
   destruct() {
     this.removeAll();
+  },
+
+  events: {
+    removeAll: "qx.event.type.Event"
   },
 
   members: {
@@ -104,6 +110,10 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
             data.model.removeListenerById(data.bindingId);
             break;
 
+          case "callback":
+            data.bindingId(data.model);
+            break;
+
           default:
             throw new Error("Invalid binding type" + data.bindingType);
         }
@@ -117,6 +127,7 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
       let arr = this.__bindingData;
       this.__bindingData = [];
       arr.forEach(data => this.__releaseData(data));
+      this.fireEvent("removeAll");
     }
   }
 });
