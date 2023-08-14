@@ -209,9 +209,10 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       rowMetadata.childrenChangeBinding = inspector.createChildrenChangeBinding(node, () => this.refreshNodeChildren(node));
       let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
       let childRows = [];
-      for (let childNode of children) {
+      for ( let childNode of children ) {
+        const childInspector = this.getNodeInspectorFactory()(childNode);
         let childRow = this.__createRowMetaData(childNode, rowMetadata.level + 1);
-        childRow.canHaveChildren = inspector.canHaveChildren(childNode);
+        childRow.canHaveChildren = childInspector.canHaveChildren(childNode);
         childRows.push(childRow);
         this.__rowMetaDataByNode[childNode.toHashCode()] = childRow;
       }
