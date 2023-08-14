@@ -30,6 +30,11 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionLayout", {
     spacing: {
       init: 3,
       check: "Integer"
+    },
+
+    position: {
+      init: "start",
+      check: ["start", "end"]
     }
   },
 
@@ -39,8 +44,8 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionLayout", {
      */
     renderLayout(availWidth, availHeight, padding) {
       let widget = this._getWidget();
-      let expander = widget.getChildControl("expander");
-      let label = widget.getChildControl("label");
+      let expander = widget.getExpander();
+      let label = widget.getLabel();
       label.getSizeHint();
 
       let left = widget.getIndentationLevel() * widget.getSpacePerIndentation();
@@ -61,17 +66,25 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionLayout", {
         }
       }
 
-      if (expander.isVisible()) {
-        expander.renderLayout(left, 0, expanderWidth, availHeight);
-        left += expanderWidth + spacing;
+      if (this.getPosition() == "start") {
+        if (expander.isVisible()) {
+          expander.renderLayout(left, 0, expanderWidth, availHeight);
+          left += expanderWidth + spacing;
+        }
+        label.renderLayout(left, 0, availWidth - left, availHeight);
+      } else {
+        let width = availWidth - left - expanderWidth - spacing;
+        label.renderLayout(left, 0, width, availHeight);
+        if ( expander.isVisible() ) {
+          left += width + spacing;
+          expander.renderLayout(left, 0, expanderWidth, availHeight);
+        }
       }
-
-      label.renderLayout(left, 0, availWidth - left, availHeight);
     },
 
     _computeSizeHint() {
       let widget = this._getWidget();
-      let expander = widget.getChildControl("expander");
+      let expander = widget.getExpander();
       let left = widget.getIndentationLevel() * widget.getSpacePerIndentation();
       let spacing = this.getSpacing();
       let expanderWidth = widget.getExpanderWidth();
@@ -91,7 +104,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionLayout", {
       }
 
       let width = left + expanderWidth + spacing;
-      let label = widget.getChildControl("label");
+      let label = widget.getLabel();
       let hint = label.getSizeHint(true);
       let labelWidth = hint.width;
       if (hint.minWidth && hint.minWidth > labelWidth) {

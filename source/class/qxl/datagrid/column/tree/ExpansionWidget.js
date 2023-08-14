@@ -136,6 +136,22 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
     /**
      * @Override
      */
+    getExpander() {
+      return this.getChildControl("expander");
+    },
+
+    /**
+     * Returns the widget for displaying the object
+     *
+     * @Override
+     */
+    getLabel() {
+      return this.getChildControl("label");
+    },
+
+    /**
+     * @Override
+     */
     _createChildControlImpl(id) {
       switch (id) {
         case "expander":
