@@ -15,14 +15,14 @@
  *      for details.
  *
  *    Authors:
- *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *      * Will Johnson (willsterjohnson)
  *
  * *********************************************************************** */
 
 /**
- * Basic appearances needed for the datagrid; this is for the Tangible theme
+ * Basic appearances needed for the datagrid; this is for the Simple theme
  */
-qx.Theme.define("qxl.datagrid.theme.MAppearance", {
+qx.Theme.define("qxl.datagrid.theme.simple.MAppearance", {
   appearances: {
     "qxl-datagrid": "widget",
     "qxl-datagrid/scrollbar-x": "scrollbar",
@@ -42,15 +42,18 @@ qx.Theme.define("qxl.datagrid.theme.MAppearance", {
     "qxl-datagrid-cell": {
       style(states) {
         let backgroundColor = "transparent";
+        let textColor = "qxl-datagrid-row";
         let decorator;
         if (states.selected) {
-          backgroundColor = "qxl-datagrid-row-selected";
+          backgroundColor = "qxl-datagrid-row-background-selected";
+          textColor = "qxl-datagrid-row-selected";
         }
         if (states.focused) {
           decorator = "qxl-datagrid-cell-focused";
         }
         return {
           backgroundColor,
+          textColor,
           decorator
         };
       }
@@ -58,8 +61,10 @@ qx.Theme.define("qxl.datagrid.theme.MAppearance", {
     "qxl-datagrid-row": {
       style(states) {
         let backgroundColor = "qxl-datagrid-row-background-even";
+        let textColor = "qxl-datagrid-row";
         if (states.selected) {
-          backgroundColor = "qxl-datagrid-row-selected";
+          backgroundColor = "qxl-datagrid-row-background-selected";
+          textColor = "qxl-datagrid-row-selected";
         } else if (states.odd) {
           backgroundColor = "qxl-datagrid-row-background-odd";
         }
@@ -69,6 +74,7 @@ qx.Theme.define("qxl.datagrid.theme.MAppearance", {
         }
         return {
           backgroundColor,
+          textColor,
           decorator
         };
       }

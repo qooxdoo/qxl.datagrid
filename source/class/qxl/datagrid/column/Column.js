@@ -120,6 +120,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
       } else {
         widget.setLabel(model);
       }
+      return new qxl.datagrid.binding.Bindings(model);
     },
 
     /**
@@ -127,7 +128,9 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * @returns {qx.ui.core.Widget}
      */
     createWidgetForDisplay() {
-      return new qx.ui.basic.Label();
+      return new qx.ui.basic.Label().set({
+        appearance: "qxl-datagrid-cell"
+      });
     },
 
     /**

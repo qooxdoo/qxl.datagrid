@@ -19,7 +19,7 @@
 *
 * *********************************************************************** */
 
-qx.Theme.define("qxl.datagrid.demo.theme.Decoration", {
-  extend: qx.theme.tangible.Decoration,
-  include: [qxl.datagrid.theme.MDecoration]
+qx.Theme.define("qxl.datagrid.demo.theme.tangible.Appearance", {
+  extend: qx.theme.tangible.Appearance,
+  include: [qxl.datagrid.theme.tangible.MAppearance]
 });

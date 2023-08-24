@@ -37,6 +37,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     super();
     this.__debounceUpdateWidgets = new qxl.datagrid.util.Debounce(() => this.updateWidgets(), 50);
     this.__selectionManager = new qxl.datagrid.ui.SelectionManager();
+    this.__selectionManager.addListener("changeSelection", () => this.scheduleUpdateWidgets());
 
     columns = columns || null;
     styling = styling || new qxl.datagrid.ui.GridStyling();
@@ -340,7 +341,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     /**
-     * Handles changes to the visibility of eiher scrollbar
+     * Handles changes to the visibility of either scrollbar
      *
      * @param {String} side either "x" or "y"
      */
@@ -498,7 +499,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           return comp;
 
         case "headerWidgetFactory":
-          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns(), "qxl-datagrid-header-cell");
+          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns())
 
         case "header":
           return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
@@ -507,7 +508,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           return new qxl.datagrid.ui.OddEvenRowBackgrounds(this.__sizeCalculator, this.getDataSource(), this.__selectionManager);
 
         case "paneWidgetFactory":
-          return new qxl.datagrid.ui.factory.SimpleWidgetFactory(this.getColumns(), "qxl-datagrid-cell");
+          return new qxl.datagrid.ui.factory.SimpleWidgetFactory(this.getColumns());
 
         case "widgetPane":
           return new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource(), this.__selectionManager);
@@ -549,7 +550,16 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @Override
      */
     renderLayout(left, top, width, height) {
-      let changed = this.__sizeCalculator.setAvailableSize(width, height, this.getStartRowIndex(), this.getStartColumnIndex());
+      const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
+      const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
+      let changed = this.__sizeCalculator.setAvailableSize(
+        width - this.getChildControl("scrollbar-y").getSizeHint().width - initialOffsetLeft - this.getQxObject("widgetPane").getPaddingRight(),
+        height,
+        this.getStartRowIndex(),
+        this.getStartColumnIndex(),
+        initialOffsetLeft,
+        initialOffsetTop
+      );
       super.renderLayout(left, top, width, height);
       if (changed) {
         this.updateWidgets();

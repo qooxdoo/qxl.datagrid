@@ -26,6 +26,14 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
   extend: qx.core.Object,
   implement: [qxl.datagrid.source.tree.INodeInspector],
 
+  construct(canHaveChildren) {
+    super();
+    this.__canHaveChildren = true;
+    if (canHaveChildren === false) {
+      this.__canHaveChildren = canHaveChildren;
+    }
+  },
+
   properties: {
     /** Where to find the children of the node */
     childrenPath: {
@@ -53,11 +61,12 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
       return null;
     },
 
+    __canHaveChildren: null,
     /**
      * @override
      */
     canHaveChildren(node) {
-      return true;
+      return this.__canHaveChildren;
     },
 
     /**

@@ -13,13 +13,12 @@ NOTE:: This is beta release, but will be in active use and development over he n
 ### Coming Soon (tm)
 
 - The current version is read only, but it will be possible to add edit cells inline in the near future.
-- The theme additions are only really compatible with Tangible - it would be easy to add mixins for other themes, but it's not been done yet
 
 ## Trying the Demos
 
 Included in this repo is a demo application - it's running live at http://qooxdoo.org/qxl-datagrid.qooxdoo.github.io/
 
-The included demo application will create a tabview showing both styles of DataGrid usage (ie spreadsheet or tree); if you would like
+The included demo application will create a tabview showing several styles of DataGrid usage; if you would like
 to try it out on your own computer, check out this repo and run it:
 
 ```
@@ -29,6 +28,12 @@ $ qx serve
 ```
 
 and browse to http://localhost:8080
+
+Currently the following demos are included:
+
+- Array - displays a simple array of model objects using [qxl.datagrid.source.ArrayDataSource](source/class/qxl/datagrid/source/ArrayDataSource.js)
+- Tree - displays the file system at `./source` using [qxl.datagrid.source.tree.TreeDataSource](source/class/qxl/datagrid/source/tree/TreeDataSource.js)
+- Big Grid - displays a large (10 billion entry) grid of data using a custom [qxl.datagrid.source.IDataSource](source/class/qxl/datagrid/source/IDataSource.js) implementation
 
 ## Getting Started
 
@@ -55,14 +60,17 @@ into your own application's theme. For example, if you app is called `myapp`, yo
 qx.Theme.define("myapp.theme.Appearance", {
   extend: qx.theme.tangible.Appearance,
 
-  include: [qxl.datagrid.theme.MAppearance]
+  include: [qxl.datagrid.theme.tangible.MAppearance]
 });
 ```
 
-Do the same for your `Decoration` and `Color`.
+Currently, the following themes are supported:
 
-NOTE:: the theming for DataGrid is only really compatible with the Tangible theme at the moment, so if you use another theme you
-may have some more work to do. Please consider contributing your appearances for other themes back to this project!
+- Tangible (light & dark) - use `qxl.datagrid.theme.tangible.*` mixins
+- Indigo & Indigo Dark - use `qxl.datagrid.theme.indigo.*` mixins
+- Simple - use `qxl.datagrid.theme.simple.*` mixins
+
+For each theme, there are three available mixins; `*.MAppearance`, `*.MColor`, and `*.MDecoration`.
 
 ## Key Concepts
 
@@ -84,6 +92,38 @@ to say how big the data is and get values from your array.
 
 One crucial point to note is that although `makeAvailable` is called with a range of columns & rows, your DataSource
 MUST always also provide a model for column 0 (zero) for each row in that range - this is to allow selection by row.
+
+### Array Data Sources
+
+Array data sources use a simple one-dimensional array of model objects, with each model in the array representing one
+row of data. This same model is then passed to each column of the corresponding row in the DataGrid, satisfying the
+requirement for two-dimensional data. Each column will display some property of that object as configured, allowing for
+a simplified list-like or table-like presentation.
+
+For most use cases, it will be sufficient to instantiate [qxl.datagrid.source.ArrayDataSource](source/class/qxl/datagrid/source/ArrayDataSource.js) and
+set it's `model` property to your array of model objects. However some cases with larger datasets may prefer to make
+trips to the server; typically this can be handled by extending [qxl.datagrid.source.ArrayDataSource](source/class/qxl/datagrid/source/ArrayDataSource.js) and overriding
+the `IsAvailable`, `makeAvailable`, and `getSize` members.
+
+For the former use case, the implementation is quite simple. Below is a snippet containing a very basic example of how
+to use an ArrayDataSource with a DataGrid - bear in mind this snippet is intended to be illustrative, not effective.
+
+```js
+const myColumns = new qxl.datagrid.column.Columns();            // create a new columns object
+myColumns.add(/* ... */);                                       // add columns to the columns object as required
+
+const myGrid = new qxl.datagrid.DataGrid(myColumns);            // create a new datagrid
+
+const myDataSource = new qxl.datagrid.source.ArrayDataSource(); // create a new array data source
+myGrid.set({ dataSource: myDataSource });                       // set the data source on the grid
+
+const myDataArray = myapp.model.MyModel.getAll();               // generate/fetch some `qx.data.Array` of model objects
+myDataSource.setModel(myDataArray);                             // set the model on the data source
+
+                                                                // Done!
+```
+
+For a more purpose-built example, take a look at [qxl.datagrid.demo.array.ArrayDemo](source/class/qxl/datagrid/demo/array/ArrayDemo.js)
 
 ### Tree Data Sources
 

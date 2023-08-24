@@ -29,13 +29,10 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
 
   /**
    * Constructor
-   *
-   * @param {String} widgetAppearance the appearance to set on the widget
    */
-  construct(columns, widgetAppearance) {
+  construct(columns) {
     super();
     this.__widgets = {};
-    this.__widgetAppearance = widgetAppearance;
     if (columns) {
       this.setColumns(columns);
     }
@@ -60,10 +57,10 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
   },
 
   members: {
-    /** @type{Map<String,qx.ui.core.Widget>} the widgets, indexed by row:column */
+    /** @type {Record<string, qx.ui.core.Widget>} the widgets, indexed by row:column */
     __widgets: null,
 
-    /** @type{String} the appearance to set on each widget */
+    /** @type {string} the appearance to set on each widget */
     __widgetAppearance: null,
 
     /**
@@ -92,7 +89,9 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
       if (!widget) {
         let column = this.getColumns().getColumn(columnIndex);
         widget = this.__widgets[id] = this._createWidget(column);
-        widget.setAppearance(this.__widgetAppearance);
+        if (this.__widgetAppearance) {
+          widget.setAppearance(this.__widgetAppearance);
+        }
         widget.setUserData("qxl.datagrid.factory.AbstractWidgetFactory.bindingData", {
           rowIndex: rowIndex,
           columnIndex: columnIndex,
@@ -141,6 +140,18 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
      */
     getWidgets() {
       return this.__widgets;
+    },
+
+    /**
+     * Updates all widgets to the new appearance, and sets the
+     * appearance for new widgets
+     * @param appearance {string} the appearance
+     */
+    setChildAppearances(appearance) {
+      this.__widgetAppearance = appearance;
+      Object.values(this.getWidgets()).forEach(widget => {
+        widget.setAppearance(this.__widgetAppearance);
+      });
     }
   }
 });

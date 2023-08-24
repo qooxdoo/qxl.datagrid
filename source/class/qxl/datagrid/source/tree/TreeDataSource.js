@@ -176,6 +176,18 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
 
     /**
      * @override
+     * Disposes of a row meta data obect
+     *
+     * @param {RowMetaData} rowMeta
+     */
+    __disposeRowMetaData(rowMeta) {
+      if (rowMeta.childrenChangeBinding) {
+        rowMeta.childrenChangeBinding.dispose();
+        delete rowMeta.childrenChangeBinding;
+      }
+    },
+
+    /**
      * Returns node metadata for the node object
      */
     _getNodeMetaData(node) {
@@ -186,7 +198,6 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     async expandNode(node) {
       await this.queue(() => this._expandNode(node));
     },
-
     /**
      * Expands given node.
      * Is called inside of this class, so its operation is not queued.
@@ -206,8 +217,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
       let childRowMetas = [];
       for (let childNode of children) {
+        const childInspector = this.getNodeInspectorFactory()(childNode);
         let childRowMeta = this.__createRowMetaData(childNode, rowMetadata.level + 1);
-        childRowMeta.canHaveChildren = inspector.canHaveChildren(childNode);
+        childRowMeta.canHaveChildren = childInspector.canHaveChildren(childNode);
         childRowMetas.push(childRowMeta);
         this.__rowMetaDataByNode[childNode.toHashCode()] = childRowMeta;
       }

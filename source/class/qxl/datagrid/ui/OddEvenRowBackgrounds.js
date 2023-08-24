@@ -93,7 +93,7 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         // prettier-ignore
-        if (cellData.row < minDataRowIndex || 
+        if (cellData.row < minDataRowIndex ||
             cellData.row > maxRowIndex) {
           child.setUserData("qxl.datagrid.cellData", null);
           this._remove(child);
@@ -107,7 +107,7 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
       let rowWidth = 0;
       sizesData.columns.forEach(cd => (rowWidth += cd.width));
 
-      let top = 0;
+      let top = this.__sizeCalculator.getInitialOffsets().top;
       let verticalSpacing = styling.getVerticalSpacing();
       let spaceAbove = Math.ceil(verticalSpacing / 2);
       let spaceBelow = verticalSpacing - spaceAbove;
@@ -157,7 +157,7 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
         }
 
         child.setLayoutProperties({
-          left: 0,
+          left: this.__sizeCalculator.getInitialOffsets().left,
           width: rowWidth,
           top: top - spaceAbove,
           height: rowSizeData.height + spaceAbove + spaceBelow
@@ -175,7 +175,15 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
     _createRowWidget() {
       return new qx.ui.basic.Atom().set({
         appearance: this.__widgetAppearance
-      });
+      } );
+    },
+
+    /**
+     * Allows row appearance to be set outside of the constructor
+     */
+    setRowAppearance(appearance) {
+      this.__widgetAppearance = appearance;
+      this._getChildren().forEach(child => child.setAppearance(appearance));
     }
   }
 });

@@ -19,7 +19,7 @@
  *
  * *********************************************************************** */
 
-qx.Theme.define("qxl.datagrid.demo.theme.Color", {
+qx.Theme.define("qxl.datagrid.demo.theme.tangible.Color", {
   extend: qx.theme.tangible.ColorLight,
-  include: [qxl.datagrid.theme.MColor]
+  include: [qxl.datagrid.theme.tangible.MColor]
 });

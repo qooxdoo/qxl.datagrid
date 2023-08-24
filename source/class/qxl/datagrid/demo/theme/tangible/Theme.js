@@ -19,12 +19,12 @@
 *
 * *********************************************************************** */
 
-qx.Theme.define("qxl.datagrid.demo.theme.Theme", {
+qx.Theme.define( "qxl.datagrid.demo.theme.tangible.Theme", {
   meta: {
-    color: qxl.datagrid.demo.theme.Color,
-    decoration: qxl.datagrid.demo.theme.Decoration,
+    color: qxl.datagrid.demo.theme.tangible.Color,
+    decoration: qxl.datagrid.demo.theme.tangible.Decoration,
     font: qx.theme.tangible.Font,
     icon: qx.theme.icon.Tango,
-    appearance: qxl.datagrid.demo.theme.Appearance
+    appearance: qxl.datagrid.demo.theme.tangible.Appearance
   }
 });

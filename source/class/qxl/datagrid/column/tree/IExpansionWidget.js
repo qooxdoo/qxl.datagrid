@@ -16,16 +16,32 @@
  *
  *    Authors:
  *      * John Spackman (john.spackman@zenesis.com, @johnspackman)
+ *      * Will Johnson (willsterjohnson)
  *
  * *********************************************************************** */
 
-/**
- * Basic colors needed for the datagrid; this is for the Tangible theme
- */
-qx.Theme.define("qxl.datagrid.theme.MColor", {
-  colors: {
-    "qxl-datagrid-row-background-even": "surface",
-    "qxl-datagrid-row-background-odd": "primary-alpha-5",
-    "qxl-datagrid-row-selected": "primary-alpha-10"
+qx.Interface.define( "qxl.datagrid.column.tree.IExpansionWidget", {
+  properties: {
+    /** How deep the indentation level is */
+    indentationLevel: {
+      init: 0,
+      check: "Integer"
+    }
+  },
+
+  members: {
+    /**
+     * Returns the expander widget
+     *
+     * @return {qx.ui.core.Widget}
+     */
+    getExpander() {},
+
+    /**
+     * Returns the widget for displaying the object
+     *
+     * @return {qx.ui.core.Widget}
+     */
+    getLabel() {}
   }
 });
