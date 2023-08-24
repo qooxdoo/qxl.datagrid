@@ -25,7 +25,7 @@
 qx.Class.define("qxl.datagrid.DataGrid", {
   extend: qx.ui.core.Widget,
   implement: [qxl.datagrid.ui.IWidgetSizeSource],
-  include: [qx.ui.core.scroll.MScrollBarFactory, qx.ui.core.scroll.MRoll],
+  include: [qx.ui.core.scroll.MScrollBarFactory],
 
   /**
    * Constructor
@@ -104,7 +104,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     startRowIndex: {
       init: 0,
       check: "Integer",
-      apply: "updateWidgets",
+      apply: "_applyStartRowIndex",
       event: "changeStartRowIndex"
     },
 
@@ -169,6 +169,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
   },
 
   members: {
+    /** @type{Boolean} True if _applyStartRowIndex is being called */
+    __inApplyStartRowIndex: false,
+
     /** @type{qxl.datagrid.ui.GridSizeCalculator} */
     __sizeCalculator: null,
 
@@ -180,6 +183,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     /** @type{qxl.datagrid.selection.SelectionManager} the selection manager */
     __selectionManager: null,
+
+    /** @type{String} unique pointer ID, only set if rolling */
+    __cancelRoll: null,
 
     /**
      * Apply for `columns`
@@ -214,12 +220,91 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     /**
+     * Apply for `startRowIndex`
+     */
+    _applyStartRowIndex(value, oldValue) {
+      this.__inApplyStartRowIndex = true;
+      this.updateWidgets();
+      this.__inApplyStartRowIndex = false;
+    },
+
+    /**
      * Event handler for changes in the data source's size
      */
     __onDataSourceChangeSize() {
       this.getQxObject("widgetPane").invalidateAll();
       this.__sizeCalculator.invalidate();
       this.updateWidgets();
+    },
+
+    /**
+     * Responsible for adding the event listener needed for scroll handling.
+     */
+    _addRollHandling() {
+      this.addListener("roll", this._onRoll, this);
+      this.addListener("pointerdown", this._onPointerDownForRoll, this);
+    },
+
+    /**
+     * Responsible for removing the event listener needed for scroll handling.
+     */
+    _removeRollHandling() {
+      this.removeListener("roll", this._onRoll, this);
+      this.removeListener("pointerdown", this._onPointerDownForRoll, this);
+    },
+
+    /**
+     * Handler for the pointerdown event which simply stops the momentum scrolling.
+     *
+     * @param e {qx.event.type.Pointer} pointerdown event
+     */
+    _onPointerDownForRoll(e) {
+      this.__cancelRoll = e.getPointerId();
+    },
+
+    /**
+     * Event handler for rolling
+     *
+     * @param {qx.event.type.Roll} e
+     * @returns
+     */
+    _onRoll(e) {
+      const SCROLLING_SPEED = 0.08;
+      // only wheel and touch
+      if (e.getPointerType() == "mouse") {
+        return;
+      }
+
+      if (this.__cancelRoll && e.getMomentum()) {
+        e.stopMomentum();
+        this.__cancelRoll = null;
+        return;
+      }
+
+      let rowCount = this.getDataSourceSize().getRow();
+      var newStartRowIndex = this.getStartRowIndex() + Math.floor(e.getDelta().y * SCROLLING_SPEED);
+      let maxRows = this.getMaxRows();
+      newStartRowIndex = qxl.datagrid.util.Math.clamp(0, Math.max(0, rowCount - maxRows), newStartRowIndex);
+      this.setStartRowIndex(newStartRowIndex);
+    },
+
+    /**
+     * @returns The number of maximum rows that the data grid can display in view.
+     */
+    getMaxRows() {
+      const styling = this.__sizeCalculator.getStyling();
+      return Math.floor(this.getQxObject("oddEvenRows").getBounds().height / (styling.getMinRowHeight() || styling.getMaxRowHeight())) - 1;
+    },
+
+    /**
+     * Scrolls the tree such that the selected item is in the center.
+     * If it's not possible to center the item, it is shown as close to the center as possible.
+     */
+    scrollToSelection() {
+      let selectedModel = this.getSelection().getItem(0);
+      let selectionIndex = this.getDataSource().getPositionOfModel(selectedModel).getRow();
+      let maxRowCount = this.getMaxRows();
+      this.setStartRowIndex(Math.max(0, selectionIndex - Math.floor(maxRowCount / 2)));
     },
 
     /**
@@ -241,6 +326,10 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         height: null,
         maxHeight: maxHeight
       };
+    },
+
+    _getSizeCalculator() {
+      return this.__sizeCalculator;
     },
 
     /**
@@ -328,14 +417,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         scrollbarY.setVisibility("excluded");
       } else {
         scrollbarY.setVisibility("visible");
-        let percent;
-        if (this.getStartRowIndex() == 0) {
+        if (this.getMaxRows() >= size.getRow()) {
           percent = 0;
-        } else if (this.getStartRowIndex() == -1 || sizeData.rows.length == size.getRow() - this.getStartRowIndex()) {
-          percent = 100;
         } else {
-          percent = Math.floor((this.getStartRowIndex() / size.getRow()) * 100);
+          percent = Math.floor(qxl.datagrid.util.Math.interpolate(0, Math.max(0, size.getRow() - this.getMaxRows()), 0, 100, this.getStartRowIndex()));
         }
+        percent = Math.min(percent, 100);
         scrollbarY.set({
           position: percent
         });
@@ -375,14 +462,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
           control.exclude();
           control.addListener("scroll", e => {
+            if (this.__inApplyStartRowIndex) return;
             let position = e.getData();
-            let size = this.getDataSource().getSize();
-            if (position == 100) {
-              this.setStartRowIndex(-1);
-            } else {
-              let start = Math.round(size.getRow() * (position / 100));
-              this.setStartRowIndex(start);
-            }
+            let rowCount = this.getDataSource().getSize().getRow();
+            const startRowIndex = Math.floor(qxl.datagrid.util.Math.interpolate(0, 100, 0, Math.max(0, rowCount - this.getMaxRows()), position));
+            this.setStartRowIndex(startRowIndex);
+            console.log("position: " + position + " start row index: " + startRowIndex);
           });
           control.addListener("changeVisibility", () => this.__onScrollbarVisibility("y"));
           return control;
