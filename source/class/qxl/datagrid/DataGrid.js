@@ -329,8 +329,18 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       };
     },
 
-    _getSizeCalculator() {
+    /**
+     * @returns {qxl.datagrid.ui.GridSizeCalculator} size calculator
+     */
+    getSizeCalculator() {
       return this.__sizeCalculator;
+    },
+
+    /**
+     * @returns {qxl.datagrid.ui.GridStyling} styling
+     */
+    getStyling() {
+      return this.__sizeCalculator.getStyling();
     },
 
     /**
@@ -499,7 +509,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           return comp;
 
         case "headerWidgetFactory":
-          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns())
+          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns());
 
         case "header":
           return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
