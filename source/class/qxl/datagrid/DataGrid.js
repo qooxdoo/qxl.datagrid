@@ -329,8 +329,18 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       };
     },
 
-    _getSizeCalculator() {
+    /**
+     * @returns {qxl.datagrid.ui.GridSizeCalculator} size calculator
+     */
+    getSizeCalculator() {
       return this.__sizeCalculator;
+    },
+
+    /**
+     * @returns {qxl.datagrid.ui.GridStyling} styling
+     */
+    getStyling() {
+      return this.__sizeCalculator.getStyling();
     },
 
     /**

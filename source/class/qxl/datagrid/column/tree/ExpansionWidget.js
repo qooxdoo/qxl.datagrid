@@ -96,6 +96,10 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
   },
 
   members: {
+    _forwardStates: {
+      selected: true
+    },
+
     /**
      * Apply for `value`
      */
