@@ -468,7 +468,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
             let rowCount = this.getDataSource().getSize().getRow();
             const startRowIndex = Math.floor(qxl.datagrid.util.Math.interpolate(0, 100, 0, Math.max(0, rowCount - this.getMaxRows()), position));
             this.setStartRowIndex(startRowIndex);
-            console.log("position: " + position + " start row index: " + startRowIndex);
           });
           control.addListener("changeVisibility", () => this.__onScrollbarVisibility("y"));
           return control;
@@ -499,7 +498,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           return comp;
 
         case "headerWidgetFactory":
-          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns())
+          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns());
 
         case "header":
           return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
