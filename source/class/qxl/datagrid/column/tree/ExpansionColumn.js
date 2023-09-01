@@ -26,6 +26,14 @@
 qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
   extend: qxl.datagrid.column.Column,
 
+  // iconPath, iconPathOptions,
+  properties: {
+    iconPathProvider: {
+      check: "Function",
+      nullable: true
+    }
+  },
+
   members: {
     /**
      * @Override
@@ -38,10 +46,16 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
      * @Override
      */
     bindWidget(widget, model, factory) {
+      // debugger;
       let bindings = super.bindWidget(widget, model);
       let state = factory.getDataSource().getNodeStateFor(model);
       widget.setIndentationLevel(state.level);
       widget.setState(state.state);
+      const iconPathProvider = this.getIconPathProvider();
+      if (iconPathProvider) {
+        const iconPath = iconPathProvider(model);
+        if (iconPath) widget.setIcon(iconPath);
+      }
       widget.addListener("changeState", evt => {
         let state = evt.getData();
         if (state == "open") {

@@ -173,6 +173,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
               column: columnSizeData.columnIndex
             });
             this._add(child);
+            qx.ui.core.queue.Layout.add(child);
             this.__widgetFactory.bindWidget(child, model);
           }
 
@@ -207,6 +208,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         }
         top += rowSizeData.height + verticalSpacing;
       }
+      qx.ui.core.queue.Layout.add(this);
     },
 
     /**

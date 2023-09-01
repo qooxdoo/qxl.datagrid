@@ -29,6 +29,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
     super();
     this._setLayout(new qxl.datagrid.column.tree.ExpansionLayout());
     this._add(this.getChildControl("expander"));
+    this._add(this.getChildControl("icon"));
     this._add(this.getChildControl("label"));
 
     this.addListener("tap", evt => {
@@ -59,15 +60,31 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
       event: "changeState"
     },
 
-    /** Function that when called will return the icon to use
-     *
-     * @param {String} state the state of the node
-     * @return {String?} the image source for the expander, null to not show anything
+    /**
+     * Icon to use when the state is "none"
      */
-    stateIconProvider: {
-      init: null,
-      nullable: true,
-      check: "Function"
+    stateIconNone: {
+      init: "@MaterialIcons/arrow_right/16",
+      check: "String",
+      themeable: true
+    },
+
+    /**
+     * Icon to use when the state is "open"
+     */
+    stateIconOpen: {
+      init: "@MaterialIcons/expand_more/16",
+      check: "String",
+      themeable: true
+    },
+
+    /**
+     * Icon to use when the state is "closed"
+     */
+    stateIconClosed: {
+      init: "@MaterialIcons/chevron_right/16",
+      check: "String",
+      themeable: true
     },
 
     /** Number of pixels to indent for each indentation level */
@@ -118,13 +135,19 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
      * Apply for `state`
      */
     __applyState(value, oldValue) {
-      const STATES = {
-        none: "@MaterialIcons/article/16",
-        open: "@MaterialIcons/folder_open/16",
-        closed: "@MaterialIcons/folder/16"
-      };
-      let fn = this.getStateIconProvider();
-      let icon = fn ? fn(value) : STATES[value];
+      let icon;
+
+      switch (value) {
+        case "none":
+          icon = this.getStateIconNone();
+          break;
+        case "open":
+          icon = this.getStateIconOpen();
+          break;
+        case "closed":
+          icon = this.getStateIconClosed();
+          break;
+      }
 
       let expander = this.getChildControl("expander");
       if (!icon) {
@@ -154,6 +177,13 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
     },
 
     /**
+     * Returns the icon widget.
+     */
+    getIcon() {
+      return this.getChildControl("icon");
+    },
+
+    /**
      * @Override
      */
     _createChildControlImpl(id) {
@@ -164,6 +194,12 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
             anonymous: true
           });
           return expander;
+
+        case "icon":
+          var icon = new qx.ui.basic.Image().set({
+            anonymous: true
+          });
+          return icon;
 
         case "label":
           return new qx.ui.basic.Label().set({
