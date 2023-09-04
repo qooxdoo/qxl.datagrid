@@ -65,46 +65,16 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionLayout", {
       let iconWidth = icon.getSizeHint().width;
       if (!icon.isVisible()) iconWidth = 0;
 
-      if (this.getPosition() == "start" || true) {
+      if (this.getPosition() == "start") {
         if (expander.isVisible()) {
-          /*
-          console.log({
-            who: "expander",
-            renderArgs: { left, zero: 0, expanderWidth, availHeight },
-            label: label.getValue()
-          });
-          */
           expander.renderLayout(left, 0, expanderWidth, availHeight);
           left += expanderWidth + spacing;
         }
-        console.log("icon1 left=" + left);
         icon.renderLayout(left, 0, iconWidth, availHeight);
-        /*
-        console.log({
-          who: "icon",
-          renderArgs: { left, zero: 0, iconWidth, availHeight },
-          label: label.getValue()
-        });
-        */
         left += iconWidth + spacing;
         label.renderLayout(left, 0, availWidth - left, availHeight);
-        /*
-        console.log({
-          who: "label",
-          renderArgs: { left, zero: 0, availWidth, availHeight },
-          label: label.getValue()
-        });
-        */
       } else {
         let width = availWidth - left - expanderWidth - spacing;
-        /*
-        console.log({
-          who: "icon2",
-          renderArgs: { left, zero: 0, iconWidth, availHeight },
-          label: label.getValue()
-        });
-        */
-        console.log("icon2 left=" + left);
         icon.renderLayout(left, 0, iconWidth, availHeight);
         left += iconWidth + spacing;
         label.renderLayout(left, 0, width - iconWidth, availHeight);
