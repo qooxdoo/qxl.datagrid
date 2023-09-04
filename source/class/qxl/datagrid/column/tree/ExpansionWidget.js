@@ -43,6 +43,11 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
   },
 
   properties: {
+    appearance: {
+      refine: true,
+      init: "qxl-datagrid-cell"
+    },
+
     /** The text to display */
     value: {
       init: null,
