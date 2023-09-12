@@ -217,6 +217,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
       let childRowMetas = [];
       for (let childNode of children) {
+        if (!childNode) continue;
         const childInspector = this.getNodeInspectorFactory()(childNode);
         let childRowMeta = this.__createRowMetaData(childNode, rowMetadata.level + 1);
         childRowMeta.canHaveChildren = childInspector.canHaveChildren(childNode);
