@@ -58,7 +58,9 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
       const iconPathProvider = this.getIconPathProvider();
       if (iconPathProvider) {
         const iconPath = iconPathProvider(model);
-        if (iconPath) widget.setIcon(iconPath);
+        if (iconPath) {
+          widget.setIcon(iconPath);
+        }
       }
       widget.addListener("changeState", evt => {
         let state = evt.getData();

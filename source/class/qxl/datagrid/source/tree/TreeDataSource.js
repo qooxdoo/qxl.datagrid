@@ -99,8 +99,12 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
           let row = this.__createRowMetaData(value, -1);
           this.__rowMetaDataByNode[value.toHashCode()] = row;
           row.canHaveChildren = inspector.canHaveChildren(value);
-          if (!row.canHaveChildren) throw new Error("Root must be able to have children!");
-          if (!row.childrenChangeBinding) row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, () => this.refreshNodeChildren(value));
+          if (!row.canHaveChildren) {
+            throw new Error("Root must be able to have children!");
+          }
+          if (!row.childrenChangeBinding) {
+            row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, () => this.refreshNodeChildren(value));
+          }
           await this._insertChildRows(value);
         });
       }
@@ -217,7 +221,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
       let childRowMetas = [];
       for (let childNode of children) {
-        if (!childNode) continue;
+        if (!childNode) {
+          continue;
+        }
         const childInspector = this.getNodeInspectorFactory()(childNode);
         let childRowMeta = this.__createRowMetaData(childNode, rowMetadata.level + 1);
         childRowMeta.canHaveChildren = childInspector.canHaveChildren(childNode);

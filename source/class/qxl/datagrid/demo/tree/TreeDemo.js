@@ -69,6 +69,7 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
           var tb = new qx.ui.toolbar.ToolBar();
           tb.add(this.getQxObject("btnAdd"));
           tb.add(this.getQxObject("btnRemoveChild"));
+          tb.add(this.getQxObject("btnExpandAll"));
           return tb;
 
         case "btnAdd":
@@ -93,6 +94,28 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
           });
           return btn;
 
+        case "btnExpandAll":
+          var btn = new qx.ui.toolbar.Button("Expand All");
+          btn.addListener("execute", async () => {
+            var dataSource = this.getQxObject("dataSource");
+
+            const expandAll = async (node, depth) => {
+              await dataSource.expandNode(node);
+              if (depth <= 2) {
+                let inspector = dataSource.getNodeInspectorFactory()(node);
+                let nodes = await inspector.getChildrenOf(node);
+                if (nodes) {
+                  for (let child of nodes) {
+                    await expandAll(child, depth + 1);
+                  }
+                }
+              }
+            };
+
+            await expandAll(dataSource.getRoot(), 1);
+          });
+          return btn;
+
         case "columns":
           var columns = new qxl.datagrid.column.Columns();
           columns.add(
@@ -100,7 +123,10 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
               caption: "Name",
               path: "name",
               minWidth: 160,
-              flex: 1
+              flex: 1,
+              iconPathProvider: node => {
+                return node.getType() == "directory" ? "@MaterialIcons/folder/16" : "@MaterialIcons/description/16";
+              }
             })
           );
           columns.add(

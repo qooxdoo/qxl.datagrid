@@ -57,6 +57,15 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
       apply: "__applyValue"
     },
 
+    /** The icon to display, next to the expander icon */
+    icon: {
+      init: null,
+      nullable: true,
+      check: "String",
+      event: "changeIcon",
+      apply: "__applyIcon"
+    },
+
     /** State of tne expander, ie whether there are children */
     state: {
       init: "none",
@@ -133,6 +142,13 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
     },
 
     /**
+     * Apply for `icon`
+     */
+    __applyIcon(value) {
+      this.getChildControl("icon").setSource(value || null);
+    },
+
+    /**
      * Apply for `indentationLevel`
      */
     __applyIndentationLevel(value, oldValue) {
@@ -173,29 +189,6 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
           visibility: "visible"
         });
       }
-    },
-
-    /**
-     * @Override
-     */
-    getExpander() {
-      return this.getChildControl("expander");
-    },
-
-    /**
-     * Returns the widget for displaying the object
-     *
-     * @Override
-     */
-    getLabel() {
-      return this.getChildControl("label");
-    },
-
-    /**
-     * Returns the icon widget.
-     */
-    getIcon() {
-      return this.getChildControl("icon");
     },
 
     /**
