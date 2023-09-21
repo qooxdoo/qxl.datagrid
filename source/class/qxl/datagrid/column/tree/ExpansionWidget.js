@@ -71,6 +71,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
     stateIconNone: {
       init: "@MaterialIcons/arrow_right/16",
       check: "String",
+      apply: "_updateIcon",
       themeable: true
     },
 
@@ -80,6 +81,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
     stateIconOpen: {
       init: "@MaterialIcons/expand_more/16",
       check: "String",
+      apply: "_updateIcon",
       themeable: true
     },
 
@@ -89,6 +91,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
     stateIconClosed: {
       init: "@MaterialIcons/chevron_right/16",
       check: "String",
+      apply: "_updateIcon",
       themeable: true
     },
 
@@ -140,9 +143,16 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
      * Apply for `state`
      */
     __applyState(value, oldValue) {
+      this._updateIcon();
+    },
+
+    /**
+     * Called to update the icon, because one or several properties have been updated
+     */
+    _updateIcon() {
       let icon;
 
-      switch (value) {
+      switch (this.getState()) {
         case "none":
           icon = this.getStateIconNone();
           break;

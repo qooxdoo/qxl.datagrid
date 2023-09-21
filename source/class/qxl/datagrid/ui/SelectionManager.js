@@ -129,7 +129,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * Batch handler to fires the selection change
      */
     __fireSelectionChange() {
-      let newData = this.__selection.toArray();
+      let newData = this.__selection;
       let oldData = this.__selectionChangeOldData;
       this.__selectionChangeOldData = newData;
       this.fireDataEvent("changeSelection", newData, oldData);
