@@ -244,18 +244,18 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
        * @param {qx.data.Object} node The node to return the path for
        * @returns {qx.data.Array} The path. It does not include the root and the node itself.
        */
-      const getPathToNode = node => {
+      const getPathToNode = async node => {
         let path = new qx.data.Array();
         let inspector = this.getNodeInspectorFactory()();
-        var parent = inspector.getParentOf(node);
-        while (parent && inspector.getParentOf(parent)) {
+        var parent = await inspector.getParentOf(node);
+        while (parent && (await inspector.getParentOf(parent))) {
           path.insertAt(0, parent);
-          parent = inspector.getParentOf(parent);
+          parent = await inspector.getParentOf(parent);
         }
         return path;
       };
       await this.queue(async () => {
-        let ancestors = getPathToNode(node);
+        let ancestors = await getPathToNode(node);
         if (!ancestors) throw new Error("Cannot find node in tree");
         for (var a = 0; a < ancestors.length; a++) {
           await this._expandNode(ancestors.getItem(a));

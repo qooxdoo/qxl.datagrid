@@ -49,6 +49,10 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
       // debugger;
       let bindings = super.bindWidget(widget, model);
       let state = factory.getDataSource().getNodeStateFor(model);
+      if (state == null) {
+        debugger;
+        return bindings;
+      }
       widget.setIndentationLevel(state.level);
       widget.setState(state.state);
       const iconPathProvider = this.getIconPathProvider();
