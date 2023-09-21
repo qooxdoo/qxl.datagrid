@@ -44,9 +44,9 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionLayout", {
      */
     renderLayout(availWidth, availHeight, padding) {
       let widget = this._getWidget();
-      let expander = widget.getExpander();
-      let icon = widget.getIcon();
-      let label = widget.getLabel();
+      let expander = widget.getChildControl("expander");
+      let icon = widget.getChildControl("icon");
+      let label = widget.getChildControl("label");
       label.getSizeHint();
 
       let left = widget.getIndentationLevel() * widget.getSpacePerIndentation();
@@ -87,10 +87,12 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionLayout", {
 
     _computeSizeHint() {
       let widget = this._getWidget();
-      let expander = widget.getExpander();
+      let expander = widget.getChildControl("expander");
+
       let left = widget.getIndentationLevel() * widget.getSpacePerIndentation();
       let spacing = this.getSpacing();
       let expanderWidth = widget.getExpanderWidth();
+
       if (expanderWidth === null) {
         if (expander.isVisible()) {
           let hint = expander.getSizeHint(true);
@@ -107,12 +109,13 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionLayout", {
       }
 
       let width = left + expanderWidth + spacing;
-      let label = widget.getLabel();
+      let label = widget.getChildControl("label");
       let hint = label.getSizeHint(true);
       let labelWidth = hint.width;
       if (hint.minWidth && hint.minWidth > labelWidth) {
         labelWidth = hint.minWidth;
       }
+
       width += labelWidth;
       return {
         width: width,

@@ -51,6 +51,8 @@ qx.Class.define("qxl.datagrid.test.source.TreeDataSource", {
       let ds = new qxl.datagrid.source.tree.TreeDataSource(() => inspector, columns);
       ds.setRoot(model);
       await ds.flushQueue();
+      ds.expandNode(model);
+      await ds.flushQueue();
 
       const testValue = (row, expected) => {
         let pos = new qxl.datagrid.source.Position(row, 0);
