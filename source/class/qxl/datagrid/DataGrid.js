@@ -297,7 +297,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     getMaxRows() {
       const styling = this.__sizeCalculator.getStyling();
-      return Math.floor(this.getQxObject("oddEvenRows").getBounds().height / (styling.getMinRowHeight() || styling.getMaxRowHeight())) - 1;
+      return Math.floor(this.getQxObject("oddEvenRows").getBounds().height / (styling.getMaxRowHeight() ?? styling.getMinRowHeight())) - 4;
     },
 
     /**
