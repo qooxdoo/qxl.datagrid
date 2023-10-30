@@ -252,7 +252,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
        */
       const getPathToNode = async node => {
         let path = new qx.data.Array();
-        let inspector = this.getNodeInspectorFactory()();
+        let inspector = this.getNodeInspectorFactory()(node);
         var parent = await inspector.getParentOf(node);
         while (parent && (await inspector.getParentOf(parent))) {
           path.insertAt(0, parent);
