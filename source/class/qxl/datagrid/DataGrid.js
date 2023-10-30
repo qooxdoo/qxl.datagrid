@@ -301,14 +301,19 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     /**
-     * Scrolls the tree such that the selected item is in the center.
-     * If it's not possible to center the item, it is shown as close to the center as possible.
+     * Scrolls the tree such that the selected item is in view.
+     * If selection is already in view, nothing happens.
+     * Otherwise, the selection is scrolled to the center of the view.
+     * If it's not possible to center the item (i.e. we would have to scroll past the top), it is shown as close to the center as possible.
      */
     scrollToSelection() {
       let selectedModel = this.getSelection().getItem(0);
       if (!selectedModel) throw new Error("Nothing is selected.");
       let selectionIndex = this.getDataSource().getPositionOfModel(selectedModel).getRow();
       let maxRowCount = this.getMaxRows();
+      const startRowIndex = this.getStartRowIndex();
+      const endRowIndex = startRowIndex + maxRowCount - 1;
+      if (selectionIndex >= startRowIndex && selectionIndex <= endRowIndex) return;
       this.setStartRowIndex(Math.max(0, selectionIndex - Math.floor(maxRowCount / 2)));
     },
 
