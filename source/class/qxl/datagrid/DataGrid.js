@@ -164,6 +164,37 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     }
   },
 
+  objects: {
+    dataPane() {
+      var comp = new qx.ui.container.Composite(new qx.ui.layout.VBox());
+      comp.add(this.getQxObject("header"));
+      var comp2 = new qx.ui.container.Composite(new qxl.datagrid.ui.layout.Layered());
+      comp2.add(this.getQxObject("widgetPane"), { layer: 0 });
+      comp2.add(this.getQxObject("oddEvenRows"), { layer: 1 });
+      comp.add(comp2, { flex: 1 });
+      return comp;
+    },
+
+    oddEvenRows() {
+      return new qxl.datagrid.ui.OddEvenRowBackgrounds(this.__sizeCalculator, this.getDataSource(), this.__selectionManager);
+    },
+
+    paneWidgetFactory() {
+      return new qxl.datagrid.ui.factory.SimpleWidgetFactory(this.getColumns());
+    },
+
+    widgetPane() {
+      return new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource(), this.__selectionManager);
+    },
+
+    headerWidgetFactory() {
+      return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns());
+    },
+    header() {
+      return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
+    }
+  },
+
   events: {
     /** Fired when the `selection` pseudo property changes */
     changeSelection: "qx.event.type.Data",
@@ -504,35 +535,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     /**
      * @Override
-     */
-    _createQxObjectImpl(id) {
-      switch (id) {
-        case "dataPane":
-          var comp = new qx.ui.container.Composite(new qx.ui.layout.VBox());
-          comp.add(this.getQxObject("header"));
-          var comp2 = new qx.ui.container.Composite(new qxl.datagrid.ui.layout.Layered());
-          comp2.add(this.getQxObject("widgetPane"), { layer: 0 });
-          comp2.add(this.getQxObject("oddEvenRows"), { layer: 1 });
-          comp.add(comp2, { flex: 1 });
-          return comp;
-
-        case "headerWidgetFactory":
-          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns());
-
-        case "header":
-          return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
-
-        case "oddEvenRows":
-          return new qxl.datagrid.ui.OddEvenRowBackgrounds(this.__sizeCalculator, this.getDataSource(), this.__selectionManager);
-
-        case "paneWidgetFactory":
-          return new qxl.datagrid.ui.factory.SimpleWidgetFactory(this.getColumns());
-
-        case "widgetPane":
-          return new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource(), this.__selectionManager);
-      }
-      return super._createQxObjectImpl(id);
-    },
+     *    
 
     /**
      * Updates the display after changes to data or columns etc

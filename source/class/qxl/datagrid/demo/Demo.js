@@ -56,43 +56,38 @@ qx.Class.define("qxl.datagrid.demo.Demo", {
     });
   },
 
-  members: {
-    /**
-     * @override
-     */
-    _createQxObjectImpl(id) {
-      switch (id) {
-        case "pgArrayDemo":
-          const arrayPage = new qx.ui.tabview.Page("Array Demo");
-          arrayPage.setLayout(new qx.ui.layout.Grow());
-          arrayPage.addListenerOnce("appear", async () => {
-            let demo = new qxl.datagrid.demo.array.ArrayDemo();
-            arrayPage.add(demo);
-            await demo.init();
-          });
-          return arrayPage;
+  objects: {
+    pgArrayDemo() {
+      const arrayPage = new qx.ui.tabview.Page("Array Demo");
+      arrayPage.setLayout(new qx.ui.layout.Grow());
+      arrayPage.addListenerOnce("appear", async () => {
+        let demo = new qxl.datagrid.demo.array.ArrayDemo();
+        arrayPage.add(demo);
+        await demo.init();
+      });
+      return arrayPage;
+    },
 
-        case "pgTreeDemo":
-          const treePage = new qx.ui.tabview.Page("Tree Demo");
-          treePage.setLayout(new qx.ui.layout.Grow());
-          treePage.addListenerOnce("appear", async () => {
-            let demo = new qxl.datagrid.demo.tree.TreeDemo();
-            treePage.add(demo);
-            await demo.init();
-          });
-          return treePage;
+    pgTreeDemo() {
+      const treePage = new qx.ui.tabview.Page("Tree Demo");
+      treePage.setLayout(new qx.ui.layout.Grow());
+      treePage.addListenerOnce("appear", async () => {
+        let demo = new qxl.datagrid.demo.tree.TreeDemo();
+        treePage.add(demo);
+        await demo.init();
+      });
+      return treePage;
+    },
 
-        case "pgBigGridDemo":
-          const bigGridPage = new qx.ui.tabview.Page("Big Grid Demo");
-          bigGridPage.setLayout(new qx.ui.layout.Grow());
-          bigGridPage.addListenerOnce("appear", async () => {
-            let demo = new qxl.datagrid.demo.biggrid.BigGridDemo();
-            bigGridPage.add(demo);
-            await demo.init();
-          });
-          return bigGridPage;
-      }
-      return super._createQxObjectImpl(id);
+    pgBigGridDemo() {
+      const bigGridPage = new qx.ui.tabview.Page("Big Grid Demo");
+      bigGridPage.setLayout(new qx.ui.layout.Grow());
+      bigGridPage.addListenerOnce("appear", async () => {
+        let demo = new qxl.datagrid.demo.biggrid.BigGridDemo();
+        bigGridPage.add(demo);
+        await demo.init();
+      });
+      return bigGridPage;
     }
   }
 });
