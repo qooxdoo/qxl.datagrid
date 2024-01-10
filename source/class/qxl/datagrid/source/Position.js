@@ -45,18 +45,13 @@ qx.Class.define("qxl.datagrid.source.Position", {
   construct(...args) {
     super();
     let { row, column } = qxl.datagrid.source.Position.__coerceValues(args);
-    if (row !== undefined && row !== null) {
-      this.setRow(row);
-    }
-    if (column !== undefined && column !== null) {
-      this.setColumn(column);
-    }
+    this.setRow(row !== undefined && row !== null ? row : 0);
+    this.setColumn(column !== undefined && column !== null ? column : 0);
   },
 
   properties: {
     /** The row this position represents */
     row: {
-      init: 0,
       check: "Integer",
       event: "changeRow",
       apply: "__applyRow"
@@ -64,7 +59,6 @@ qx.Class.define("qxl.datagrid.source.Position", {
 
     /** The column this position represents */
     column: {
-      init: 0,
       check: "Integer",
       event: "changeColumn",
       apply: "__applyColumn"
@@ -131,15 +125,19 @@ qx.Class.define("qxl.datagrid.source.Position", {
     /**
      * Apply for `row`
      */
-    __applyRow(value) {
-      this.fireEvent("change");
+    __applyRow(_, oldValue) {
+      if (oldValue !== undefined && oldValue !== null) {
+        this.fireEvent("change");
+      }
     },
 
     /**
      * Apply for `column`
      */
-    __applyColumn(value) {
-      this.fireEvent("change");
+    __applyColumn(_, oldValue) {
+      if (oldValue !== undefined && oldValue !== null) {
+        this.fireEvent("change");
+      }
     }
   },
 
