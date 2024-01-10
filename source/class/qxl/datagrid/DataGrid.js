@@ -164,6 +164,37 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     }
   },
 
+  objects: {
+    dataPane() {
+      var comp = new qx.ui.container.Composite(new qx.ui.layout.VBox());
+      comp.add(this.getQxObject("header"));
+      var comp2 = new qx.ui.container.Composite(new qxl.datagrid.ui.layout.Layered());
+      comp2.add(this.getQxObject("widgetPane"), { layer: 0 });
+      comp2.add(this.getQxObject("oddEvenRows"), { layer: 1 });
+      comp.add(comp2, { flex: 1 });
+      return comp;
+    },
+
+    oddEvenRows() {
+      return new qxl.datagrid.ui.OddEvenRowBackgrounds(this.__sizeCalculator, this.getDataSource(), this.__selectionManager);
+    },
+
+    paneWidgetFactory() {
+      return new qxl.datagrid.ui.factory.SimpleWidgetFactory(this.getColumns());
+    },
+
+    widgetPane() {
+      return new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource(), this.__selectionManager);
+    },
+
+    headerWidgetFactory() {
+      return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns());
+    },
+    header() {
+      return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
+    }
+  },
+
   events: {
     /** Fired when the `selection` pseudo property changes */
     changeSelection: "qx.event.type.Data",
@@ -297,20 +328,29 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     getMaxRows() {
       const styling = this.__sizeCalculator.getStyling();
-      return Math.floor(this.getQxObject("oddEvenRows").getBounds().height / (styling.getMinRowHeight() || styling.getMaxRowHeight())) - 1;
+      return Math.floor(this.getQxObject("oddEvenRows").getBounds().height / (styling.getMaxRowHeight() ?? styling.getMinRowHeight())) - 4;
     },
 
     /**
-     * Scrolls the tree such that the selected item is in the center.
-     * If it's not possible to center the item, it is shown as close to the center as possible.
+     * Scrolls the tree such that the selected item is in view.
+     * If selection is already in view, nothing happens.
+     * Otherwise, the selection is scrolled to the center of the view.
+     * If it's not possible to center the item (i.e. we would have to scroll past the top), it is shown as close to the center as possible.
      */
     scrollToSelection() {
       let selectedModel = this.getSelection().getLength() ? this.getSelection().getItem(0) : null;
-      if (selectedModel) {
-        let selectionIndex = this.getDataSource().getPositionOfModel(selectedModel).getRow();
-        let maxRowCount = this.getMaxRows();
-        this.setStartRowIndex(Math.max(0, selectionIndex - Math.floor(maxRowCount / 2)));
+      if (!selectedModel) {
+        throw new Error("Nothing is selected");
       }
+
+      let selectionIndex = this.getDataSource().getPositionOfModel(selectedModel).getRow();
+      let maxRowCount = this.getMaxRows();
+      let startRowIndex = this.getStartRowIndex();
+      let endRowIndex = startRowIndex + maxRowCount - 1;
+      if (selectionIndex >= startRowIndex && selectionIndex <= endRowIndex) {
+        return;
+      }
+      this.setStartRowIndex(Math.max(0, selectionIndex - Math.floor(maxRowCount / 2)));
     },
 
     /**
@@ -500,35 +540,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     /**
      * @Override
-     */
-    _createQxObjectImpl(id) {
-      switch (id) {
-        case "dataPane":
-          var comp = new qx.ui.container.Composite(new qx.ui.layout.VBox());
-          comp.add(this.getQxObject("header"));
-          var comp2 = new qx.ui.container.Composite(new qxl.datagrid.ui.layout.Layered());
-          comp2.add(this.getQxObject("widgetPane"), { layer: 0 });
-          comp2.add(this.getQxObject("oddEvenRows"), { layer: 1 });
-          comp.add(comp2, { flex: 1 });
-          return comp;
-
-        case "headerWidgetFactory":
-          return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns());
-
-        case "header":
-          return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
-
-        case "oddEvenRows":
-          return new qxl.datagrid.ui.OddEvenRowBackgrounds(this.__sizeCalculator, this.getDataSource(), this.__selectionManager);
-
-        case "paneWidgetFactory":
-          return new qxl.datagrid.ui.factory.SimpleWidgetFactory(this.getColumns());
-
-        case "widgetPane":
-          return new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource(), this.__selectionManager);
-      }
-      return super._createQxObjectImpl(id);
-    },
+     *    
 
     /**
      * Updates the display after changes to data or columns etc

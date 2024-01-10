@@ -76,6 +76,43 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
     this.add(grid, { flex: 1 });
   },
 
+  objects: {
+    dataSource() {
+      // Create a massive data source with 1,000,000 rows and 10,000 columns
+      return new qxl.datagrid.demo.biggrid.DummyDataSource(1000000, 10000);
+    },
+
+    grid() {
+      var dataSource = this.getQxObject("dataSource");
+      var columns = new qxl.datagrid.column.Columns();
+      for (let columnIndex = 0; columnIndex < dataSource.getNumColumns(); columnIndex++) {
+        // One column definition does not take uyp much space, so although we create 10,000
+        //  columns that shouldnt be much of a problem
+        let column = new qxl.datagrid.column.TextColumn().set({
+          caption: qxl.datagrid.util.Labels.getColumnLetters(columnIndex),
+          path: "label",
+          minWidth: 80
+        });
+        columns.add(column);
+      }
+
+      var grid = new qxl.datagrid.DataGrid(columns).set({
+        dataSource: dataSource
+      });
+
+      // Adjust the default selection style
+      grid.getSelectionManager().set({
+        selectionStyle: "cell",
+        selectionMode: "multi"
+      });
+      grid.addListener("changeSelection", evt => {
+        let sel = evt.getData();
+        console.log("Selection changed to " + sel.map(model => model.toString().join(",")));
+      });
+      return grid;
+    }
+  },
+
   members: {
     /**
      * Called once to get the demo running
@@ -88,46 +125,6 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       const valueAt = (row, column) => dataSource.getModelForPosition(new qxl.datagrid.source.Position(row, column));
       grid.getSelection().replace([valueAt(1, 0), valueAt(2, 0), valueAt(3, 0)]);
       grid.getSelectionManager().setFocused(valueAt(4, 4));
-    },
-
-    /**
-     * @override
-     */
-    _createQxObjectImpl(id) {
-      switch (id) {
-        case "dataSource":
-          // Create a massive data source with 1,000,000 rows and 10,000 columns
-          return new qxl.datagrid.demo.biggrid.DummyDataSource(1000000, 10000);
-
-        case "grid":
-          var dataSource = this.getQxObject("dataSource");
-          var columns = new qxl.datagrid.column.Columns();
-          for (let columnIndex = 0; columnIndex < dataSource.getNumColumns(); columnIndex++) {
-            // One column definition does not take uyp much space, so although we create 10,000
-            //  columns that shouldnt be much of a problem
-            let column = new qxl.datagrid.column.TextColumn().set({
-              caption: qxl.datagrid.util.Labels.getColumnLetters(columnIndex),
-              path: "label",
-              minWidth: 80
-            });
-            columns.add(column);
-          }
-
-          var grid = new qxl.datagrid.DataGrid(columns).set({
-            dataSource: dataSource
-          });
-
-          // Adjust the default selection style
-          grid.getSelectionManager().set({
-            selectionStyle: "cell",
-            selectionMode: "multi"
-          });
-          grid.addListener("changeSelection", evt => {
-            let sel = evt.getData();
-            console.log("Selection changed to " + sel.map(model => model.toString().join(",")));
-          });
-          return grid;
-      }
     }
   }
 });

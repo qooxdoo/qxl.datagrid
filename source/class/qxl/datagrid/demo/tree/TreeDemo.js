@@ -48,121 +48,122 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
     this.add(grid, { flex: 1 });
   },
 
+  objects: {
+    dataSource() {
+      var inspector = new qxl.datagrid.demo.tree.TreeDemoNodeInspector();
+      return new qxl.datagrid.source.tree.TreeDataSource(() => inspector, this.getQxObject("columns"));
+    },
+
+    toolbar() {
+      var tb = new qx.ui.toolbar.ToolBar();
+      tb.add(this.getQxObject("btnAdd"));
+      tb.add(this.getQxObject("btnRemoveChild"));
+      tb.add(this.getQxObject("btnExpandAll"));
+      return tb;
+    },
+
+    btnAdd() {
+      var btn = new qx.ui.toolbar.Button("Add child");
+      btn.addListener("execute", () => {
+        let node = new qxl.datagrid.demo.tree.TreeDemoFileNode().set({
+          name: "Cat pictures",
+          permissions: "-rw-",
+          lastModified: new Date()
+        });
+        this._getSelectedNode().getChildren().push(node);
+        this._updateUi();
+      });
+      return btn;
+    },
+
+    btnRemoveChild() {
+      var btn = new qx.ui.toolbar.Button("Remove last child");
+      btn.addListener("execute", () => {
+        let selectedNode = this._getSelectedNode();
+        selectedNode.getChildren().removeAt(selectedNode.getChildren().length - 1);
+        this._updateUi();
+      });
+      return btn;
+    },
+
+    btnExpandAll() {
+      var btn = new qx.ui.toolbar.Button("Expand All");
+      btn.addListener("execute", async () => {
+        var dataSource = this.getQxObject("dataSource");
+
+        const expandAll = async (node, depth) => {
+          await dataSource.expandNode(node);
+          if (depth <= 2) {
+            let inspector = dataSource.getNodeInspectorFactory()(node);
+            let nodes = await inspector.getChildrenOf(node);
+            if (nodes) {
+              for (let child of nodes) {
+                await expandAll(child, depth + 1);
+              }
+            }
+          }
+        };
+
+        await expandAll(dataSource.getRoot(), 1);
+      });
+      return btn;
+    },
+
+    columns() {
+      var columns = new qxl.datagrid.column.Columns();
+      columns.add(
+        new qxl.datagrid.column.tree.ExpansionColumn().set({
+          caption: "Name",
+          path: "name",
+          minWidth: 160,
+          flex: 1,
+          iconPathProvider: node => {
+            return node.getType() == "directory" ? "@MaterialIcons/folder/16" : "@MaterialIcons/description/16";
+          }
+        })
+      );
+      columns.add(
+        new qxl.datagrid.column.FileSizeColumn().set({
+          caption: "Size",
+          path: "size",
+          minWidth: 70
+        })
+      );
+      columns.add(
+        new qxl.datagrid.column.TextColumn().set({
+          caption: "Permissions",
+          path: "permissions",
+          minWidth: 100
+        })
+      );
+      columns.add(
+        new qxl.datagrid.column.DateColumn().set({
+          caption: "Last Modified",
+          path: "lastModified",
+          minWidth: 240,
+          dateFormat: new qx.util.format.DateFormat("dd/MM/yyyy hh:mm")
+        })
+      );
+      return columns;
+    },
+
+    grid() {
+      var dataSource = this.getQxObject("dataSource");
+
+      var grid = new qxl.datagrid.DataGrid(this.getQxObject("columns")).set({
+        dataSource: dataSource
+      });
+      const sel = grid.getSelection();
+      sel.addListener("change", this._updateUi, this);
+      return grid;
+    }
+  },
   members: {
     /**
      * One time initialisation
      */
     async init() {
       this.getQxObject("dataSource").setRoot(await qxl.datagrid.demo.tree.TreeDemoFileNode.createDummyRoot());
-    },
-
-    /**
-     * @override
-     */
-    _createQxObjectImpl(id) {
-      switch (id) {
-        case "dataSource":
-          var inspector = new qxl.datagrid.demo.tree.TreeDemoNodeInspector();
-          return new qxl.datagrid.source.tree.TreeDataSource(() => inspector, this.getQxObject("columns"));
-
-        case "toolbar":
-          var tb = new qx.ui.toolbar.ToolBar();
-          tb.add(this.getQxObject("btnAdd"));
-          tb.add(this.getQxObject("btnRemoveChild"));
-          tb.add(this.getQxObject("btnExpandAll"));
-          return tb;
-
-        case "btnAdd":
-          var btn = new qx.ui.toolbar.Button("Add child");
-          btn.addListener("execute", () => {
-            let node = new qxl.datagrid.demo.tree.TreeDemoFileNode().set({
-              name: "Cat pictures",
-              permissions: "-rw-",
-              lastModified: new Date()
-            });
-            this._getSelectedNode().getChildren().push(node);
-            this._updateUi();
-          });
-          return btn;
-
-        case "btnRemoveChild":
-          var btn = new qx.ui.toolbar.Button("Remove last child");
-          btn.addListener("execute", () => {
-            let selectedNode = this._getSelectedNode();
-            selectedNode.getChildren().removeAt(selectedNode.getChildren().length - 1);
-            this._updateUi();
-          });
-          return btn;
-
-        case "btnExpandAll":
-          var btn = new qx.ui.toolbar.Button("Expand All");
-          btn.addListener("execute", async () => {
-            var dataSource = this.getQxObject("dataSource");
-
-            const expandAll = async (node, depth) => {
-              await dataSource.expandNode(node);
-              if (depth <= 2) {
-                let inspector = dataSource.getNodeInspectorFactory()(node);
-                let nodes = await inspector.getChildrenOf(node);
-                if (nodes) {
-                  for (let child of nodes) {
-                    await expandAll(child, depth + 1);
-                  }
-                }
-              }
-            };
-
-            await expandAll(dataSource.getRoot(), 1);
-          });
-          return btn;
-
-        case "columns":
-          var columns = new qxl.datagrid.column.Columns();
-          columns.add(
-            new qxl.datagrid.column.tree.ExpansionColumn().set({
-              caption: "Name",
-              path: "name",
-              minWidth: 160,
-              flex: 1,
-              iconPathProvider: node => {
-                return node.getType() == "directory" ? "@MaterialIcons/folder/16" : "@MaterialIcons/description/16";
-              }
-            })
-          );
-          columns.add(
-            new qxl.datagrid.column.FileSizeColumn().set({
-              caption: "Size",
-              path: "size",
-              minWidth: 70
-            })
-          );
-          columns.add(
-            new qxl.datagrid.column.TextColumn().set({
-              caption: "Permissions",
-              path: "permissions",
-              minWidth: 100
-            })
-          );
-          columns.add(
-            new qxl.datagrid.column.DateColumn().set({
-              caption: "Last Modified",
-              path: "lastModified",
-              minWidth: 240,
-              dateFormat: new qx.util.format.DateFormat("dd/MM/yyyy hh:mm")
-            })
-          );
-          return columns;
-
-        case "grid":
-          var dataSource = this.getQxObject("dataSource");
-
-          var grid = new qxl.datagrid.DataGrid(this.getQxObject("columns")).set({
-            dataSource: dataSource
-          });
-          const sel = grid.getSelection();
-          sel.addListener("change", this._updateUi, this);
-          return grid;
-      }
     },
 
     _getSelectedNode() {
