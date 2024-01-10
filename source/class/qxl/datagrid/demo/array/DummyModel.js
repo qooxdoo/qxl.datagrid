@@ -94,8 +94,9 @@ qx.Class.define("qxl.datagrid.demo.array.DummyModel", {
         "Hawk",
         "Falcon",
         "Vulture",
-        "Penguin",
+        "Penguin"
       ];
+
       return nouns[Math.floor(Math.random() * nouns.length)];
     },
 

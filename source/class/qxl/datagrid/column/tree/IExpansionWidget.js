@@ -20,7 +20,7 @@
  *
  * *********************************************************************** */
 
-qx.Interface.define( "qxl.datagrid.column.tree.IExpansionWidget", {
+qx.Interface.define("qxl.datagrid.column.tree.IExpansionWidget", {
   properties: {
     /** How deep the indentation level is */
     indentationLevel: {

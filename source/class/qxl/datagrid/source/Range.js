@@ -275,7 +275,7 @@ qx.Class.define("qxl.datagrid.source.Range", {
      */
     __applyXxxx(value) {
       if (value) {
-        value.addListener("change", evt => this.fireEvent("change"), this);
+        value.addListener("change", evt => this.fireEvent("change"));
       }
     }
   },

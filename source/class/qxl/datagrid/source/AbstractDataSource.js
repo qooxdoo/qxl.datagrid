@@ -69,7 +69,9 @@ qx.Class.define("qxl.datagrid.source.AbstractDataSource", {
      */
     _parseDataKey(str) {
       let pos = 5;
-      if (str.length !== 11) pos = str.indexOf(":");
+      if (str.length !== 11) {
+        pos = str.indexOf(":");
+      }
       let row = parseInt(str.substring(0, pos), 10);
       let column = parseInt(str.substring(pos + 1), 10);
       return { row, column };

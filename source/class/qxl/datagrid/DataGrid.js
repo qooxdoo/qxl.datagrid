@@ -423,7 +423,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @param {Integer} pos
      */
     scrollToX(pos) {
-      // TODO
+      /* TODO */
     },
 
     /**
@@ -432,7 +432,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @param {Integer} pos
      */
     scrollToY(pos) {
-      //TODO
+      /* TODO */
     },
 
     /**
@@ -446,7 +446,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
 
       let size = this.getDataSource().getSize();
-
       let scrollbarX = this.getChildControl("scrollbar-x");
       let columns = this.getColumns();
       let showX = this.getScrollbarX();
@@ -518,7 +517,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
           control.exclude();
           control.addListener("scroll", e => {
-            if (this.__inApplyStartRowIndex) return;
+            if (this.__inApplyStartRowIndex) {
+              return;
+            }
             let position = e.getData();
             let rowCount = this.getDataSource().getSize().getRow();
             const startRowIndex = Math.floor(qxl.datagrid.util.Math.interpolate(0, 100, 0, Math.max(0, rowCount - this.getMaxRows()), position));
@@ -537,10 +538,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
       return super._createChildControlImpl(id);
     },
-
-    /**
-     * @Override
-     *    
 
     /**
      * Updates the display after changes to data or columns etc

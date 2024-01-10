@@ -262,7 +262,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       };
       await this.queue(async () => {
         let ancestors = await getPathToNode(node);
-        if (!ancestors) throw new Error("Cannot find node in tree");
+        if (!ancestors) {
+          throw new Error("Cannot find node in tree");
+        }
         for (var a = 0; a < ancestors.length; a++) {
           await this._expandNode(ancestors.getItem(a));
         }

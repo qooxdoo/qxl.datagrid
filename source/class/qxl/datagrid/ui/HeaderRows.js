@@ -67,9 +67,9 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         // prettier-ignore
-        if (cellData.row > numHeaderRows || 
-            cellData.column < minColumnIndex || 
-            cellData.column > maxColumnIndex) {
+        if (cellData.row > numHeaderRows ||
+        cellData.column < minColumnIndex ||
+        cellData.column > maxColumnIndex) {
           this.__widgetFactory.unbindWidget(child);
           child.setUserData("qxl.datagrid.cellData", null);
           this._remove(child);
