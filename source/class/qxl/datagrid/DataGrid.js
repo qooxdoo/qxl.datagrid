@@ -305,10 +305,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * If it's not possible to center the item, it is shown as close to the center as possible.
      */
     scrollToSelection() {
-      let selectedModel = this.getSelection().getItem(0);
-      let selectionIndex = this.getDataSource().getPositionOfModel(selectedModel).getRow();
-      let maxRowCount = this.getMaxRows();
-      this.setStartRowIndex(Math.max(0, selectionIndex - Math.floor(maxRowCount / 2)));
+      let selectedModel = this.getSelection().getLength() ? this.getSelection().getItem(0) : null;
+      if (selectedModel) {
+        let selectionIndex = this.getDataSource().getPositionOfModel(selectedModel).getRow();
+        let maxRowCount = this.getMaxRows();
+        this.setStartRowIndex(Math.max(0, selectionIndex - Math.floor(maxRowCount / 2)));
+      }
     },
 
     /**
@@ -327,7 +329,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         maxWidth: maxWidth,
 
         minHeight: minHeight,
-        height: null,
+        height: rowIndex < 0 ? styling.getHeaderRowHeight() : null,
         maxHeight: maxHeight
       };
     },
@@ -408,17 +410,17 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       let scrollbarX = this.getChildControl("scrollbar-x");
       let columns = this.getColumns();
       let showX = this.getScrollbarX();
-      if (showX === "off" || (showX == "auto" && sizeData.columns.length == columns.getLength())) {
+      if (showX === "off" || (showX == "auto" && sizeData.columns.length > columns.getLength())) {
         scrollbarX.setVisibility("excluded");
       } else {
         scrollbarX.setVisibility("visible");
         let percent;
-        if (this.getStartColumnIndex() == -1 || sizeData.columns.length == columns.getLength() - this.getStartColumnIndex()) {
+        if (this.getStartColumnIndex() == -1 || sizeData.columns.length > columns.getLength() - this.getStartColumnIndex()) {
           percent = 100;
         } else if (this.getStartColumnIndex() == 0) {
           percent = 0;
         } else {
-          percent = Math.floor((this.getStartColumnIndex() / columns.getLength()) * 100);
+          percent = Math.floor((this.getStartColumnIndex() / (columns.getLength() + 1)) * 100);
         }
         scrollbarX.set({
           position: percent

@@ -26,6 +26,7 @@
 qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
   extend: qx.core.Object,
   implement: [qxl.datagrid.source.IDataSource],
+
   properties: {
     /**
      * The columns of the data.
@@ -36,6 +37,7 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
       check: "qxl.datagrid.column.IColumns",
       event: "changeColumns"
     },
+
     /**
      * The data model to display.
      */
@@ -56,6 +58,9 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
   },
 
   members: {
+    /**
+     * Apply for `model`
+     */
     _applyModel(value, oldValue) {
       if (oldValue) {
         oldValue.removeListener("change", this.__onModelChange, this);
@@ -65,6 +70,11 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
       }
     },
 
+    /**
+     * Event handler for `model` change event.
+     *
+     * @param {*} evt
+     */
     __onModelChange(evt) {
       this.fireDataEvent("changeSize", this.getSize());
     },
@@ -97,8 +107,8 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
      * @Override
      */
     getPositionOfModel(value) {
-      const rowIndex = this.getModel().indexOf(value);
-      const pos = new qxl.datagrid.source.Position(rowIndex, 0);
+      let rowIndex = this.getModel().indexOf(value);
+      let pos = new qxl.datagrid.source.Position(rowIndex, 0);
       return pos;
     },
 
@@ -106,7 +116,10 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
      * @Override
      */
     getSize() {
-      const size = new qxl.datagrid.source.Position(this.getModel().getLength(), this.getColumns().getLength());
+      if (!this.getModel()) {
+        return new qxl.datagrid.source.Position(0, 0);
+      }
+      let size = new qxl.datagrid.source.Position(this.getModel().getLength(), this.getColumns().getLength());
       return size;
     }
   }

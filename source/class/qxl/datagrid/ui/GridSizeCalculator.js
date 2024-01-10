@@ -260,7 +260,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       if (flexColumnIndexes.length) {
         let flexUnit = flexAvailable / totalFlex;
 
-        for (let columnIndex in flexColumnIndexes) {
+        for (let columnIndex of flexColumnIndexes) {
           let column = this._columns.getColumn(columnIndex);
           let flex = column.getFlex();
           let width = Math.floor(flexUnit * flex);
@@ -291,7 +291,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
       const calculateRowHeight = rowIndex => {
         let largestRowHeight = 0;
-        for (let columnIndex in visibleColumnIndexes) {
+        for (let columnIndex of visibleColumnIndexes) {
           let column = this._columns.getColumn(columnIndex);
           let hint = this._widgetSizeSource.getWidgetSize(rowIndex, column);
           let rowHeight = hint.height || 0;

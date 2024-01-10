@@ -26,12 +26,14 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
   extend: qx.core.Object,
   implement: [qxl.datagrid.source.tree.INodeInspector],
 
+  /**
+   * Constructor
+   *
+   * @param {Boolean?true} canHaveChildren default return value for `canHaveChildren()`
+   */
   construct(canHaveChildren) {
     super();
-    this.__canHaveChildren = true;
-    if (canHaveChildren === false) {
-      this.__canHaveChildren = canHaveChildren;
-    }
+    this.__canHaveChildren = !(canHaveChildren === false);
   },
 
   properties: {
@@ -49,6 +51,9 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
   },
 
   members: {
+    /** @type{Boolean} default return value for `canHaveChildren()` */
+    __canHaveChildren: true,
+
     /**
      * @override
      */
@@ -61,7 +66,6 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
       return null;
     },
 
-    __canHaveChildren: null,
     /**
      * @override
      */
@@ -73,7 +77,8 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
      * @override
      */
     createChildrenChangeBinding(node, fn, context) {
-      return new qxl.datagrid.binding.Bindings(node.get(this.getChildrenPath()), node.get(this.getChildrenPath()).addListener("change", fn, context), "listener");
+      let children = node.get(this.getChildrenPath());
+      return new qxl.datagrid.binding.Bindings(children, children.addListener("change", fn, context), "listener");
     },
 
     /**

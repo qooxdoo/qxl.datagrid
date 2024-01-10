@@ -83,9 +83,12 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
       let horizontalSpacing = styling.getHorizontalSpacing();
       let verticalSpacing = styling.getVerticalSpacing();
       let top = 0;
-      for (let rowIndex = 0; rowIndex < numHeaderRows; rowIndex++) {
+      for (let rowSizeData of sizesData.rows) {
         let left = 0;
-        let rowSizeData = sizesData.rows[rowIndex];
+        if (rowSizeData.rowIndex >= 0) {
+          continue;
+        }
+        let rowIndex = -1 - rowSizeData.rowIndex;
 
         for (let visibleColumnIndex = 0; visibleColumnIndex < sizesData.columns.length; visibleColumnIndex++) {
           let columnSizeData = sizesData.columns[visibleColumnIndex];

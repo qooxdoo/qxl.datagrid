@@ -32,6 +32,7 @@ qx.Class.define("qxl.datagrid.column.DateColumn", {
       event: "changeDateFormat"
     }
   },
+
   construct() {
     super();
     this.setBindingOptions((widget, model) => {

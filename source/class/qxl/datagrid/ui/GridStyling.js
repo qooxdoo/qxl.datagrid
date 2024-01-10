@@ -68,6 +68,15 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
       event: "changeMaxRowHeight"
     },
 
+    /** Target height of each header row */
+    headerRowHeight: {
+      init: null,
+      nullable: true,
+      check: "Integer",
+      apply: "__applyXxx",
+      event: "changeHeaderRowHeight"
+    },
+
     /** Minimum column width */
     minColumnWidth: {
       init: null,

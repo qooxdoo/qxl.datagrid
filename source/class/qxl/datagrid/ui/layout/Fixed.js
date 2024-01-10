@@ -53,7 +53,7 @@ qx.Class.define("qxl.datagrid.ui.layout.Fixed", {
         let left = padding.left + (props.left || 0) + child.getMarginLeft();
         let top = padding.top + (props.top || 0) + child.getMarginTop();
 
-        child.renderLayout(left, top, props.width, props.height);
+        child.renderLayout(left, top, props.width || 0, props.height || 0);
       }
     },
 

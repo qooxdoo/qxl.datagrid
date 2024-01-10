@@ -52,9 +52,12 @@ qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
      * @override
      */
     _createWidget() {
-      return new qx.ui.basic.Atom().set({
-        appearance: "qxl-datagrid-header-cell"
+      let atom = new qx.ui.basic.Atom().set({
+        appearance: "qxl-datagrid-header-cell",
+        rich: true,
+        iconPosition: "top-left"
       });
+      return atom;
     }
   }
 });

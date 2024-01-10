@@ -117,8 +117,6 @@ qx.Class.define("qxl.datagrid.column.Column", {
           let bindingId = model.bind(path, widget, "value", this.getBindingOptions()(widget, model));
           return new qxl.datagrid.binding.Bindings(model, bindingId);
         }
-      } else {
-        widget.setLabel(model);
       }
       return new qxl.datagrid.binding.Bindings(model);
     },

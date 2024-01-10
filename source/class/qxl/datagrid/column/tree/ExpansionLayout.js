@@ -63,7 +63,9 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionLayout", {
       }
 
       let iconWidth = icon.getSizeHint().width;
-      if (!icon.isVisible()) iconWidth = 0;
+      if (!icon.isVisible()) {
+        iconWidth = 0;
+      }
 
       if (this.getPosition() == "start") {
         if (expander.isVisible()) {
