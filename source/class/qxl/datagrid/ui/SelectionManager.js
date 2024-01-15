@@ -155,6 +155,12 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      *    items contains more than one elements.
      */
     setSelection(items) {
+      if (qx.core.Environment.get("qx.debug")) {
+        const dataSource = this.getDataSource();
+        items.forEach(item => {
+          this.assertNotNull(dataSource.getPositionOfModel(item), "Failed to set selection. The item " + item + " is not found in the DataGrid!");
+        });
+      }
       if (items instanceof qx.data.Array) {
         items = items.toArray();
       }
