@@ -33,7 +33,7 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
    *
    * @param {qx.data.Object} model The model to add the binding to
    * @param {String} bindingId Id of binding
-   * @param {String?"binding"} bindingType The type of the binding. Either "binding" or "listener". Defaults to binding. Set to "binding " if this is a binding to a property, or "listener" if it's for a listener added with "addListener".
+   * @param {"binding" | "listener"} bindingType The type of the binding. Either "binding" or "listener". Defaults to binding. Set to "binding " if this is a binding to a property, or "listener" if it's for a listener added with "addListener".
    */
   construct(model, bindingId, bindingType) {
     super();
@@ -68,7 +68,7 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
      *
      * @param {qx.core.Object} model the object with a binding
      * @param {*} bindingId the binding ID to release
-     * @param {String?"binding"} bindingType The type of the binding. Either "binding" or "listener". Defaults to binding. Set to "binding " if this is a binding to a property, or "listener" if it's for a listener added with "addListener".
+     * @param {"binding" | "listener"} bindingType The type of the binding. Either "binding" or "listener". Defaults to binding. Set to "binding " if this is a binding to a property, or "listener" if it's for a listener added with "addListener".
      */
     add(model, bindingId, bindingType) {
       if (bindingType === undefined) {
