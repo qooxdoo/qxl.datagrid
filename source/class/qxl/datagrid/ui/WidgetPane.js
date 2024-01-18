@@ -45,7 +45,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       this.setDataSource(dataSource);
     }
     this._setLayout(new qxl.datagrid.ui.layout.Fixed());
-    this.addListener("tap", this.__onTap, this);
+    this.addListener("tap", this.__onTap, this, true);
   },
 
   properties: {
@@ -216,13 +216,14 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
      */
     __onTap(evt) {
       let widget = qx.ui.core.Widget.getWidgetByElement(evt.getOriginalTarget());
-      while (widget && widget.isAnonymous()) {
+      let model = null;
+      while (widget && widget != this && !model) {
+        model = this.__widgetFactory.getModelForWidget(widget);
+        if (model) {
+          break;
+        }
         widget = widget.getLayoutParent();
       }
-      if (!widget) {
-        return;
-      }
-      let model = this.__widgetFactory.getModelForWidget(widget);
       if (!model) {
         return;
       }
