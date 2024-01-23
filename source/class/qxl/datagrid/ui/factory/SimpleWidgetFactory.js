@@ -26,6 +26,19 @@
 qx.Class.define("qxl.datagrid.ui.factory.SimpleWidgetFactory", {
   extend: qxl.datagrid.ui.factory.AbstractWidgetFactory,
 
+  events: {
+    /** 
+     * @typedef BindWidgetData
+     * @property {qx.ui.core.Widget} widget the wiget to bind
+     * @property {qx.core.Object} model the model the widget is bound to
+     * 
+     * Fired when a widget is bound; data is {BindWidgetData} */
+    "bindWidget": "qx.event.type.Data",
+
+    /** Fired when a widget is unbound; data is {BindWidgetData} */
+    "unbindWidget": "qx.event.type.Data"
+  },
+
   members: {
     /**
      * @override
@@ -34,6 +47,7 @@ qx.Class.define("qxl.datagrid.ui.factory.SimpleWidgetFactory", {
       let bindingData = widget.getUserData("qxl.datagrid.factory.AbstractWidgetFactory.bindingData");
       bindingData.binding = bindingData.column.bindWidget(widget, model, this);
       bindingData.model = model;
+      this.fireDataEvent("bindWidget", { widget, model });
     },
 
     /**
@@ -44,8 +58,10 @@ qx.Class.define("qxl.datagrid.ui.factory.SimpleWidgetFactory", {
       if (bindingData.binding) {
         bindingData.binding.dispose();
       }
+      let model = bindingData.model;
       bindingData.model = null;
       bindingData.binding = null;
+      this.fireDataEvent("unbindWidget", { widget, model });
     },
 
     /**

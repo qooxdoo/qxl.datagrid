@@ -67,6 +67,7 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
       }
       if (value) {
         value.addListener("change", this.__onModelChange, this);
+        this.__onModelChange();
       }
     },
 
