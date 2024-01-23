@@ -62,6 +62,11 @@ qx.Class.define("qxl.datagrid.column.toolbar.CellWidget", {
       }
     },
 
+    /**
+     * Adds a button factory
+     *
+     * @param {qxl.datagrid.column.toolbar.Factory} factory
+     */
     _addButton(factory) {
       let button = factory.createButton();
       button.addListener("execute", () => {
@@ -71,6 +76,11 @@ qx.Class.define("qxl.datagrid.column.toolbar.CellWidget", {
       this._add(button);
     },
 
+    /**
+     * Removes a button factory
+     *
+     * @param {qxl.datagrid.column.toolbar.Factory} factory
+     */
     _removeButton(factory) {
       let current = this.__buttonsByFactoryHash[factory.toHashCode()];
       if (current) {
@@ -78,6 +88,16 @@ qx.Class.define("qxl.datagrid.column.toolbar.CellWidget", {
         this._remove(current);
         current.dispose();
       }
+    },
+
+    /**
+     * @Override
+     */
+    _applyEnabled(value, oldValue) {
+      for (let btn of Object.values(this.__buttonsByFactoryHash)) {
+        btn.setEnabled(value);
+      }
+      return super._applyEnabled(value, oldValue);
     },
 
     /**

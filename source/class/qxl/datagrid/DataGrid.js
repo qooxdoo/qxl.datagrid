@@ -161,6 +161,16 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     scrollbar: {
       group: ["scrollbarX", "scrollbarY"]
+    },
+
+    /**
+     * Whether the grid is read only (even if the data grid does not yet support editing, this is
+     * still relevant because it is available to the columns and )
+     */
+    readOnly: {
+      init: false,
+      check: "Boolean",
+      event: "changeReadOnly"
     }
   },
 
@@ -190,6 +200,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     headerWidgetFactory() {
       return new qxl.datagrid.ui.factory.HeaderWidgetFactory(this.getColumns());
     },
+
     header() {
       return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
     }
@@ -227,15 +238,37 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     _applyColumns(value, oldValue) {
       if (oldValue) {
-        oldValue.removeListener("change", this.scheduleLayoutUpdate, this);
+        oldValue.removeListener("change", this.__onColumnsChange, this);
+        for (let column of oldValue) {
+          column.setDataGrid(null);
+        }
       }
       if (value) {
-        value.addListener("change", this.scheduleLayoutUpdate, this);
+        for (let column of value) {
+          column.setDataGrid(this);
+        }
+        value.addListener("change", this.__onColumnsChange, this);
       }
       this.__sizeCalculator.setColumns(value);
       this.getQxObject("headerWidgetFactory").setColumns(value);
       this.getQxObject("paneWidgetFactory").setColumns(value);
       this.updateWidgets();
+    },
+
+    /**
+     * Event handler for changes in the columns array
+     *
+     * @param {qx.event.type.Data} evt
+     */
+    __onColumnsChange(evt) {
+      let data = evt.getData();
+      if (data.type == "remove") {
+        data.column.setDataGrid(null);
+      }
+      if (data.type == "add") {
+        data.column.setDataGrid(this);
+      }
+      this.scheduleLayoutUpdate();
     },
 
     /**

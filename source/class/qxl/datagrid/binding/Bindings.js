@@ -65,14 +65,28 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
     __bindingData: null,
 
     /**
+     * Adds a binding or listener binding ID.
+     *
+     * Set `bindingType` to "binding" if this is a binding to a property, or "listener" if it's for a listener
+     * added with "addListener".  If no value then it will be auto detected
      *
      * @param {qx.core.Object} model the object with a binding
      * @param {*} bindingId the binding ID to release
-     * @param {String?"binding"} bindingType The type of the binding. Either "binding" or "listener". Defaults to binding. Set to "binding " if this is a binding to a property, or "listener" if it's for a listener added with "addListener".
+     * @param {String?} bindingType The type of the binding. Either "binding" or "listener". Defaults to auto detect.
      */
     add(model, bindingId, bindingType) {
       if (bindingType === undefined) {
-        bindingType = "binding";
+        if (typeof bindingId == "string") {
+          bindingType = "listener";
+        } else {
+          bindingType = "binding";
+        }
+      } else if (qx.core.Environment.get("qx.debug")) {
+        if (bindingType === "listener") {
+          this.assertTrue(typeof bindingId == "string", "Invalid binding type " + bindingType + " for bindingId " + bindingId);
+        } else {
+          this.assertTrue(typeof bindingId != "string", "Invalid binding type " + bindingType + " for bindingId " + JSON.stringify(bindingId));
+        }
       }
       this.__bindingData.push({
         model,
