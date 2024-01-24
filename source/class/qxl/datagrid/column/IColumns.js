@@ -31,10 +31,22 @@
  */
 qx.Interface.define("qxl.datagrid.column.IColumns", {
   members: {
+    /**
+     *
+     * @param {Integer} index - the column index
+     * @returns {qxl.datagrid.column.Column} the column
+     */
     getColumn(index) {},
 
+    /**
+     * @returns {Integer} the number of columns
+     */
     getLength() {},
 
+    /**
+     * @param {qxl.datagrid.column.Column} column - the column to find the index of
+     * @returns {Integer} the index of the column, or -1 if not found
+     */
     indexOf(column) {}
   }
 });

@@ -44,7 +44,7 @@ qx.Class.define("qxl.datagrid.column.Columns", {
   },
 
   members: {
-    /** @type{qxl.datagrid.column.Column[]} the columns */
+    /** @type {qxl.datagrid.column.Column[]} the columns */
     _columns: null,
 
     /**

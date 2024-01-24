@@ -107,7 +107,7 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       });
       grid.addListener("changeSelection", evt => {
         let sel = evt.getData();
-        console.log("Selection changed to " + sel.map(model => model.toString().join(",")));
+        console.log("Selection changed to " + sel.map(model => model.toString()).join(","));
       });
       return grid;
     }

@@ -176,7 +176,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * @returns {Boolean}
      */
     isEffectivelyReadOnly() {
-      return this.getReadOnly() || !this.getEnabled() || this.__datagrid?.isReadOnly() || !this.__datagrid?.isEnabled();
+      return this.getReadOnly() || !this.getEnabled() || !!this.__datagrid?.isReadOnly() || !this.__datagrid?.isEnabled();
     },
 
     /**
@@ -185,7 +185,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * @returns {Boolean}
      */
     isEffectivelyEnabled() {
-      return !this.getEnabled() || this.__datagrid?.isEnabled();
+      return !this.getEnabled() || !!this.__datagrid?.isEnabled();
     },
 
     /**
