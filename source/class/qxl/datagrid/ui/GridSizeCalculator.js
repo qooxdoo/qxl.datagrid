@@ -85,41 +85,41 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
   },
 
   members: {
-    /** @type{qxl.datagrid.ui.IColumns} the columns array on display */
+    /** @type {qxl.datagrid.column.IColumns} the columns array on display */
     _columns: null,
 
-    /** @type{qxl.datagrid.ui.IWidgetSizeSource} where to get w*/
+    /** @type {qxl.datagrid.ui.IWidgetSizeSource} where to get w*/
     _widgetSizeSource: null,
 
-    /** @type{SizesData} the cached sizes */
+    /** @type {SizesData} the cached sizes */
     __sizes: null,
 
-    /** @type{Integer} the available width */
+    /** @type {Integer} the available width */
     _width: null,
 
-    /** @type{Integer} the available height */
+    /** @type {Integer} the available height */
     _height: null,
 
-    /** @type{Integer} the first row in the data source */
+    /** @type {Integer} the first row in the data source */
     _startRowIndex: null,
 
-    /** @type{Integer} the first column in the data source */
+    /** @type {Integer} the first column in the data source */
     _startColumnIndex: null,
 
-    /** @type{Integer} the left scroll position */
+    /** @type {Integer} the left scroll position */
     _left: null,
 
-    /** @type{Integer} the top scroll position */
+    /** @type {Integer} the top scroll position */
     _top: null,
 
     /**
-     * Gets the sizes for a given set of available size or scroll position
+     * Gets the sizes for a given available size and scroll position of a Visible Space
      *
-     * @param {Integer} width
-     * @param {Integer} height
-     * @param {Integer} startRowIndex
-     * @param {Integer} startColumnIndex
-     * @returns {SizesData}
+     * @param {Integer} width - the total available width of the Visible Space
+     * @param {Integer} height - the total available height of the Visible Space
+     * @param {Integer} startRowIndex - an Absolute Row Index representing the first row to be included in the Visible Space
+     * @param {Integer} startColumnIndex - an Absolute Column Index representing the first column to be included in the Visible Space
+     * @returns {SizesData} the sizes of rows and columns in the Visible Space
      */
     getSizesFor(width, height, startRowIndex, startColumnIndex) {
       this.setAvailableSize(width, height, startRowIndex, startColumnIndex, 0, 0);
@@ -128,12 +128,12 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
     /**
      * Sets the available sizes; this can trigger invalidation and a change event if the available
-     * size or scroll position has changed.
+     * size or scroll position of the Visible Space has changed.
      *
-     * @param {Integer} width
-     * @param {Integer} height
-     * @param {Integer} startRowIndex
-     * @param {Integer} startColumnIndex
+     * @param {Integer} width - the total available width of the Visible Space
+     * @param {Integer} height - the total available height of the Visible Space
+     * @param {Integer} startRowIndex - an Absolute Row Index representing the first row to be included in the Visible Space
+     * @param {Integer} startColumnIndex - an Absolute Column Index representing the first column to be included in the Visible Space
      * @param {Integer} left
      * @param {Integer} top
      * @returns {Boolean} true if the widgets need to be redrawn because the previous data is invalid
@@ -152,9 +152,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     },
 
     /**
-     * Gets the sizes
-     *
-     * @returns {SizesData}
+     * @returns {SizesData} the sizes of rows and columns in the Visible Space
      */
     getSizes() {
       if (!this.__sizes && this._width && this._height) {
@@ -166,7 +164,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     /**
      * Gets the left and top initial offsets
      *
-     * @returns {Map} with keys "left" and "top"
+     * @returns {{ left: Integer, top: Integer }} the offsets
      */
     getInitialOffsets() {
       return {
@@ -186,29 +184,52 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     /**
      * Calculates the size data
      *
-     * @returns {SizesData}
+     * - Visible Space
+     *   - The range of cells which are currently visible to the user, based on sizes, scroll, etc.
+     * - Absolute Index
+     *   - The index of the full raw data, ignoring what may or may not be currently in the Visible Space
+     * - Relative Index
+     *   - The index of a column or row in the Visible Space, adjusted such that the top-left-most cell in the Visible Space is Vis(0,0)
+     *   - eg, When the visible Space covers Abs(5,5) to Abs(10,10), Abs(5,5) is the same cell as Rel(0,0)
+     * - Visible Index
+     *   - An Absolute Index which is currently in the Visible Space
+     *   - eg, Abs(5,2) is a Visible Index if the Visible Space covers Abs(5,5) to Abs(10,10)
+     *
+     * @returns {SizesData} the sizes of rows and columns in the Visible Space
      */
     _calculateSizes() {
+      let styling = this.getStyling();
+
+      let startIndex = {
+        row: this._startRowIndex + styling.getNumFixedRows(),
+        column: this._startColumnIndex + styling.getNumFixedColumns(),
+      };
+
       let flexColumnIndexes = [];
       let visibleColumnIndexes = [];
       let totalFlex = 0;
-      let columnWidths = [];
+      /**
+       * A map of absolute column indexes to their widths
+       */
+      let columnWidths = {};
       let lastFlexColumnIndex = -1;
       let flexAvailable = this._width;
-      let styling = this.getStyling();
       let horizontalSpacing = styling.getHorizontalSpacing();
       let verticalSpacing = styling.getVerticalSpacing();
       let totalColumnWidth = 0;
 
-      const calculateColumnWidth = columnIndex => {
-        let column = this._columns.getColumn(columnIndex);
-        visibleColumnIndexes.push(columnIndex);
+      /**
+       * @param {Integer} absoluteColumnIndex 
+       */
+      const calculateColumnWidth = (absoluteColumnIndex) => {
+        let column = this._columns.getColumn(absoluteColumnIndex);
+        visibleColumnIndexes.push(absoluteColumnIndex);
 
         let flex = column.getFlex() && column.getWidth() === null ? column.getFlex() : 0;
         let width;
         if (flex) {
-          flexColumnIndexes.push(columnIndex);
-          lastFlexColumnIndex = columnIndex;
+          flexColumnIndexes.push(absoluteColumnIndex);
+          lastFlexColumnIndex = absoluteColumnIndex;
           totalFlex += flex;
           width = column.getMinWidth();
         } else {
@@ -226,7 +247,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
         if (!flex) {
           flexAvailable -= width;
         }
-        columnWidths[columnIndex] = width;
+        columnWidths[absoluteColumnIndex] = width;
 
         if (visibleColumnIndexes.length > 0) {
           totalColumnWidth += horizontalSpacing;
@@ -234,66 +255,79 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
         totalColumnWidth += width;
       };
 
-      let numFixedColumns = styling.getNumFixedColumns();
-      if (numFixedColumns > 0) {
-        for (let columnIndex = 0; columnIndex < numFixedColumns; columnIndex++) {
-          calculateColumnWidth(columnIndex);
-        }
+      // process the fixed columns. Regardless of the Visible Index, these are always the first N Absolute Indexes
+      for (let absoluteColumnIndex = 0; absoluteColumnIndex < styling.getNumFixedColumns(); absoluteColumnIndex++) {
+        calculateColumnWidth(absoluteColumnIndex);
       }
 
-      if (this._startColumnIndex >= 0) {
-        for (let columnIndex = this._startColumnIndex; columnIndex < this._columns.getLength(); columnIndex++) {
-          if (totalColumnWidth > this._width) {
+      if (startIndex.column >= 0) {
+        // process the remaining columns, starting from the Visible Index
+        for (let absoluteColumnIndex = startIndex.column; absoluteColumnIndex < this._columns.getLength(); absoluteColumnIndex++) {
+          if (totalColumnWidth >= this._width) {
             break;
           }
-          calculateColumnWidth(columnIndex);
+          calculateColumnWidth(absoluteColumnIndex);
         }
       } else {
-        for (let columnIndex = this._columns.getLength() - 1; columnIndex >= 0; columnIndex--) {
-          if (totalColumnWidth > this._width) {
+        // process the remaining columns, starting from the end and working backwards until the space is filled
+        for (let absoluteColumnIndex = this._columns.getLength() - 1; absoluteColumnIndex >= 0; absoluteColumnIndex--) {
+          if (totalColumnWidth >= this._width) {
             break;
           }
-          calculateColumnWidth(columnIndex);
+          calculateColumnWidth(absoluteColumnIndex);
         }
       }
 
       if (flexColumnIndexes.length) {
         let flexUnit = flexAvailable / totalFlex;
 
-        for (let columnIndex of flexColumnIndexes) {
-          let column = this._columns.getColumn(columnIndex);
+        for (let absoluteColumnIndex of flexColumnIndexes) {
+          /** @type {qxl.datagrid.column.Column} */
+          let column = this._columns.getColumn(absoluteColumnIndex);
           let flex = column.getFlex();
           let width = Math.floor(flexUnit * flex);
           let minWidth = column.getMinWidth() || 0;
+
           if (width < minWidth) {
             width = minWidth;
           }
-          if (columnIndex == lastFlexColumnIndex && flexAvailable > width) {
+
+          if (absoluteColumnIndex == lastFlexColumnIndex && flexAvailable > width) {
             width = flexAvailable;
           }
+
           let maxWidth = column.getMaxWidth();
           if (maxWidth && width > maxWidth) {
             width = maxWidth;
           }
+
           flexAvailable -= width;
-          if (columnWidths[columnIndex]) {
-            totalColumnWidth -= columnWidths[columnIndex];
+          if (columnWidths[absoluteColumnIndex]) {
+            totalColumnWidth -= columnWidths[absoluteColumnIndex];
           }
+
           totalColumnWidth += width;
-          columnWidths[columnIndex] = width;
+          columnWidths[absoluteColumnIndex] = width;
         }
       }
 
       let minRowHeight = styling.getMinRowHeight();
       let maxRowHeight = styling.getMaxRowHeight();
-      let rowHeights = [];
+      /**
+       * A map of absolute row indexes to their heights
+       */
+      let rowHeights = {};
       let totalRowHeight = 0;
 
-      const calculateRowHeight = rowIndex => {
+      
+      /**
+       * @param {Integer} absoluteRowIndex 
+       */
+      const calculateRowHeight = absoluteRowIndex => {
         let largestRowHeight = 0;
-        for (let columnIndex of visibleColumnIndexes) {
-          let column = this._columns.getColumn(columnIndex);
-          let hint = this._widgetSizeSource.getWidgetSize(rowIndex, column);
+        for (let absoluteColumnIndex of visibleColumnIndexes) {
+          let column = this._columns.getColumn(absoluteColumnIndex);
+          let hint = this._widgetSizeSource.getWidgetSize(absoluteRowIndex, column);
           let rowHeight = hint.height || 0;
           if (rowHeight < hint.minHeight) {
             rowHeight = hint.minHeight;
@@ -313,41 +347,45 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
             largestRowHeight = rowHeight;
           }
         }
-        rowHeights[rowIndex] = largestRowHeight;
-        if (rowHeights.length > 0) {
+        rowHeights[absoluteRowIndex] = largestRowHeight;
+        if (Object.keys(rowHeights).length > 0) {
           totalRowHeight += verticalSpacing;
         }
         totalRowHeight += largestRowHeight;
       };
 
-      for (let rowIndex = 0; rowIndex < styling.getNumHeaderRows(); rowIndex++) {
-        calculateRowHeight(-1 - rowIndex);
+      // process the header rows. Regardless of the Visible Index, these are always the *last* N Absolute Indexes
+      for (let absoluteRowIndex = 0; absoluteRowIndex < styling.getNumHeaderRows(); absoluteRowIndex++) {
+        // negative: index from end, increment: index `-0` isn't a real thing
+        calculateRowHeight(-(absoluteRowIndex + 1));
       }
 
-      let numFixedRows = styling.getNumFixedRows();
-      if (numFixedRows > 0) {
-        for (let rowIndex = 0; rowIndex < numFixedRows; rowIndex++) {
-          calculateRowHeight(rowIndex);
-        }
+      // process the fixed rows. Regardless of the Visible Index, these are always the first N Absolute Indexes
+      for (let absoluteRowIndex = 0; absoluteRowIndex < styling.getNumFixedRows(); absoluteRowIndex++) {
+        calculateRowHeight(absoluteRowIndex);
       }
 
       let numRows = this._widgetSizeSource.getDataSourceSize().getRow();
-      if (this._startRowIndex >= 0) {
-        for (let rowIndex = this._startRowIndex; rowIndex < numRows; rowIndex++) {
-          if (totalRowHeight > this._height) {
+      if (startIndex.row >= 0) {
+        // process the remaining rows, starting from the Visible Index
+        for (let absoluteRowIndex = startIndex.row; absoluteRowIndex < numRows; absoluteRowIndex++) {
+          if (totalRowHeight >= this._height) {
             break;
           }
-          if (rowHeights[rowIndex] === undefined) {
-            calculateRowHeight(rowIndex);
+          // only calculate the row height if it hasn't already been calculated by the fixed rows/headers
+          if (rowHeights[absoluteRowIndex] === undefined) {
+            calculateRowHeight(absoluteRowIndex);
           }
         }
       } else {
-        for (let rowIndex = numRows - 1; rowIndex >= 0; rowIndex--) {
-          if (totalRowHeight > this._height) {
+        // process the remaining rows, starting from the end and working backwards until the space is filled
+        for (let absoluteRowIndex = numRows - 1; absoluteRowIndex >= 0; absoluteRowIndex--) {
+          if (totalRowHeight >= this._height) {
             break;
           }
-          if (rowHeights[rowIndex] === undefined) {
-            calculateRowHeight(rowIndex);
+          // only calculate the row height if it hasn't already been calculated by the fixed rows/headers
+          if (rowHeights[absoluteRowIndex] === undefined) {
+            calculateRowHeight(absoluteRowIndex);
           }
         }
       }
@@ -359,20 +397,20 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
         verticalScrollPosition: 0
       };
 
-      for (let columnIndex in columnWidths) {
-        columnIndex = parseInt(columnIndex, 10);
+      for (let absoluteColumnIndex in columnWidths) {
+        let numericIdx = parseInt(absoluteColumnIndex, 10);
         sizesData.columns.push({
-          columnIndex: columnIndex,
-          column: this._columns.getColumn(columnIndex),
-          width: columnWidths[columnIndex]
+          columnIndex: numericIdx,
+          column: this._columns.getColumn(numericIdx),
+          width: columnWidths[absoluteColumnIndex]
         });
       }
 
-      for (let rowIndex in rowHeights) {
-        rowIndex = parseInt(rowIndex, 10);
+      for (let absoluteRowIndex in rowHeights) {
+        let numericIdx = parseInt(absoluteRowIndex, 10);
         sizesData.rows.push({
-          rowIndex: rowIndex,
-          height: rowHeights[rowIndex]
+          rowIndex: numericIdx,
+          height: rowHeights[absoluteRowIndex]
         });
       }
 

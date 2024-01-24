@@ -23,30 +23,27 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
   extend: qx.dev.unit.TestCase,
 
   members: {
-    testBasicSizes() {
-      let columns = new qxl.datagrid.column.Columns();
+    testSimpleGrid() {
+      const columns = new qxl.datagrid.column.Columns();
       columns.addAll([
-        new qxl.datagrid.column.TextColumn("a").set({ minWidth: 50 }),
-        new qxl.datagrid.column.TextColumn("b").set({ minWidth: 51 }),
-        new qxl.datagrid.column.TextColumn("c").set({ minWidth: 52 }),
-        new qxl.datagrid.column.TextColumn("d").set({ minWidth: 53 }),
-        new qxl.datagrid.column.TextColumn("e").set({ minWidth: 54 }),
-        new qxl.datagrid.column.TextColumn("f")
+        new qxl.datagrid.column.TextColumn("a").set({ width: 1 }),
+        new qxl.datagrid.column.TextColumn("b").set({ width: 2 }),
+        new qxl.datagrid.column.TextColumn("c").set({ width: 3 }),
+        new qxl.datagrid.column.TextColumn("d").set({ width: 4 }),
+        new qxl.datagrid.column.TextColumn("e").set({ width: 5 })
       ]);
-
-      let widgetSizeSource = {
+      const widgetSizeSource = {
         widgetHeights: [
-          [10, 20, 30, 25, 15, 26, 16, 17, 28], // 30
-          [20, 20, 20, 20, 20, 20, 20, 20, 60], // 50
-          [20, 20, 20, 20, 20, 20, 20, 60, 20], // 70
-          [20, 20, 50, 20, 20, 20, 20, 20, 20], // 90
-          [20, 20, 00, 20, 20, 20, 20, 20, 60], // 110
-          [20, 20, 60, 20, 20, 20, 20, 20, 60] // 110
+          [1, 1, 1, 1, 1],
+          [2, 2, 2, 2, 2],
+          [3, 3, 3, 3, 3],
+          [4, 4, 4, 4, 4],
+          [5, 5, 5, 5, 5]
         ],
-        headerHeights: [30, 30, 30, 30, 30, 30, 30, 30, 30],
+        headerHeights: [10, 10, 10, 10, 10],
         init() {},
         getWidgetSize(rowIndex, column) {
-          let arr = rowIndex < 0 ? this.headerHeights : this.widgetHeights[rowIndex];
+          const arr = rowIndex < 0 ? this.headerHeights : this.widgetHeights[rowIndex];
           let columnIndex = columns.indexOf(column);
           let height = arr[columnIndex] === undefined ? null : arr[columnIndex];
           return {
@@ -54,102 +51,169 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
             width: null,
             maxWidth: null,
             minHeight: height,
-            height: null,
+            height: height,
             maxHeight: height
           };
         },
-        _size: new qxl.datagrid.source.Position(6, 9),
+        _size: new qxl.datagrid.source.Position(5, 5),
         getDataSourceSize() {
           return this._size;
         }
       };
-
-      let styling = new qxl.datagrid.ui.GridStyling().set({
+      const styling = new qxl.datagrid.ui.GridStyling().set({
         horizontalSpacing: 0,
         verticalSpacing: 0,
-        minRowHeight: 10,
+        minRowHeight: 0,
         numHeaderRows: 0
       });
-      let sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, widgetSizeSource);
+      const sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, widgetSizeSource);
 
-      let sizes = sizeCalculator.getSizesFor(125, 75, 0, 0);
-      this.assertTrue(sizes.rows.length == 4);
-      this.assertTrue(sizes.rows[0].height == 30);
-      this.assertTrue(sizes.rows[1].height == 20);
-      this.assertTrue(sizes.rows[2].height == 20);
-      this.assertTrue(sizes.rows[3].height == 50);
+      /**
+       * @param {0|1|2} scrollX - either 0, 1, or 2, the number of rows scrolled past
+       * @param {0|1|2} scrollY - either 0, 1, or 2, the number of columns scrolled past
+       */
+      const subcase = (scrollX, scrollY) => {
+        //! do not modify this tester's limits without also modifying the size source to accommodate
+        if (![0, 1, 2].includes(scrollX) || ![0, 1, 2].includes(scrollY)) {
+          return;
+        }
 
-      this.assertTrue(sizes.columns.length == 3);
-      this.assertTrue(sizes.columns[0].width == 50);
-      this.assertTrue(sizes.columns[1].width == 51);
-      this.assertTrue(sizes.columns[2].width == 52);
+        const sizes = sizeCalculator.getSizesFor(3 * scrollY + 6, 3 * scrollX + 6, scrollX, scrollY);
 
-      sizes = sizeCalculator.getSizesFor(125, 75, 0, 1);
-      this.assertTrue(sizes.columns.length == 3);
-      this.assertTrue(sizes.columns[0].width == 51);
-      this.assertTrue(sizes.columns[1].width == 52);
-      this.assertTrue(sizes.columns[2].width == 53);
+        this.assertArrayEquals(
+          [scrollX, scrollX + 1, scrollX + 2],
+          sizes.rows.map(c => c.rowIndex)
+        );
+        this.assertTrue(sizes.rows[0].height == scrollX + 1);
+        this.assertTrue(sizes.rows[1].height == scrollX + 2);
+        this.assertTrue(sizes.rows[2].height == scrollX + 3);
 
-      styling.setNumFixedColumns(1);
-      sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizesFor(125, 75, 0, 2);
-      this.assertArrayEquals(
-        [0, 2, 3],
-        sizes.columns.map(c => c.columnIndex)
-      );
-      this.assertTrue(sizes.columns[0].width == 50);
-      this.assertTrue(sizes.columns[1].width == 52);
-      this.assertTrue(sizes.columns[2].width == 53);
+        this.assertArrayEquals(
+          [scrollY, scrollY + 1, scrollY + 2],
+          sizes.columns.map(c => c.columnIndex)
+        );
+        this.assertTrue(sizes.columns[0].width == scrollY + 1);
+        this.assertTrue(sizes.columns[1].width == scrollY + 2);
+        this.assertTrue(sizes.columns[2].width == scrollY + 3);
+      };
 
-      widgetSizeSource.widgetHeights = [
-        [20, 20, 20, 20, 20, 20, 20, 20, 20],
-        [21, 21, 21, 21, 21, 21, 21, 21, 21],
-        [22, 22, 22, 22, 22, 22, 22, 22, 22],
-        [23, 23, 23, 23, 23, 23, 23, 23, 23],
-        [24, 24, 24, 24, 24, 24, 24, 24, 24],
-        [25, 25, 25, 25, 25, 25, 25, 25, 25]
-      ];
+      // no scroll
+      subcase(0, 0);
 
-      sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizesFor(125, 75, 0, 0);
-      this.assertTrue(sizes.rows.length == 4);
-      this.assertTrue(sizes.rows[0].height == 20);
-      this.assertTrue(sizes.rows[1].height == 21);
-      this.assertTrue(sizes.rows[2].height == 22);
-      this.assertTrue(sizes.rows[3].height == 23);
+      // vertical scroll only
+      subcase(1, 0);
+      subcase(2, 0);
 
-      sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizesFor(125, 75, 1, 0);
-      this.assertTrue(sizes.rows.length == 4);
-      this.assertTrue(sizes.rows[0].height == 21);
-      this.assertTrue(sizes.rows[1].height == 22);
-      this.assertTrue(sizes.rows[2].height == 23);
-      this.assertTrue(sizes.rows[3].height == 24);
+      // horizontal scroll only
+      subcase(0, 1);
+      subcase(0, 2);
 
-      styling.setNumFixedRows(1);
-      sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizesFor(125, 75, 2, 0);
-      this.assertArrayEquals(
-        [0, 2, 3, 4],
-        sizes.rows.map(c => c.rowIndex)
-      );
-      this.assertTrue(sizes.rows.length == 4);
-      this.assertTrue(sizes.rows[0].height == 20);
-      this.assertTrue(sizes.rows[1].height == 22);
-      this.assertTrue(sizes.rows[2].height == 23);
-      this.assertTrue(sizes.rows[3].height == 24);
+      // mixed scrolling - same count
+      subcase(1, 1);
+      subcase(2, 2);
+      // mixed scrolling - different count
+      subcase(2, 1);
+      subcase(1, 2);
+    },
 
-      styling.setNumHeaderRows(1);
-      sizeCalculator.invalidate();
-      sizes = sizeCalculator.getSizesFor(125, 80, 2, 0);
-      this.assertArrayEquals(
-        [0, 2, 3, -1],
-        sizes.rows.map(c => c.rowIndex)
-      );
-      this.assertTrue(sizes.rows[0].height == 20);
-      this.assertTrue(sizes.rows[1].height == 22);
-      this.assertTrue(sizes.rows[2].height == 23);
-      this.assertTrue(sizes.rows[3].height == 30); // header row
+    testWithFixed() {
+      const columns = new qxl.datagrid.column.Columns();
+      columns.addAll([
+        new qxl.datagrid.column.TextColumn("a").set({ width: 1 }),
+        new qxl.datagrid.column.TextColumn("b").set({ width: 2 }),
+        new qxl.datagrid.column.TextColumn("c").set({ width: 3 }),
+        new qxl.datagrid.column.TextColumn("d").set({ width: 4 }),
+        new qxl.datagrid.column.TextColumn("e").set({ width: 5 })
+      ]);
+      const widgetSizeSource = {
+        widgetHeights: [
+          [1, 1, 1, 1, 1],
+          [2, 2, 2, 2, 2],
+          [3, 3, 3, 3, 3],
+          [4, 4, 4, 4, 4],
+          [5, 5, 5, 5, 5]
+        ],
+        headerHeights: [10, 10, 10, 10, 10],
+        init() {},
+        getWidgetSize(rowIndex, column) {
+          const arr = rowIndex < 0 ? this.headerHeights : this.widgetHeights[rowIndex];
+          let columnIndex = columns.indexOf(column);
+          let height = arr[columnIndex] === undefined ? null : arr[columnIndex];
+          return {
+            minWidth: null,
+            width: null,
+            maxWidth: null,
+            minHeight: height,
+            height: height,
+            maxHeight: height
+          };
+        },
+        _size: new qxl.datagrid.source.Position(5, 5),
+        getDataSourceSize() {
+          return this._size;
+        }
+      };
+      const styling = new qxl.datagrid.ui.GridStyling().set({
+        horizontalSpacing: 0,
+        verticalSpacing: 0,
+        minRowHeight: 0,
+        numHeaderRows: 0,
+        numFixedColumns: 0, // will change
+        numFixedRows: 0 // will change
+      });
+
+      const sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, widgetSizeSource);
+
+      /**
+       * @param {0|1|2|3} fixedCols - either 0, 1, 2, or 3 the number of fixed columns
+       * @param {0|1|2|3} fixedRows - either 0, 1, 2, or 3 the number of fixed rows
+       */
+      const subcase = (fixedCols, fixedRows) => {
+        //! do not modify this tester's limits without also modifying the size source to accommodate
+        if (![0, 1, 2, 3].includes(fixedCols) || ![0, 1, 2, 3].includes(fixedRows)) {
+          return;
+        }
+
+        styling.setNumFixedColumns(fixedCols);
+        styling.setNumFixedRows(fixedRows);
+
+        const sizes = sizeCalculator.getSizesFor(12 - 2 * fixedCols, 12 - 2 * fixedRows, 2, 2);
+        // see above; grid is offset by 2 in both directions, without fixed the idxs are [2, 3, 4], widths are [3, 4, 5]
+
+        this.assertArrayEquals(
+          // if there are more than zero (at least one) fixed rows, the first row is idx 0, otherwise it is idx 2
+          // etc etc for other ternaries
+          [fixedRows > 0 ? 0 : 2, fixedRows > 1 ? 1 : 3, fixedRows > 2 ? 2 : 4],
+          sizes.rows.map(c => c.rowIndex)
+        );
+        // same as above, if gt 0, then width 1, else 3, etc etc
+        this.assertTrue(sizes.rows[0].height == (fixedRows > 0 ? 1 : 3));
+        this.assertTrue(sizes.rows[1].height == (fixedRows > 1 ? 2 : 4));
+        this.assertTrue(sizes.rows[2].height == (fixedRows > 2 ? 3 : 5));
+
+        this.assertArrayEquals(
+          [fixedCols > 0 ? 0 : 2, fixedCols > 1 ? 1 : 3, fixedCols > 2 ? 2 : 4],
+          sizes.columns.map(c => c.columnIndex)
+        );
+        this.assertTrue(sizes.columns[0].width == (fixedCols > 0 ? 1 : 3));
+        this.assertTrue(sizes.columns[1].width == (fixedCols > 1 ? 2 : 4));
+        this.assertTrue(sizes.columns[2].width == (fixedCols > 2 ? 3 : 5));
+      };
+
+      // cols only
+      subcase(1, 0);
+      subcase(2, 0);
+      subcase(3, 0);
+
+      // rows only
+      subcase(0, 1);
+      subcase(0, 2);
+      subcase(0, 3);
+
+      // cols and rows
+      subcase(1, 1);
+      subcase(2, 2);
+      subcase(3, 3);
     }
   }
 });
