@@ -96,6 +96,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       if (!this.__widgetFactory.getColumns()) {
         return;
       }
+      let columns = this.__widgetFactory.getColumns();
       let dataSource = this.getDataSource();
       let styling = this.__sizeCalculator.getStyling();
       let sizesData = this.__sizeCalculator.getSizes();
@@ -138,10 +139,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         // prettier-ignore
         if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
-          this.__widgetFactory.unbindWidget(child);
-          child.setUserData("qxl.datagrid.cellData", null);
-          this._remove(child);
-          this.__widgetFactory.disposeWidget(child);
+          this.__fullDiscardWidget(child) 
         } else {
           let id = cellData.row + ":" + cellData.column;
           children[id] = child;
@@ -151,17 +149,23 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let horizontalSpacing = styling.getHorizontalSpacing();
       let verticalSpacing = styling.getVerticalSpacing();
       let top = 0;
-      for (let visibleRowIndex = 0; visibleRowIndex < sizesData.rows.length; visibleRowIndex++) {
+
+      let fillFromRelativePosition = new qxl.datagrid.source.Position();
+      let fillFromAbsolutePosition = new qxl.datagrid.source.Position();
+      for (let relativeRowIndex = 0; relativeRowIndex < sizesData.rows.length; relativeRowIndex++) {
         let left = 0;
-        let rowSizeData = sizesData.rows[visibleRowIndex];
+        let rowSizeData = sizesData.rows[relativeRowIndex];
         // Negative rowIndex means its a header row
         if (rowSizeData.rowIndex < 0) {
           continue;
         }
 
-        for (let visibleColumnIndex = 0; visibleColumnIndex < sizesData.columns.length; visibleColumnIndex++) {
-          let columnSizeData = sizesData.columns[visibleColumnIndex];
+        let fillFromColumnIndex = null;
+
+        for (let relativeColumnIndex = 0; relativeColumnIndex < sizesData.columns.length; relativeColumnIndex++) {
+          let columnSizeData = sizesData.columns[relativeColumnIndex];
           let id = rowSizeData.rowIndex + ":" + columnSizeData.columnIndex;
+          let filledWidth = columnSizeData.width;
 
           let child = children[id];
           let model = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, columnSizeData.columnIndex));
@@ -175,6 +179,28 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             this._add(child);
             qx.ui.core.queue.Layout.add(child);
             this.__widgetFactory.bindWidget(child, model);
+          }
+
+          // if no idx found...
+          if (fillFromColumnIndex === null) {
+            fillFromRelativePosition.set({ row: relativeRowIndex, column: relativeColumnIndex });
+            fillFromAbsolutePosition.set({ row: rowSizeData.rowIndex, column: columnSizeData.columnIndex });
+            //  check if this col should fill
+            let shouldFillFn = columns.getColumn(columnSizeData.columnIndex).getShouldFillWidth();
+            let shouldFill = shouldFillFn(model, child, fillFromRelativePosition, fillFromAbsolutePosition);
+            if (shouldFill) {
+              // assign and fill width
+              fillFromColumnIndex = columnSizeData.columnIndex;
+              for (let i = relativeColumnIndex + 1; i < sizesData.columns.length; i++) {
+                filledWidth += sizesData.columns[i].width + horizontalSpacing;
+              }
+            }
+          } else {
+            // idx found, discard widget
+            if (child) {
+              this.__fullDiscardWidget(child);
+              continue;
+            }
           }
 
           let isSelected = false;
@@ -199,7 +225,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
           child.setLayoutProperties({
             left: left,
-            width: columnSizeData.width,
+            width: filledWidth,
             top: top,
             height: rowSizeData.height
           });
@@ -209,6 +235,13 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         top += rowSizeData.height + verticalSpacing;
       }
       qx.ui.core.queue.Layout.add(this);
+    },
+
+    __fullDiscardWidget(child) {
+      this.__widgetFactory.unbindWidget(child);
+      child.setUserData("qxl.datagrid.cellData", null);
+      this._remove(child);
+      this.__widgetFactory.disposeWidget(child);
     },
 
     /**

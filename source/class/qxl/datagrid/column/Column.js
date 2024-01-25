@@ -26,6 +26,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
   construct(path) {
     super();
+    this.setShouldFillWidth(() => false);
     if (path) {
       this.setPath(path);
     }
@@ -101,6 +102,18 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
     bindingOptions: {
       init: () => undefined
+    },
+
+    /**
+     * A callback used to determine whether a given cell on the grid should fill
+     * the remaining width in the row. By default, this always returns false.
+     *
+     * @type {(model: any, child: qx.ui.core.Widget, relativePosition: qxl.datagrid.source.Position, absolutePosition: qxl.datagrid.source.Position) => boolean}
+     */
+    shouldFillWidth: {
+      check: "Function",
+      nullable: false,
+      event: "changeShouldFillWidth"
     }
   },
 
