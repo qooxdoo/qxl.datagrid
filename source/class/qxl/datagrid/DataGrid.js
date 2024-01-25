@@ -116,7 +116,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     startColumnIndex: {
       init: 0,
       check: "Integer",
-      apply: "updateWidgets",
+      apply: "_applyStartColumnIndex",
       event: "changeStartColumnIndex"
     },
 
@@ -215,22 +215,28 @@ qx.Class.define("qxl.datagrid.DataGrid", {
   },
 
   members: {
-    /** @type{Boolean} True if _applyStartRowIndex is being called */
+    /** @type {Boolean} True if _applyStartRowIndex is being called */
     __inApplyStartRowIndex: false,
 
-    /** @type{qxl.datagrid.ui.GridSizeCalculator} */
+    /** @type {Boolean} True if _applyStartColumnIndex is being called */
+    __inApplyStartColumnIndex: false,
+
+    /** @type {Boolean} True if _applyStartColumnIndex is being called */
+    __inComputeScrollbars: false,
+
+    /** @type {qxl.datagrid.ui.GridSizeCalculator} */
     __sizeCalculator: null,
 
-    /** @type{Promise} if the widgets is being updated but pending a promise completion */
+    /** @type {Promise} if the widgets is being updated but pending a promise completion */
     __updatingPromise: null,
 
-    /** @type{qxl.datagrid.util.Debounce} debounced call to updateWidgets */
+    /** @type {qxl.datagrid.util.Debounce} debounced call to updateWidgets */
     __debounceUpdateWidgets: null,
 
-    /** @type{qxl.datagrid.selection.SelectionManager} the selection manager */
+    /** @type {qxl.datagrid.selection.SelectionManager} the selection manager */
     __selectionManager: null,
 
-    /** @type{String} unique pointer ID, only set if rolling */
+    /** @type {String} unique pointer ID, only set if rolling */
     __cancelRoll: null,
 
     /**
@@ -294,6 +300,15 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       this.__inApplyStartRowIndex = true;
       this.updateWidgets();
       this.__inApplyStartRowIndex = false;
+    },
+
+    /**
+     * Apply for `startColumnIndex`
+     */
+    _applyStartColumnIndex(value, oldValue) {
+      this.__inApplyStartColumnIndex = true;
+      this.updateWidgets();
+      this.__inApplyStartColumnIndex = false;
     },
 
     /**
@@ -473,8 +488,13 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      *
      */
     _computeScrollbars() {
+      if (this.__inComputeScrollbars) {
+        return;
+      }
+      this.__inComputeScrollbars = true;
       let sizeData = this.__sizeCalculator.getSizes();
       if (!sizeData) {
+        this.__inComputeScrollbars = false;
         return;
       }
 
@@ -482,7 +502,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       let scrollbarX = this.getChildControl("scrollbar-x");
       let columns = this.getColumns();
       let showX = this.getScrollbarX();
-      if (showX === "off" || (showX == "auto" && sizeData.columns.length > columns.getLength())) {
+      if (showX === "off" || (showX == "auto" && sizeData.columns.length >= columns.getLength())) {
         scrollbarX.setVisibility("excluded");
       } else {
         scrollbarX.setVisibility("visible");
@@ -505,6 +525,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         scrollbarY.setVisibility("excluded");
       } else {
         scrollbarY.setVisibility("visible");
+        let percent;
         if (this.getMaxRows() >= size.getRow()) {
           percent = 0;
         } else {
@@ -515,6 +536,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           position: percent
         });
       }
+
+      this.__inComputeScrollbars = false;
     },
 
     /**
@@ -530,6 +553,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
           control.exclude();
           control.addListener("scroll", e => {
+            if (this.__inApplyStartRowIndex) {
+              return;
+            }
             let position = e.getData();
             let size = this.getDataSource().getSize();
             if (position == 100) {
