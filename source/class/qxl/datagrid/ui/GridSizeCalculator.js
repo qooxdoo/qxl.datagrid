@@ -202,7 +202,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
       let startIndex = {
         row: this._startRowIndex + styling.getNumFixedRows(),
-        column: this._startColumnIndex + styling.getNumFixedColumns(),
+        column: this._startColumnIndex + styling.getNumFixedColumns()
       };
 
       let flexColumnIndexes = [];
@@ -219,36 +219,33 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       let totalColumnWidth = 0;
 
       /**
-       * @param {Integer} absoluteColumnIndex 
+       * @param {Integer} absoluteColumnIndex
        */
-      const calculateColumnWidth = (absoluteColumnIndex) => {
+      const calculateColumnWidth = absoluteColumnIndex => {
         let column = this._columns.getColumn(absoluteColumnIndex);
         visibleColumnIndexes.push(absoluteColumnIndex);
 
         let flex = column.getFlex() && column.getWidth() === null ? column.getFlex() : 0;
-        let width;
+
+        let width = column.getWidth() ?? 0;
+        let minWidth = column.getMinWidth() ?? 0;
+
         if (flex) {
           flexColumnIndexes.push(absoluteColumnIndex);
           lastFlexColumnIndex = absoluteColumnIndex;
           totalFlex += flex;
-          width = column.getMinWidth();
+          width = minWidth;
         } else {
-          width = column.getWidth() || 0;
-          let minWidth = column.getMinWidth() || 0;
+          let maxWidth = column.getMaxWidth() ?? 0;
           if (width < minWidth) {
             width = minWidth;
           }
+          if (maxWidth && width > maxWidth) {
+            width = maxWidth;
+          }
         }
-
-        let maxWidth = column.getMaxWidth();
-        if (maxWidth && width > maxWidth) {
-          width = maxWidth;
-        }
-        if (!flex) {
-          flexAvailable -= width;
-        }
+        flexAvailable -= width;
         columnWidths[absoluteColumnIndex] = width;
-
         if (visibleColumnIndexes.length > 0) {
           totalColumnWidth += horizontalSpacing;
         }
@@ -279,35 +276,32 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       }
 
       if (flexColumnIndexes.length) {
-        let flexUnit = flexAvailable / totalFlex;
+        let flexColumns = flexColumnIndexes.map(index => ({ index, column: this._columns.getColumn(index) }));
+        flexColumns.sort((a, b) => {
+          return (
+            // smallest minWidth
+            (a.column.getMinWidth() ?? 0) - (b.column.getMinWidth() ?? 0) ||
+            // smallest maxWidth
+            (a.column.getMaxWidth() ?? 0) - (b.column.getMaxWidth() ?? 0) ||
+            // smallest flex
+            (a.column.getFlex() ?? 0) - (b.column.getFlex() ?? 0)
+          );
+        });
 
-        for (let absoluteColumnIndex of flexColumnIndexes) {
-          /** @type {qxl.datagrid.column.Column} */
-          let column = this._columns.getColumn(absoluteColumnIndex);
-          let flex = column.getFlex();
-          let width = Math.floor(flexUnit * flex);
-          let minWidth = column.getMinWidth() || 0;
+        for (let { column, index } of flexColumns) {
+          let flexAmount = Math.floor((flexAvailable / totalFlex) * column.getFlex());
 
-          if (width < minWidth) {
-            width = minWidth;
+          if (column.getMaxWidth()) {
+            let maxFlex = column.getMaxWidth() - columnWidths[index];
+            if (flexAmount > maxFlex) {
+              flexAmount = maxFlex;
+            }
           }
 
-          if (absoluteColumnIndex == lastFlexColumnIndex && flexAvailable > width) {
-            width = flexAvailable;
-          }
-
-          let maxWidth = column.getMaxWidth();
-          if (maxWidth && width > maxWidth) {
-            width = maxWidth;
-          }
-
-          flexAvailable -= width;
-          if (columnWidths[absoluteColumnIndex]) {
-            totalColumnWidth -= columnWidths[absoluteColumnIndex];
-          }
-
-          totalColumnWidth += width;
-          columnWidths[absoluteColumnIndex] = width;
+          flexAvailable -= flexAmount;
+          totalColumnWidth += flexAmount;
+          columnWidths[index] += flexAmount;
+          totalFlex -= column.getFlex();
         }
       }
 
@@ -319,9 +313,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       let rowHeights = {};
       let totalRowHeight = 0;
 
-      
       /**
-       * @param {Integer} absoluteRowIndex 
+       * @param {Integer} absoluteRowIndex
        */
       const calculateRowHeight = absoluteRowIndex => {
         let largestRowHeight = 0;
