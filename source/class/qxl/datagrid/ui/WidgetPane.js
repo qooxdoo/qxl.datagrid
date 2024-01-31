@@ -187,7 +187,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             fillFromAbsolutePosition.set({ row: rowSizeData.rowIndex, column: columnSizeData.columnIndex });
             //  check if this col should fill
             let shouldFillFn = columns.getColumn(columnSizeData.columnIndex).getShouldFillWidth();
-            let shouldFill = shouldFillFn(model, child, fillFromRelativePosition, fillFromAbsolutePosition);
+            let shouldFill = shouldFillFn ? shouldFillFn(model, child, fillFromRelativePosition, fillFromAbsolutePosition) : false;
             if (shouldFill) {
               // assign and fill width
               fillFromColumnIndex = columnSizeData.columnIndex;

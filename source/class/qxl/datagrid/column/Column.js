@@ -26,7 +26,6 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
   construct(path) {
     super();
-    this.setShouldFillWidth(() => false);
     if (path) {
       this.setPath(path);
     }
@@ -111,8 +110,9 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * @type {(model: any, child: qx.ui.core.Widget, relativePosition: qxl.datagrid.source.Position, absolutePosition: qxl.datagrid.source.Position) => boolean}
      */
     shouldFillWidth: {
+      init: null,
       check: "Function",
-      nullable: false,
+      nullable: true,
       event: "changeShouldFillWidth"
     }
   },
