@@ -212,7 +212,6 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
        * A map of absolute column indexes to their widths
        */
       let columnWidths = {};
-      let lastFlexColumnIndex = -1;
       let flexAvailable = this._width;
       let horizontalSpacing = styling.getHorizontalSpacing();
       let verticalSpacing = styling.getVerticalSpacing();
@@ -232,7 +231,6 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
         if (flex) {
           flexColumnIndexes.push(absoluteColumnIndex);
-          lastFlexColumnIndex = absoluteColumnIndex;
           totalFlex += flex;
           width = minWidth;
         } else {
@@ -245,6 +243,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
           }
         }
         flexAvailable -= width;
+        flexAvailable -= horizontalSpacing;
         columnWidths[absoluteColumnIndex] = width;
         if (visibleColumnIndexes.length > 0) {
           totalColumnWidth += horizontalSpacing;
