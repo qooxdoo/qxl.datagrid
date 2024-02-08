@@ -352,6 +352,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @returns
      */
     _onRoll(e) {
+      e.stop();
       const SCROLLING_SPEED = 0.08;
       // only wheel and touch
       if (e.getPointerType() == "mouse") {
