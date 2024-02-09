@@ -500,8 +500,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
 
       let size = this.getDataSource().getSize();
-      let scrollbarX = this.getChildControl("scrollbar-x");
       let columns = this.getColumns();
+
+      let scrollbarX = this.getChildControl("scrollbar-x");
       let showX = this.getScrollbarX();
       if (showX === "off" || (showX == "auto" && sizeData.columns.length >= columns.getLength())) {
         scrollbarX.setVisibility("excluded");
@@ -515,14 +516,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         } else {
           percent = Math.floor((this.getStartColumnIndex() / (columns.getLength() + 1)) * 100);
         }
-        scrollbarX.set({
-          position: percent
-        });
+        scrollbarX.set({ position: percent });
       }
 
       let scrollbarY = this.getChildControl("scrollbar-y");
       let showY = this.getScrollbarY();
-      if (showY == "off" || (showY == "auto" && sizeData.rows.length == size.getColumn())) {
+      if (showY == "off" || (showY == "auto" && sizeData.rows.length >= size.getRow())) {
         scrollbarY.setVisibility("excluded");
       } else {
         scrollbarY.setVisibility("visible");
@@ -533,9 +532,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           percent = Math.floor(qxl.datagrid.util.Math.interpolate(0, Math.max(0, size.getRow() - this.getMaxRows()), 0, 100, this.getStartRowIndex()));
         }
         percent = Math.min(percent, 100);
-        scrollbarY.set({
-          position: percent
-        });
+        scrollbarY.set({ position: percent });
       }
 
       this.__inComputeScrollbars = false;
