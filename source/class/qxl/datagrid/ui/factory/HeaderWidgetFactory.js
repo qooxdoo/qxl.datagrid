@@ -25,6 +25,19 @@
 qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
   extend: qxl.datagrid.ui.factory.AbstractWidgetFactory,
 
+  properties: {
+    /**
+     * Sets the appearance for created widgets.
+     *
+     * This will only alter the appearance of widgets created after this property is set.
+     */
+    widgetAppearance: {
+      check: "String",
+      event: "changeWidgetAppearance",
+      init: "qxl-datagrid-header-cell"
+    }
+  },
+
   members: {
     /**
      * @override
@@ -53,7 +66,7 @@ qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
      */
     _createWidget() {
       let atom = new qx.ui.basic.Atom().set({
-        appearance: "qxl-datagrid-header-cell",
+        appearance: this.getWidgetAppearance(),
         rich: true,
         iconPosition: "top-left"
       });
