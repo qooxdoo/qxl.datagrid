@@ -78,7 +78,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
      * Icon to use when the state is "none"
      */
     stateIconNone: {
-      init: "@MaterialIcons/arrow_right/16",
+      init: null,
       check: "String",
       apply: "_updateIcon",
       themeable: true
