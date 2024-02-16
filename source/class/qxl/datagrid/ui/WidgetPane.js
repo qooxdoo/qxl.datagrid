@@ -103,8 +103,8 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       if (!sizesData) {
         return;
       }
-      let minColumnIndex = sizesData.columns[0].columnIndex;
-      let maxColumnIndex = sizesData.columns[sizesData.columns.length - 1].columnIndex;
+      let minColumnIndex = sizesData.columns[0]?.columnIndex ?? 0;
+      let maxColumnIndex = sizesData.columns[sizesData.columns.length - 1]?.columnIndex ?? 0;
 
       let minRowIndex = null;
       let maxRowIndex = null;

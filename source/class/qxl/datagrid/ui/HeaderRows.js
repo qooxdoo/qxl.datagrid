@@ -60,8 +60,8 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
         return;
       }
       let numHeaderRows = styling.getNumHeaderRows();
-      let minColumnIndex = sizesData.columns[0].columnIndex;
-      let maxColumnIndex = sizesData.columns[sizesData.columns.length - 1].columnIndex;
+      let minColumnIndex = sizesData.columns[0]?.columnIndex ?? 0;
+      let maxColumnIndex = sizesData.columns[sizesData.columns.length - 1]?.columnIndex ?? 0;
 
       let children = {};
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
