@@ -499,41 +499,39 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         return;
       }
 
+      const calculateScrollbar = (show, scrollbar, currentCount, totalCount, startIndex, percentCalc) => {
+        if (show === "off" || (show == "auto" && currentCount >= totalCount)) {
+          scrollbar.setVisibility("excluded");
+        } else {
+          scrollbar.setVisibility("visible");
+          let percent;
+          if (startIndex == -1 || currentCount > totalCount - startIndex) {
+            percent = 100;
+          } else if (startIndex == 0) {
+            percent = 0;
+          } else {
+            percent = percentCalc();
+          }
+          scrollbar.set({ position: percent });
+        }
+      };
+
       let size = this.getDataSource().getSize();
       let columns = this.getColumns();
 
       let scrollbarX = this.getChildControl("scrollbar-x");
       let showX = this.getScrollbarX();
-      if (showX === "off" || (showX == "auto" && sizeData.columns.length >= columns.getLength())) {
-        scrollbarX.setVisibility("excluded");
-      } else {
-        scrollbarX.setVisibility("visible");
-        let percent;
-        if (this.getStartColumnIndex() == -1 || sizeData.columns.length > columns.getLength() - this.getStartColumnIndex()) {
-          percent = 100;
-        } else if (this.getStartColumnIndex() == 0) {
-          percent = 0;
-        } else {
-          percent = Math.floor((this.getStartColumnIndex() / (columns.getLength() + 1)) * 100);
-        }
-        scrollbarX.set({ position: percent });
-      }
+      let totalColumns = columns.getLength();
+      let startColumnIndex = this.getStartColumnIndex();
+      calculateScrollbar(showX, scrollbarX, sizeData.columns.length, totalColumns, startColumnIndex, () => Math.floor((startColumnIndex / (totalColumns + 1)) * 100));
 
       let scrollbarY = this.getChildControl("scrollbar-y");
       let showY = this.getScrollbarY();
-      if (showY == "off" || (showY == "auto" && sizeData.rows.length >= size.getRow())) {
-        scrollbarY.setVisibility("excluded");
-      } else {
-        scrollbarY.setVisibility("visible");
-        let percent;
-        if (this.getMaxRows() >= size.getRow()) {
-          percent = 0;
-        } else {
-          percent = Math.floor(qxl.datagrid.util.Math.interpolate(0, Math.max(0, size.getRow() - this.getMaxRows()), 0, 100, this.getStartRowIndex()));
-        }
-        percent = Math.min(percent, 100);
-        scrollbarY.set({ position: percent });
-      }
+      let totalRows = size.getRow() + this.getStyling().getNumHeaderRows();
+      let startRowIndex = this.getStartRowIndex();
+      calculateScrollbar(showY, scrollbarY, sizeData.rows.length, totalRows, startRowIndex, () =>
+        Math.floor(qxl.datagrid.util.Math.interpolate(0, Math.max(0, size.getRow() - this.getMaxRows()), 0, 100, this.getStartRowIndex()))
+      );
 
       this.__inComputeScrollbars = false;
     },
@@ -551,7 +549,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
           control.exclude();
           control.addListener("scroll", e => {
-            if (this.__inApplyStartRowIndex) {
+            if (this.__inApplyStartRowIndex || this.__inComputeScrollbars) {
               return;
             }
             let position = e.getData();
@@ -574,7 +572,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
           control.exclude();
           control.addListener("scroll", e => {
-            if (this.__inApplyStartRowIndex) {
+            if (this.__inApplyStartRowIndex || this.__inComputeScrollbars) {
               return;
             }
             let position = e.getData();
