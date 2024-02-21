@@ -26,6 +26,7 @@ qx.Class.define("qxl.datagrid.util.Math", {
      * @param {Number} b1
      * @param {Number} b2
      * @param {Number} x
+     * @returns {Number}
      */
     interpolate(a1, a2, b1, b2, x) {
       return b1 + ((x - a1) * (b2 - b1)) / (a2 - a1);
