@@ -30,6 +30,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     this.__sizeCalculator = sizeCalculator;
     this.__widgetFactory = widgetFactory;
     this.__selectionManager = selectionManager;
+    this.__children = {};
     selectionManager.addListener("changeSelectionStyle", () => this.updateWidgets());
     selectionManager.addListener("changeSelection", () => {
       if (selectionManager.getSelectionStyle() == "cell") {
@@ -79,6 +80,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     /** @type{Boolean} */
     __invalidateAll: false,
+
+    /**@type {Record<string, qx.ui.core.Widget>}*/
+    __children: null,
 
     /**
      * Invalidates all widgets, meaning that they will be recalculated next time `updateWidget` is called
@@ -134,14 +138,14 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let invalidateAll = this.__invalidateAll;
       this.__invalidateAll = false;
 
-      let children = {};
+      let children = this.__children;
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
+        let id = cellData.row + ":" + cellData.column;
         // prettier-ignore
         if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
-          this.__fullDiscardWidget(child) 
+          this.__fullDiscardWidget(child, id); 
         } else {
-          let id = cellData.row + ":" + cellData.column;
           children[id] = child;
         }
       });
@@ -198,7 +202,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           } else {
             // idx found, discard widget
             if (child) {
-              this.__fullDiscardWidget(child);
+              this.__fullDiscardWidget(child, id);
               continue;
             }
           }
@@ -237,11 +241,16 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       qx.ui.core.queue.Layout.add(this);
     },
 
-    __fullDiscardWidget(child) {
+    __fullDiscardWidget(child, id) {
       this.__widgetFactory.unbindWidget(child);
       child.setUserData("qxl.datagrid.cellData", null);
       this._remove(child);
       this.__widgetFactory.disposeWidget(child);
+      delete this.__children[id];
+    },
+
+    getChildAtPosition(row, column) {
+      return this.__children[`${row}:${column}`] ?? null;
     },
 
     /**

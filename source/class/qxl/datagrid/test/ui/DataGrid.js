@@ -40,7 +40,7 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
         columns.add(column);
       }
       let widgetSizeSource = {
-        getWidgetSize(rowIndex, column) {
+        getWidgetSize(rowIndex, columnIndex) {
           let minHeight = styling.getMinRowHeight();
           let maxHeight = styling.getMaxRowHeight();
           let minWidth = styling.getMinColumnWidth();

@@ -28,10 +28,10 @@ qx.Interface.define("qxl.datagrid.ui.IWidgetSizeSource", {
      * Returns the size hint for a widget in a given row and column
      *
      * @param {Integer} rowIndex
-     * @param {qxl.datagrid.column.Column} column
+     * @param {Integer} columnIndex
      * @return {*} see qx.ui.core.LayoutItem.getSizeHint
      */
-    getWidgetSize(rowIndex, column) {},
+    getWidgetSize(rowIndex, columnIndex) {},
 
     /**
      * Returns the size of the datasource

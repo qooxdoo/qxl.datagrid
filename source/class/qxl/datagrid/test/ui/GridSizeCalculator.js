@@ -42,9 +42,8 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
         ],
         headerHeights: [10, 10, 10, 10, 10],
         init() {},
-        getWidgetSize(rowIndex, column) {
+        getWidgetSize(rowIndex, columnIndex) {
           const arr = rowIndex < 0 ? this.headerHeights : this.widgetHeights[rowIndex];
-          let columnIndex = columns.indexOf(column);
           let height = arr[columnIndex] === undefined ? null : arr[columnIndex];
           return {
             minWidth: null,
@@ -135,9 +134,8 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
         ],
         headerHeights: [10, 10, 10, 10, 10],
         init() {},
-        getWidgetSize(rowIndex, column) {
+        getWidgetSize(rowIndex, columnIndex) {
           const arr = rowIndex < 0 ? this.headerHeights : this.widgetHeights[rowIndex];
-          let columnIndex = columns.indexOf(column);
           let height = arr[columnIndex] === undefined ? null : arr[columnIndex];
           return {
             minWidth: null,
