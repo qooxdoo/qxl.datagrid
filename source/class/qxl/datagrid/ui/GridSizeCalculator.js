@@ -318,8 +318,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       const calculateRowHeight = absoluteRowIndex => {
         let largestRowHeight = 0;
         for (let absoluteColumnIndex of visibleColumnIndexes) {
-          let column = this._columns.getColumn(absoluteColumnIndex);
-          let hint = this._widgetSizeSource.getWidgetSize(absoluteRowIndex, column);
+          let hint = this._widgetSizeSource.getWidgetSize(absoluteRowIndex, absoluteColumnIndex);
+
           let rowHeight = hint.height || 0;
           if (rowHeight < hint.minHeight) {
             rowHeight = hint.minHeight;

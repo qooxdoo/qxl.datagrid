@@ -171,6 +171,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       init: false,
       check: "Boolean",
       event: "changeReadOnly"
+    },
+
+    dynamicSizing: {
+      init: "none",
+      check: ["rows", "columns", "both", "none"],
+      event: "changeDynamicSizing"
     }
   },
 
@@ -202,7 +208,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     header() {
-      return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"), this.getDataSource());
+      return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"));
     }
   },
 
@@ -233,7 +239,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     /** @type {qxl.datagrid.util.Debounce} debounced call to updateWidgets */
     __debounceUpdateWidgets: null,
 
-    /** @type {qxl.datagrid.selection.SelectionManager} the selection manager */
+    /** @type {qxl.datagrid.ui.SelectionManager} the selection manager */
     __selectionManager: null,
 
     /** @type {String} unique pointer ID, only set if rolling */
@@ -400,48 +406,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         return;
       }
       this.setStartRowIndex(Math.max(0, selectionIndex - Math.floor(maxRowCount / 2)));
-    },
-
-    /**
-     * @override
-     */
-    getWidgetSize(rowIndex, column) {
-      let styling = this.__sizeCalculator.getStyling();
-      let minHeight = styling.getMinRowHeight();
-      let maxHeight = styling.getMaxRowHeight();
-      let minWidth = styling.getMinColumnWidth();
-      let maxWidth = styling.getMaxColumnWidth();
-
-      return {
-        minWidth: minWidth,
-        width: null,
-        maxWidth: maxWidth,
-
-        minHeight: minHeight,
-        height: rowIndex < 0 ? styling.getHeaderRowHeight() : null,
-        maxHeight: maxHeight
-      };
-    },
-
-    /**
-     * @returns {qxl.datagrid.ui.GridSizeCalculator} size calculator
-     */
-    getSizeCalculator() {
-      return this.__sizeCalculator;
-    },
-
-    /**
-     * @returns {qxl.datagrid.ui.GridStyling} styling
-     */
-    getStyling() {
-      return this.__sizeCalculator.getStyling();
-    },
-
-    /**
-     * @override
-     */
-    getDataSourceSize() {
-      return this.getDataSource().getSize();
     },
 
     /**
@@ -625,6 +589,37 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     /**
+     * @override
+     */
+    getWidgetSize(rowIndex, columnIndex) {
+      let styling = this.__sizeCalculator.getStyling();
+      let minHeight = styling.getMinRowHeight();
+      let maxHeight = styling.getMaxRowHeight();
+      let minWidth = styling.getMinColumnWidth();
+      let maxWidth = styling.getMaxColumnWidth();
+
+      let width = null;
+      let height = null;
+
+      let widget = this.getQxObject("widgetPane").getChildAtPosition(rowIndex, columnIndex);
+      if (rowIndex < 0) {
+        height = styling.getHeaderRowHeight();
+      } else {
+        let dynamicSizing = this.getDynamicSizing();
+        if (dynamicSizing === "rows" || dynamicSizing === "both") {
+          height = widget?.getSizeHint()?.height;
+        }
+        if (dynamicSizing === "columns" || dynamicSizing === "both") {
+          width = widget?.getSizeHint()?.width;
+        }
+      }
+
+      const size = { minWidth, width, maxWidth, minHeight, height, maxHeight };
+      widget?.setUserData("qxl.datagrid.lastSize", size);
+      return size;
+    },
+
+    /**
      * @Override
      */
     renderLayout(left, top, width, height) {
@@ -638,6 +633,36 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         initialOffsetLeft,
         initialOffsetTop
       );
+      const dynamicSizing = this.getDynamicSizing();
+      const dsRows = dynamicSizing === "rows" || dynamicSizing === "both";
+      const dsCols = dynamicSizing === "columns" || dynamicSizing === "both";
+      if (!changed && (dsRows || dsCols)) {
+        for (const widget of this.getQxObject("widgetPane").getLayoutChildren()) {
+          const target = widget.getSizeHint();
+          const current = widget.getUserData("qxl.datagrid.lastSize");
+          if (!target) {
+            continue;
+          }
+          if (dsRows) {
+            const tooBig = (current?.height ?? Infinity) > (target.maxHeight ?? Infinity);
+            const tooSmall = (current?.height ?? -Infinity) < (target.minHeight ?? 0);
+            if (tooBig || tooSmall) {
+              changed = true;
+              this.__sizeCalculator.invalidate();
+              break;
+            }
+          }
+          if (dsCols) {
+            const tooBig = (current?.width ?? Infinity) > (target.maxWidth ?? Infinity);
+            const tooSmall = (current?.width ?? -Infinity) < (target.minWidth ?? 0);
+            if (tooBig || tooSmall) {
+              changed = true;
+              this.__sizeCalculator.invalidate();
+              break;
+            }
+          }
+        }
+      }
       super.renderLayout(left, top, width, height);
       if (changed) {
         this.updateWidgets();
@@ -699,6 +724,27 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     getSelectionManager() {
       return this.__selectionManager;
+    },
+
+    /**
+     * @returns {qxl.datagrid.ui.GridSizeCalculator} size calculator
+     */
+    getSizeCalculator() {
+      return this.__sizeCalculator;
+    },
+
+    /**
+     * @returns {qxl.datagrid.ui.GridStyling} styling
+     */
+    getStyling() {
+      return this.__sizeCalculator.getStyling();
+    },
+
+    /**
+     * @override
+     */
+    getDataSourceSize() {
+      return this.getDataSource().getSize();
     }
   }
 });
