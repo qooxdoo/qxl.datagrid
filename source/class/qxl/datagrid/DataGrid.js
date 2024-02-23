@@ -474,7 +474,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
           } else if (startIndex == 0) {
             percent = 0;
           } else {
-            percent = percentCalc();
+            percent = qxl.datagrid.util.Math.clamp(0, 100, percentCalc());
           }
           scrollbar.set({ position: percent });
         }
