@@ -96,7 +96,7 @@ qx.Class.define("qxl.datagrid.source.Range", {
     /**
      * Tests whether this range eclipses (ie completely overlaps) another range
      *
-     * @param {qxl.datagrid.rource.Range} range
+     * @param {qxl.datagrid.source.Range} range
      * @returns {Boolean}
      */
     eclipses(range) {

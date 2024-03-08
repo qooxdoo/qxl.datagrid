@@ -209,7 +209,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
           let isSelected = false;
           let isFocused = false;
-          if (this.__selectionManager.getSelectionStyle() == "cell") {
+          if (this.__selectionManager.getSelectionStyle() == "cell" || this.__selectionManager.getSelectionStyle() == "area") {
             isSelected = this.__selectionManager.isSelected(model);
             isFocused = this.__selectionManager.getFocused() === model;
           } else {
@@ -270,37 +270,53 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         return;
       }
       let manager = this.__selectionManager;
+      let style = manager.getSelectionStyle();
       let mode = manager.getSelectionMode();
-      let selection = qx.lang.Array.clone(manager.getSelection().toArray());
-      if (mode == "single") {
-        selection = model ? [model] : [];
-      } else if (mode == "one") {
-        if (model) {
-          selection = model ? [model] : [];
+      /**@type {Array<any>|qxl.datagrid.source.Range}*/
+      let selection;
+      if (style === "area") {
+        const widgetPosition = this.getDataSource().getPositionOfModel(model);
+        if (evt.getNativeEvent().shiftKey) {
+          let lastSelection = manager.getSelectionRange();
+          if (!(lastSelection instanceof qxl.datagrid.source.Range)) {
+            lastSelection = new qxl.datagrid.source.Range(widgetPosition, widgetPosition);
+          }
+          selection = new qxl.datagrid.source.Range(lastSelection.getStart(), widgetPosition);
+        } else {
+          selection = new qxl.datagrid.source.Range(widgetPosition, widgetPosition);
         }
-      } else if (mode == "multi") {
-        if (model) {
-          if ((evt.getModifiers() & qx.event.type.Dom.CTRL_MASK) != 0) {
+      } else {
+        selection = qx.lang.Array.clone(manager.getSelection().toArray());
+        if (mode == "single") {
+          selection = model ? [model] : [];
+        } else if (mode == "one") {
+          if (model) {
+            selection = model ? [model] : [];
+          }
+        } else if (mode == "multi") {
+          if (model) {
+            if ((evt.getModifiers() & qx.event.type.Dom.CTRL_MASK) != 0) {
+              if (selection.indexOf(model) < 0) {
+                selection.push(model);
+              } else {
+                qx.lang.Array.remove(selection, model);
+              }
+            } else {
+              selection = model ? [model] : [];
+            }
+          }
+        } else if (mode == "additive") {
+          if (model) {
             if (selection.indexOf(model) < 0) {
               selection.push(model);
             } else {
               qx.lang.Array.remove(selection, model);
             }
-          } else {
-            selection = model ? [model] : [];
           }
         }
-      } else if (mode == "additive") {
-        if (model) {
-          if (selection.indexOf(model) < 0) {
-            selection.push(model);
-          } else {
-            qx.lang.Array.remove(selection, model);
-          }
-        }
+        this.__selectionManager.setFocused(model);
       }
       this.__selectionManager.setSelection(selection);
-      this.__selectionManager.setFocused(model);
     },
 
     /**
