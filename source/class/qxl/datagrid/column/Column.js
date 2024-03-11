@@ -114,6 +114,33 @@ qx.Class.define("qxl.datagrid.column.Column", {
       check: "Function",
       nullable: true,
       event: "changeShouldFillWidth"
+    },
+
+    /**
+     * A callback used to determine how many columns a cell should fill. This
+     * also includes header cells at negative indexes.
+     *
+     * If the returned value is not a number, is zero or is negative, the
+     * colspan will default to 1. If a non-integer value is returned, it will
+     * always be rounded down.
+     *
+     * For grid cells, the behavior of colSpan will be overridden by
+     * {@link #shouldFillWidth} if that property's value function returns
+     * `true`.
+     *
+     * Providing a callback to this property will override the default call to
+     * {@link qxl.datagrid.ui.GridStyling#colSpan}'s value function. Columns
+     * may defer back to the GridStyling property value function by calling the
+     * first argument `stylingFn` (no parameters necessary).
+     *
+     *
+     * @type {(stylingFn: Function, model: any, child: qx.ui.core.Widget, relativePosition: qxl.datagrid.source.Position, absolutePosition: qxl.datagrid.source.Position) => Integer}
+     */
+    colSpan: {
+      init: null,
+      check: "Function",
+      nullable: true,
+      event: "changecolSpan"
     }
   },
 

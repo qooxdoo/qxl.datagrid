@@ -28,17 +28,22 @@ qx.Class.define("qxl.datagrid.test.source.Position", {
       this.assertTrue(p.getRow() == 1);
       this.assertTrue(p.getColumn() == 2);
 
-      p = new qxl.datagrid.source.Position({ row: 3, column: 4 });
+      let sample = new qxl.datagrid.source.Position().set({ row: 3, column: 4 });
+      p = new qxl.datagrid.source.Position(sample);
       this.assertTrue(p.getRow() == 3);
       this.assertTrue(p.getColumn() == 4);
 
-      p = new qxl.datagrid.source.Position([5, 6]);
+      p = new qxl.datagrid.source.Position({ row: 5, column: 6 });
       this.assertTrue(p.getRow() == 5);
       this.assertTrue(p.getColumn() == 6);
 
+      p = new qxl.datagrid.source.Position([7, 7]);
+      this.assertTrue(p.getRow() == 7);
+      this.assertTrue(p.getColumn() == 8);
+
       p.increment(1, 1);
-      this.assertTrue(p.getRow() == 6);
-      this.assertTrue(p.getColumn() == 7);
+      this.assertTrue(p.getRow() == 8);
+      this.assertTrue(p.getColumn() == 9);
     }
   }
 });

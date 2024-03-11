@@ -111,6 +111,33 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
       check: "Integer",
       apply: "__applyXxx",
       event: "changeVerticalSpacing"
+    },
+
+    // todo: colspan here, use it in wpane/hrows/oeBgs, col-specific colspan takes priority over this.
+    /**
+     * A callback used to determine how many columns a cell should fill. This
+     * also includes header cells at negative indexes.
+     *
+     * If the returned value is not a number, is zero or is negative, the
+     * colspan will default to 1. If a non-integer value is returned, it will
+     * always be rounded down.
+     *
+     * For grid cells, the behavior of colSpan will be overridden by
+     * {@link qxl.datagrid.column.Column#shouldFillWidth} if that property's
+     * value function returns `true`.
+     *
+     * For a given column, if that column specifies
+     * {@link qxl.datagrid.column.Column#colSpan} then that value function will
+     * be used and this one will be ignored. Columns may defer back to this
+     * function by calling their first argument (no parameters necessary).
+     *
+     * @type {(model: any, child: qx.ui.core.Widget, relativePosition: qxl.datagrid.source.Position, absolutePosition: qxl.datagrid.source.Position) => Integer}
+     */
+    colSpan: {
+      init: null,
+      check: "Function",
+      nullable: true,
+      event: "changecolSpan"
     }
   },
 

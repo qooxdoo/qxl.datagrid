@@ -158,10 +158,15 @@ qx.Class.define("qxl.datagrid.source.Position", {
      */
     __coerceValues(args) {
       let row, column;
-      if (args.length == 1 && qx.lang.Type.isObject(args[0])) {
-        ({ row, column } = args[0]);
-      } else if (args.length == 1 && qx.lang.Type.isArray(args[0])) {
-        [row, column] = args[0];
+      if (args.length == 1) {
+        if (args[0] instanceof qxl.datagrid.source.Position) {
+          row = args[0].getRow();
+          column = args[0].getColumn();
+        } else if (qx.lang.Type.isObject(args[0])) {
+          ({ row, column } = args[0]);
+        } else if (qx.lang.Type.isArray(args[0])) {
+          [row, column] = args[0];
+        }
       } else if (args.length > 0) {
         [row, column] = args;
       }
