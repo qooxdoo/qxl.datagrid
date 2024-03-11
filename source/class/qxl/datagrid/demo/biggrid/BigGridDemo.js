@@ -36,8 +36,10 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       rbComp.add(rbRow.set({ model: "row" }));
       let rbCell = new qx.ui.form.RadioButton("Cell");
       rbComp.add(rbCell.set({ model: "cell" }));
+      let rbArea = new qx.ui.form.RadioButton("Area");
+      rbComp.add(rbArea.set({ model: "area" }));
       comp.add(rbComp, { row: 0, column: 1 });
-      let manager = new qx.ui.form.RadioGroup(rbRow, rbCell);
+      let manager = new qx.ui.form.RadioGroup(rbRow, rbCell, rbArea);
       manager.addListener("changeSelection", evt => {
         let rb = evt.getData()[0];
         grid.getSelectionManager().setSelectionStyle(rb.getModel());

@@ -54,6 +54,7 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
       if (!this.__widgetFactory.getColumns()) {
         return;
       }
+      let columns = this.__widgetFactory.getColumns();
       let styling = this.__sizeCalculator.getStyling();
       let sizesData = this.__sizeCalculator.getSizes();
       if (!sizesData) {
@@ -66,16 +67,11 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
       let children = {};
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
+        let id = cellData.row + ":" + cellData.column;
         // prettier-ignore
-        if (cellData.row > numHeaderRows ||
-        cellData.column < minColumnIndex ||
-        cellData.column > maxColumnIndex) {
-          this.__widgetFactory.unbindWidget(child);
-          child.setUserData("qxl.datagrid.cellData", null);
-          this._remove(child);
-          this.__widgetFactory.disposeWidget(child);
+        if (cellData.row > numHeaderRows || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
+          this.__fullDiscardWidget(child, id);
         } else {
-          let id = cellData.row + ":" + cellData.column;
           children[id] = child;
         }
       });
@@ -83,18 +79,32 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
       let horizontalSpacing = styling.getHorizontalSpacing();
       let verticalSpacing = styling.getVerticalSpacing();
       let top = 0;
+
+      const gridStyleColSpanFn = styling.getColSpan();
+
+      let currentRelativePosition = new qxl.datagrid.source.Position();
+      let currentAbsolutePosition = new qxl.datagrid.source.Position();
       for (let rowSizeData of sizesData.rows) {
         let left = 0;
         if (rowSizeData.rowIndex >= 0) {
           continue;
         }
-        let rowIndex = -1 - rowSizeData.rowIndex;
+        let rowIndex = rowSizeData.rowIndex;
+        // exclusive endIndex
+        let lastColSpanEndIndex = -Infinity;
 
-        for (let visibleColumnIndex = 0; visibleColumnIndex < sizesData.columns.length; visibleColumnIndex++) {
-          let columnSizeData = sizesData.columns[visibleColumnIndex];
+        for (let relativeColumnIndex = 0; relativeColumnIndex < sizesData.columns.length; relativeColumnIndex++) {
+          let columnSizeData = sizesData.columns[relativeColumnIndex];
           let id = rowIndex + ":" + columnSizeData.columnIndex;
+          let filledWidth = columnSizeData.width;
 
           let child = children[id];
+
+          if (relativeColumnIndex < lastColSpanEndIndex) {
+            this.__fullDiscardWidget(child, id);
+            continue;
+          }
+
           if (!child) {
             child = this.__widgetFactory.getWidgetFor(rowIndex, columnSizeData.columnIndex);
             children[id] = child;
@@ -106,16 +116,47 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
             this.__widgetFactory.bindWidget(child);
           }
 
+          const callbackArguments = [null, child, currentRelativePosition, currentAbsolutePosition];
+
+          currentRelativePosition.set({ row: rowIndex, column: relativeColumnIndex });
+          currentAbsolutePosition.set({ row: rowIndex, column: columnSizeData.columnIndex });
+
+          const columnColSpanFn = columns.getColumn(columnSizeData.columnIndex).getColSpan();
+          let colSpan = 1;
+          if (columnColSpanFn) {
+            colSpan = columnColSpanFn(() => gridStyleColSpanFn?.(...callbackArguments), ...callbackArguments);
+          } else if (gridStyleColSpanFn) {
+            colSpan = gridStyleColSpanFn(...callbackArguments);
+          }
+          colSpan = Math.floor(colSpan ?? 1);
+          child.setUserData("qxl.datagrid.cellData", {
+            ...child.getUserData("qxl.datagrid.cellData"),
+            colSpan
+          });
+          lastColSpanEndIndex = relativeColumnIndex + colSpan;
+          for (let i = relativeColumnIndex + 1; i < lastColSpanEndIndex; i++) {
+            filledWidth += sizesData.columns[i].width + horizontalSpacing;
+          }
+
           child.setLayoutProperties({
             left: left,
-            width: columnSizeData.width,
+            width: filledWidth,
             top: top,
             height: rowSizeData.height
           });
           child.getSizeHint(true);
-          left += columnSizeData.width + horizontalSpacing;
+          left += filledWidth + horizontalSpacing;
         }
         top += rowSizeData.height + verticalSpacing;
+      }
+    },
+
+    __fullDiscardWidget(child, id) {
+      if (child) {
+        this.__widgetFactory.unbindWidget(child);
+        child.setUserData("qxl.datagrid.cellData", null);
+        this._remove(child);
+        this.__widgetFactory.disposeWidget(child);
       }
     }
   }

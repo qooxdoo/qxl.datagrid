@@ -48,7 +48,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     /** Whether the user has to select entire rows, or just individual cells */
     selectionStyle: {
       init: "row",
-      check: ["row", "cell"],
+      check: ["row", "cell", "area"],
       apply: "_applySelectionStyle",
       event: "changeSelectionStyle"
     },
@@ -89,8 +89,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * Apply for `selectionStyle`
      */
     _applySelectionStyle(value) {
-      if (value == "row") {
-        let dataSource = this.getDataSource();
+      if (value === "row") {
         for (let i = 0; i < this.__selection.getLength(); i++) {
           let model = this.__selection.getItem(i);
           model = this.__forceRowModel(model);
@@ -110,8 +109,14 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * Apply for `selectionMode`
      */
     _applySelectionMode(value) {
-      if (value == "one" && this.__selection.getLength() > 1) {
+      if (value === "one" && this.__selection.getLength() > 1) {
         this.__selection.replace([this.__selection.getItem(0)]);
+      }
+
+      if (qx.core.Environment.get("qx.debug")) {
+        if (this.getSelectionStyle() === "area") {
+          this.warn(`${this.classname}.selectionMode has no effect when the selectionStyle is 'area'`);
+        }
       }
     },
 
@@ -119,7 +124,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * Transform for `focused`
      */
     __transformFocused(value) {
-      if (this.getSelectionStyle() == "row") {
+      if (this.getSelectionStyle() === "row") {
         value = this.__forceRowModel(value);
       }
       return value;
@@ -147,14 +152,55 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
       return this.__selection;
     },
 
+    getSelectionRange() {
+      return this.__selectionRange;
+    },
+
     /**
      * Replaces current selection with the given items.
      *
-     * @param items {qx.ui.core.Widget[]} Items to select.
+     * @param {qx.ui.core.Widget[]|qx.data.Array<qx.ui.core.Widget>|qxl.datagrid.source.Range} selection Items to select.
      * @throws {Error} if one of the items is not a child element and if
      *    items contains more than one elements.
      */
-    setSelection(items) {
+    setSelection(selection) {
+      this.__selectionRange = null;
+      if (this.getSelectionStyle() === "area") {
+        this.__setSelectionArea(selection);
+      } else {
+        this.__setSelectionStandard(selection);
+      }
+    },
+
+    __setSelectionArea(range) {
+      if (qx.core.Environment.get("qx.debug")) {
+        this.assertInstance(range, qxl.datagrid.source.Range, `Failed to set selection in area selection style. The selection ${range} is not an instance of qxl.datagrid.source.Range`);
+      }
+      this.__selectionRange = range;
+      this.__selection.replace(this.__cellsFromRange(range));
+      this.setFocused(this.__selection.getItem(0));
+    },
+
+    __cellsFromRange(range) {
+      const dataSource = this.getDataSource();
+      const x1 = Math.min(range.getStart().getColumn(), range.getEnd().getColumn());
+      const x2 = Math.max(range.getStart().getColumn(), range.getEnd().getColumn());
+      const y1 = Math.min(range.getStart().getRow(), range.getEnd().getRow());
+      const y2 = Math.max(range.getStart().getRow(), range.getEnd().getRow());
+      const items = new qx.data.Array();
+      for (let y = y1; y <= y2; y++) {
+        for (let x = x1; x <= x2; x++) {
+          const nextItem = dataSource.getModelForPosition(new qxl.datagrid.source.Position(y, x));
+          if (qx.core.Environment.get("qx.debug")) {
+            this.assertNotNull(nextItem, `Failed to set selection in area selection style. There is no item at position (${x},${y}) in the DataGrid.`);
+          }
+          items.push(nextItem);
+        }
+      }
+      return items;
+    },
+
+    __setSelectionStandard(items) {
       if (qx.core.Environment.get("qx.debug")) {
         const dataSource = this.getDataSource();
         items.forEach(item => {
@@ -164,10 +210,10 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
       if (items instanceof qx.data.Array) {
         items = items.toArray();
       }
-      if (this.getSelectionMode() == "one" && items.length > 1) {
+      if (this.getSelectionMode() === "one" && items.length > 1) {
         items = [items[0]];
       }
-      if (this.getSelectionStyle() == "row") {
+      if (this.getSelectionStyle() === "row") {
         items = items.map(model => this.__forceRowModel(model));
       }
       this.__selection.replace(items);
@@ -197,7 +243,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * @return {Boolean} Whether the selection is empty.
      */
     isSelectionEmpty() {
-      return this.__selection.getLength() == 0;
+      return this.__selection.getLength() === 0;
     },
 
     /**

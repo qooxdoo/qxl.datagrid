@@ -9,6 +9,6 @@
   "author": "John Spackman john.spackman@zenesis.com, @johnspackman",
   "license": "MIT",
   "dependencies": {
-    "@qooxdoo/framework": "^7.6.0"
+    "@qooxdoo/framework": "^7.6.3"
   }
 }
