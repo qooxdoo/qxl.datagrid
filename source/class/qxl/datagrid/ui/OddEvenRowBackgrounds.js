@@ -78,7 +78,7 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
       let maxRowIndex = null;
       let minDataRowIndex = null;
       sizesData.rows.forEach(row => {
-        if (row.rowIndex >= 0 && (minDataRowIndex === null || minDataRowIndex > row.rowIndex)) {
+        if (row.rowIndex >= styling.getNumFixedRows() && (minDataRowIndex === null || minDataRowIndex > row.rowIndex)) {
           minDataRowIndex = row.rowIndex;
         }
         if (minRowIndex === null || minRowIndex > row.rowIndex) {

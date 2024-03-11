@@ -114,7 +114,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let maxRowIndex = null;
       let minDataRowIndex = null;
       sizesData.rows.forEach(row => {
-        if (row.rowIndex >= 0 && (minDataRowIndex === null || minDataRowIndex > row.rowIndex)) {
+        if (row.rowIndex >= styling.getNumFixedRows() && (minDataRowIndex === null || minDataRowIndex > row.rowIndex)) {
           minDataRowIndex = row.rowIndex;
         }
         if (minRowIndex === null || minRowIndex > row.rowIndex) {
@@ -154,8 +154,10 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let verticalSpacing = styling.getVerticalSpacing();
       let top = 0;
 
-      let fillFromRelativePosition = new qxl.datagrid.source.Position();
-      let fillFromAbsolutePosition = new qxl.datagrid.source.Position();
+      const gridStyleColSpanFn = styling.getColSpan();
+
+      let currentRelativePosition = new qxl.datagrid.source.Position();
+      let currentAbsolutePosition = new qxl.datagrid.source.Position();
       for (let relativeRowIndex = 0; relativeRowIndex < sizesData.rows.length; relativeRowIndex++) {
         let left = 0;
         let rowSizeData = sizesData.rows[relativeRowIndex];
@@ -165,6 +167,8 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         }
 
         let fillFromColumnIndex = null;
+        // exclusive endIndex
+        let lastColSpanEndIndex = -Infinity;
 
         for (let relativeColumnIndex = 0; relativeColumnIndex < sizesData.columns.length; relativeColumnIndex++) {
           let columnSizeData = sizesData.columns[relativeColumnIndex];
@@ -172,38 +176,57 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           let filledWidth = columnSizeData.width;
 
           let child = children[id];
+
+          if (relativeColumnIndex < lastColSpanEndIndex || fillFromColumnIndex !== null) {
+            this.__fullDiscardWidget(child, id);
+            continue;
+          }
+
           let model = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, columnSizeData.columnIndex));
           if (!child) {
             child = this.__widgetFactory.getWidgetFor(rowSizeData.rowIndex, columnSizeData.columnIndex);
             children[id] = child;
             child.setUserData("qxl.datagrid.cellData", {
               row: rowSizeData.rowIndex,
-              column: columnSizeData.columnIndex
+              column: columnSizeData.columnIndex,
+              colSpan: 1
             });
             this._add(child);
             qx.ui.core.queue.Layout.add(child);
             this.__widgetFactory.bindWidget(child, model);
           }
 
+          const callbackArguments = [model, child, currentRelativePosition, currentAbsolutePosition];
           // if no idx found...
           if (fillFromColumnIndex === null) {
-            fillFromRelativePosition.set({ row: relativeRowIndex, column: relativeColumnIndex });
-            fillFromAbsolutePosition.set({ row: rowSizeData.rowIndex, column: columnSizeData.columnIndex });
+            currentRelativePosition.set({ row: relativeRowIndex, column: relativeColumnIndex });
+            currentAbsolutePosition.set({ row: rowSizeData.rowIndex, column: columnSizeData.columnIndex });
             //  check if this col should fill
-            let shouldFillFn = columns.getColumn(columnSizeData.columnIndex).getShouldFillWidth();
-            let shouldFill = shouldFillFn ? shouldFillFn(model, child, fillFromRelativePosition, fillFromAbsolutePosition) : false;
+            const shouldFillFn = columns.getColumn(columnSizeData.columnIndex).getShouldFillWidth();
+            let shouldFill = shouldFillFn ? shouldFillFn(...callbackArguments) : false;
             if (shouldFill) {
               // assign and fill width
               fillFromColumnIndex = columnSizeData.columnIndex;
               for (let i = relativeColumnIndex + 1; i < sizesData.columns.length; i++) {
                 filledWidth += sizesData.columns[i].width + horizontalSpacing;
               }
-            }
-          } else {
-            // idx found, discard widget
-            if (child) {
-              this.__fullDiscardWidget(child, id);
-              continue;
+            } else {
+              const columnColSpanFn = columns.getColumn(columnSizeData.columnIndex).getColSpan();
+              let colSpan = 1;
+              if (columnColSpanFn) {
+                colSpan = columnColSpanFn(() => gridStyleColSpanFn?.(...callbackArguments), ...callbackArguments);
+              } else if (gridStyleColSpanFn) {
+                colSpan = gridStyleColSpanFn(...callbackArguments);
+              }
+              colSpan = Math.max(1, Math.floor(colSpan ?? 1));
+              child.setUserData("qxl.datagrid.cellData", {
+                ...child.getUserData("qxl.datagrid.cellData"),
+                colSpan
+              });
+              lastColSpanEndIndex = relativeColumnIndex + colSpan;
+              for (let i = relativeColumnIndex + 1; i < lastColSpanEndIndex; i++) {
+                filledWidth += sizesData.columns[i].width + horizontalSpacing;
+              }
             }
           }
 
@@ -234,7 +257,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             height: rowSizeData.height
           });
           child.getSizeHint(true);
-          left += columnSizeData.width + horizontalSpacing;
+          left += filledWidth + horizontalSpacing;
         }
         top += rowSizeData.height + verticalSpacing;
       }
@@ -242,11 +265,15 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     },
 
     __fullDiscardWidget(child, id) {
-      this.__widgetFactory.unbindWidget(child);
-      child.setUserData("qxl.datagrid.cellData", null);
-      this._remove(child);
-      this.__widgetFactory.disposeWidget(child);
-      delete this.__children[id];
+      if (child) {
+        this.__widgetFactory.unbindWidget(child);
+        child.setUserData("qxl.datagrid.cellData", null);
+        this._remove(child);
+        this.__widgetFactory.disposeWidget(child);
+      }
+      if (id in this.__children) {
+        delete this.__children[id];
+      }
     },
 
     getChildAtPosition(row, column) {
