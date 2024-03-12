@@ -210,11 +210,14 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
       if (items instanceof qx.data.Array) {
         items = items.toArray();
       }
-      if (this.getSelectionMode() === "one" && items.length > 1) {
+      if (["one", "single"].includes(this.getSelectionMode()) && items.length > 1) {
         items = [items[0]];
       }
       if (this.getSelectionStyle() === "row") {
         items = items.map(model => this.__forceRowModel(model));
+      }
+      if (this.getSelectionMode() === "single" && items[0] === this.__selection.getItem(0)) {
+        items = [];
       }
       this.__selection.replace(items);
     },
