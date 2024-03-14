@@ -395,7 +395,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     scrollToSelection() {
       let selectedModel = this.getSelection().getLength() ? this.getSelection().getItem(0) : null;
       if (!selectedModel) {
-        throw new Error("Nothing is selected");
+        return;
       }
 
       let selectionIndex = this.getDataSource().getPositionOfModel(selectedModel).getRow();
