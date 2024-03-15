@@ -395,6 +395,10 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     scrollToSelection() {
       let selectedModel = this.getSelection().getLength() ? this.getSelection().getItem(0) : null;
       if (!selectedModel) {
+        // single selection mode is excused for having no selection as setting the selection to the current selection will deselect the item
+        if (this.__selectionManager.getSelectionMode() === "single") {
+          return;
+        }
         throw new Error("Nothing is selected");
       }
 
