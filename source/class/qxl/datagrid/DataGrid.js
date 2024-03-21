@@ -436,7 +436,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @param {Integer} pos
      */
     scrollToX(pos) {
-      /* TODO */
+      this.getChildControl("scrollbar-x").scrollTo(pos);
     },
 
     /**
@@ -445,7 +445,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @param {Integer} pos
      */
     scrollToY(pos) {
-      /* TODO */
+      this.getChildControl("scrollbar-y").scrollTo(pos);
     },
 
     /**
