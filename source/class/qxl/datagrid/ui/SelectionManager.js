@@ -136,7 +136,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     __fireSelectionChange() {
       let newData = this.__selection;
       let oldData = this.__selectionChangeOldData;
-      this.__selectionChangeOldData = newData;
+      this.__selectionChangeOldData = newData.copy();
       this.fireDataEvent("changeSelection", newData, oldData);
     },
 

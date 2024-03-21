@@ -39,7 +39,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     this.__selectionManager = new qxl.datagrid.ui.SelectionManager();
     this.__selectionManager.addListener("changeSelection", evt => {
       this.scheduleUpdateWidgets();
-      this.fireDataEvent("changeSelection", evt.getData());
+      this.fireDataEvent("changeSelection", evt.getData(), evt.getOldData());
     });
 
     columns = columns || null;
