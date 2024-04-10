@@ -383,7 +383,14 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     getMaxRows() {
       const styling = this.__sizeCalculator.getStyling();
-      return Math.floor(this.getQxObject("oddEvenRows").getBounds().height / (styling.getMaxRowHeight() ?? styling.getMinRowHeight())) - 4;
+      const oddEvenBounds = this.getQxObject("oddEvenRows").getBounds();
+      if (oddEvenBounds && "height" in oddEvenBounds) {
+        return Math.floor(oddEvenBounds.height / (styling.getMaxRowHeight() ?? styling.getMinRowHeight())) - 4;
+      }
+      if (qx.core.Environment.get("qx.debug")) {
+        this.warn(`${this.classname}.getMaxRows called too early, assuming maximum of zero rows`);
+      }
+      return 0;
     },
 
     /**
