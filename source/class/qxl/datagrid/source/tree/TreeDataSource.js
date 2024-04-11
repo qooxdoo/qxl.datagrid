@@ -122,6 +122,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         let childInspector = this.getNodeInspectorFactory()(node);
 
         childRowMeta.canHaveChildren = childInspector.canHaveChildren(node);
+        childRowMeta.parentMeta = rowMeta;
         this.__rowMetaDatas.push(childRowMeta);
         this.__rowMetaDataByNode[node.toHashCode()] = childRowMeta;
         rowMeta.childRowMetas.push(childRowMeta);
@@ -228,6 +229,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         let childRowMeta = this.__createRowMetaData(childNode, rowMetadata.level + 1);
         childRowMeta.canHaveChildren = childInspector.canHaveChildren(childNode);
         childRowMetas.push(childRowMeta);
+        childRowMeta.parentMeta = rowMetadata;
         this.__rowMetaDataByNode[childNode.toHashCode()] = childRowMeta;
       }
       let before = this.__rowMetaDatas.slice(0, parentRowIndex + 1);
@@ -432,6 +434,20 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       }
       let row = this.__rowMetaDatas[rowIndex];
       return row.node;
+    },
+
+    /**
+     *
+     * @param {qx.core.Object} node
+     * @returns {qx.core.Object}
+     */
+    getParentOf(node) {
+      let meta = this.__rowMetaDataByNode[node.toHashCode()];
+      if (!meta) {
+        throw new Error("Cannot get parent of node. Node is not displayed in tree.");
+      }
+
+      return meta.parentMeta?.node ?? null;
     },
 
     /**
