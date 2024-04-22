@@ -708,7 +708,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     /**
      * Returns an array of currently selected model items
      *
-     * @return {*[]} List of items.
+     * @return {qx.data.Array} List of items.
      */
     getSelection() {
       return this.__selectionManager.getSelection();
