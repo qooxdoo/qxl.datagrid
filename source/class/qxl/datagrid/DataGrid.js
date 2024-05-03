@@ -358,7 +358,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @returns
      */
     _onRoll(e) {
-      const SCROLLING_SPEED = 0.08;
+      const SCROLLING_SPEED = 0.06;
       // only wheel and touch
       if (e.getPointerType() == "mouse") {
         e.stop();
@@ -373,10 +373,11 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
 
       let rowCount = this.getDataSourceSize().getRow();
-      var newStartRowIndex = this.getStartRowIndex() + Math.floor(e.getDelta().y * SCROLLING_SPEED);
-      let maxRows = this.getMaxRows();
-      newStartRowIndex = qxl.datagrid.util.Math.clamp(0, Math.max(0, rowCount - maxRows), newStartRowIndex);
-
+      let currentStartRowIndex = this.getStartRowIndex();
+      const minValue = e.getDelta().y > 0 ? currentStartRowIndex : 0;
+      const maxValue = e.getDelta().y < 0 ? currentStartRowIndex : rowCount - 1;
+      let newStartRowIndex = qxl.datagrid.util.Math.clamp(minValue, maxValue, currentStartRowIndex + Math.floor(e.getDelta().y * SCROLLING_SPEED));
+      
       const isAtScrollLimit = newStartRowIndex == this.getStartRowIndex();
       if (!isAtScrollLimit) {
         e.stop();
@@ -506,9 +507,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       let showY = this.getScrollbarY();
       let totalRows = size.getRow() + this.getStyling().getNumHeaderRows();
       let startRowIndex = this.getStartRowIndex();
-      calculateScrollbar(showY, scrollbarY, sizeData.rows.length, totalRows, startRowIndex, () =>
-        Math.floor(qxl.datagrid.util.Math.interpolate(0, Math.max(0, size.getRow() - this.getMaxRows()), 0, 100, this.getStartRowIndex()))
-      );
+      calculateScrollbar(showY, scrollbarY, sizeData.rows.length, totalRows, startRowIndex, () => {
+        let maxIndex = size.getRow() - 1; // SUB(1): getRow() is 1-based, maxIndex is 0-based
+        let currentIndex = this.getStartRowIndex();
+        let interpolation = qxl.datagrid.util.Math.interpolate(0, maxIndex, 0, 100, currentIndex);
+        return Math.floor(interpolation);
+      });
 
       this.__inComputeScrollbars = false;
     },
