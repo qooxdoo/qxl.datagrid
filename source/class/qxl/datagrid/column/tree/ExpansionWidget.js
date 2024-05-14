@@ -212,7 +212,9 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
         case "label":
           return new qx.ui.basic.Label().set({
             allowGrowX: true,
-            anonymous: true
+            anonymous: true,
+            rich: true,
+            wrap: true
           });
       }
 
