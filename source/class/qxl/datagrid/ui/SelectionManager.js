@@ -42,7 +42,8 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     dataSource: {
       init: null,
       check: "qxl.datagrid.source.IDataSource",
-      event: "changeDataSource"
+      event: "changeDataSource",
+      apply: "_applyDataSource"
     },
 
     /** Whether the user has to select entire rows, or just individual cells */
@@ -84,6 +85,36 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
 
     /** @type{Array} the oldData for batched notification of selection change */
     __selectionChangeOldData: null,
+
+    /**
+     * Apply for `dataSource` property
+     */
+    _applyDataSource(value, oldValue) {
+      if (oldValue) {
+        oldValue.removeListener("changeSize", this.__onDataSourceChange, this);
+      }
+      if (value) {
+        value.addListener("changeSize", this.__onDataSourceChange, this);
+      }
+    },
+
+    /**
+     * Event handler for changes to the data source's model
+     *
+     * @param {qx.event.type.Data} evt
+     */
+    __onDataSourceChange(evt) {
+      let newSelection = [];
+      let dataSource = this.getDataSource();
+      if (dataSource) {
+        this.__selection.forEach(model => {
+          if (dataSource.isModelValid(model)) {
+            newSelection.push(model);
+          }
+        });
+      }
+      this.__selection.replace(newSelection);
+    },
 
     /**
      * Apply for `selectionStyle`

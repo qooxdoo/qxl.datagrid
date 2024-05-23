@@ -65,6 +65,14 @@ qx.Interface.define("qxl.datagrid.source.IDataSource", {
     getPositionOfModel(value) {},
 
     /**
+     * Called to find out if the model is valid within this data source
+     *
+     * @param {*} value
+     * @return {Boolean}
+     */
+    isModelValid(value) {},
+
+    /**
      * Returns the size of the datasource
      *
      * @return {qxl.datagrid.source.Position}

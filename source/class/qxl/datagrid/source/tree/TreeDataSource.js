@@ -409,6 +409,13 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     },
 
     /**
+     * @Override
+     */
+    isModelValid(value) {
+      return !!this.getPositionOfModel(value);
+    },
+
+    /**
      * @override
      */
     getNodeStateFor(node) {

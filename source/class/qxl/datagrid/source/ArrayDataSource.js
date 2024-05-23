@@ -116,6 +116,13 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
     /**
      * @Override
      */
+    isModelValid(value) {
+      return this.getModel().indexOf(value) >= 0;
+    },
+
+    /**
+     * @Override
+     */
     getSize() {
       if (!this.getModel()) {
         return new qxl.datagrid.source.Position(0, 0);
