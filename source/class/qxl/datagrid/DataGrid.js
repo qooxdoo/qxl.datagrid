@@ -377,7 +377,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       const minValue = e.getDelta().y > 0 ? currentStartRowIndex : 0;
       const maxValue = e.getDelta().y < 0 ? currentStartRowIndex : rowCount - 1;
       let newStartRowIndex = qxl.datagrid.util.Math.clamp(minValue, maxValue, currentStartRowIndex + Math.floor(e.getDelta().y * SCROLLING_SPEED));
-      
+
       const isAtScrollLimit = newStartRowIndex == this.getStartRowIndex();
       if (!isAtScrollLimit) {
         e.stop();

@@ -141,6 +141,31 @@ qx.Class.define("qxl.datagrid.column.Column", {
       check: "Function",
       nullable: true,
       event: "changecolSpan"
+    },
+
+    /**
+     * User-specified.
+     * Whether this column supports sorting.
+     * If true, the column will be sortable and the user can click on the header to sort the column.
+     */
+    sortable: {
+      init: false,
+      check: "Boolean",
+      event: "changeSortable"
+    },
+
+    /**
+     * Only relevant when sortable is set to true
+     * Defines the sort order for this column
+     * This is changed when the user clicks on a column to sort it,
+     * but can also be set programatically.
+     * Note: The code ensures that at most one column within an instance of qxl.datagrid.column.Columns has a sortOrder of "asc" or "desc"
+     */
+    sortOrder: {
+      init: null,
+      nullable: true,
+      check: ["asc", "desc"],
+      event: "changeSortOrder"
     }
   },
 
@@ -162,7 +187,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
     __datagrid: null,
 
     /**
-     * Called the the DataGrid when the column is added.  Do NOT call this manually.
+     * Called by the DataGrid when the column is added.  Do NOT call this manually.
      *
      * @param {qxl.datagrid.DataGrid} datagrid
      */

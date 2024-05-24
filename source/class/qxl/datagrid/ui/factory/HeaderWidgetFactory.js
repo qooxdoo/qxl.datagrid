@@ -24,6 +24,7 @@
  */
 qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
   extend: qxl.datagrid.ui.factory.AbstractWidgetFactory,
+  implement: qxl.datagrid.ui.factory.IWidgetFactory,
 
   properties: {
     /**
@@ -42,14 +43,15 @@ qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
     /**
      * @override
      */
-    bindWidget(widget, column) {
+    bindWidget(widget) {
       let bindingData = widget.getUserData("qxl.datagrid.factory.AbstractWidgetFactory.bindingData");
-      let id = bindingData.column.bind("caption", widget, "label", {
-        converter(data, model, source, target) {
-          return data ? data : qxl.datagrid.util.Labels.getColumnLetters(bindingData.columnIndex);
-        }
-      });
-      bindingData.bindingId = id;
+      let column = bindingData.column;
+      let bindings = new qxl.datagrid.binding.Bindings();
+      bindings.add(column, column.bind("sortOrder", widget, "sortOrder"));
+      bindings.add(widget, widget.bind("sortOrder", column, "sortOrder"));
+      bindings.add(column, column.bind("caption", widget, "label"));
+      bindings.add(column, column.bind("sortable", widget, "sortable"));
+      bindingData.bindings = bindings;
     },
 
     /**
@@ -57,20 +59,16 @@ qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
      */
     unbindWidget(widget) {
       let bindingData = widget.getUserData("qxl.datagrid.factory.AbstractWidgetFactory.bindingData");
-      bindingData.column.removeBinding(bindingData.bindingId);
-      bindingData.bindingId = null;
+      bindingData.bindings.dispose();
+      bindingData.bindings = null;
     },
 
     /**
      * @override
      */
     _createWidget() {
-      let atom = new qx.ui.basic.Atom().set({
-        appearance: this.getWidgetAppearance(),
-        rich: true,
-        iconPosition: "top-left"
-      });
-      return atom;
+      let widget = new qxl.datagrid.ui.ColumnHeaderCell();
+      return widget;
     }
   }
 });

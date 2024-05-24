@@ -40,7 +40,17 @@ qx.Class.define("qxl.datagrid.column.Columns", {
      *
      * Fired when the list of columns changes; data is {ChangeData}
      */
-    change: "qx.event.type.Data"
+    change: "qx.event.type.Data",
+    /**
+     * @type {{column: qxl.datagrid.column.Column, sortOrder: "asc" | "desc"}}
+     * Fired when the sortOrder property of one of the columns changes.
+     * This can be triggered when the user clicks on a column to sort it,
+     * or when the programmer sets it programmatically.
+     *
+     * The user can subscribe to this event to know when sorting is requested,
+     * an update the dataSource {@link qxl.datagrid.source.AbstractDataSource} accordingly.
+     */
+    changeSortingColumn: "qx.event.type.Data"
   },
 
   members: {
@@ -68,6 +78,9 @@ qx.Class.define("qxl.datagrid.column.Columns", {
       }
       let moved = !!qx.lang.Array.remove(this._columns, column);
       this._columns.push(column);
+
+      column.addListener("changeSortOrder", this.__onColumnSortOrderChange, this);
+
       this.fireDataEvent("change", {
         type: "add",
         column: column,
@@ -98,6 +111,8 @@ qx.Class.define("qxl.datagrid.column.Columns", {
           type: "remove",
           column: column
         });
+
+        column.removeListener("changeSortOrder", this.__onColumnSortOrderChange, this);
       }
     },
 
@@ -204,6 +219,31 @@ qx.Class.define("qxl.datagrid.column.Columns", {
      */
     toArray() {
       return this._columns;
+    },
+
+    /**
+     * Called when the sortOrder property of any of the columns changes.
+     *
+     * Ensures that only one column can be sorted at a time.
+     * @param {*} evt
+     * @returns
+     */
+    __onColumnSortOrderChange(evt) {
+      let column = evt.getTarget();
+      let sortOrder = evt.getData();
+
+      if (!sortOrder) return;
+
+      this.fireDataEvent("changeSort", {
+        column: column,
+        sortOrder
+      });
+
+      for (let otherColumn of this._columns) {
+        if (otherColumn !== column) {
+          otherColumn.setSortOrder(null);
+        }
+      }
     }
   },
 
