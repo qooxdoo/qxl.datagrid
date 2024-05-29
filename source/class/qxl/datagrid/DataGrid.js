@@ -358,7 +358,6 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @returns
      */
     _onRoll(e) {
-      const SCROLLING_SPEED = 0.06;
       // only wheel and touch
       if (e.getPointerType() == "mouse") {
         e.stop();
@@ -372,17 +371,25 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         return;
       }
 
-      let rowCount = this.getDataSourceSize().getRow();
-      let currentStartRowIndex = this.getStartRowIndex();
-      const minValue = e.getDelta().y > 0 ? currentStartRowIndex : 0;
-      const maxValue = e.getDelta().y < 0 ? currentStartRowIndex : rowCount - 1;
-      let newStartRowIndex = qxl.datagrid.util.Math.clamp(minValue, maxValue, currentStartRowIndex + Math.floor(e.getDelta().y * SCROLLING_SPEED));
-
-      const isAtScrollLimit = newStartRowIndex == this.getStartRowIndex();
-      if (!isAtScrollLimit) {
+      let oldStartRowIndex = this.getStartRowIndex();
+      this.__updateScrollStartIndex(e.getDelta().y);
+      let newStartRowIndex = this.getStartRowIndex();
+      if (newStartRowIndex !== oldStartRowIndex) {
         e.stop();
       }
-      this.setStartRowIndex(newStartRowIndex);
+    },
+
+    __updateScrollStartIndex(deltaY) {
+      let dataSourceSize = this.getDataSource()?.getSize();
+
+      let rowCount = dataSourceSize?.getRow();
+      if (rowCount) {
+        let currentStartRowIndex = this.getStartRowIndex();
+        const minValue = deltaY > 0 ? currentStartRowIndex : 0;
+        const maxValue = deltaY < 0 ? currentStartRowIndex : rowCount - 1;
+        let newStartRowIndex = qxl.datagrid.util.Math.clamp(minValue, maxValue, currentStartRowIndex + Math.floor(deltaY * qxl.datagrid.DataGrid.SCROLLING_SPEED));
+        this.setStartRowIndex(newStartRowIndex);
+      }
     },
 
     /**
@@ -584,6 +591,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
       this.getQxObject("header").updateWidgets();
       this.getQxObject("oddEvenRows").updateWidgets();
+      if (!this.__inApplyStartRowIndex && !this.__inApplyStartColumnIndex) {
+        this.__updateScrollStartIndex(0);
+      }
       const onPaneUpdated = () => {
         this._computeScrollbars();
         this.scheduleLayoutUpdate();
@@ -763,5 +773,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     getDataSourceSize() {
       return this.getDataSource().getSize();
     }
+  },
+
+  statics: {
+    SCROLLING_SPEED: 0.06
   }
 });
