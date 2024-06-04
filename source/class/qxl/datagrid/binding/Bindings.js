@@ -85,7 +85,7 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
         if (bindingType === "listener") {
           this.assertTrue(typeof bindingId == "string", "Invalid binding type " + bindingType + " for bindingId " + bindingId);
         } else {
-          this.assertTrue(typeof bindingId != "string", "Invalid binding type " + bindingType + " for bindingId " + JSON.stringify(bindingId));
+          this.assertTrue(typeof bindingId != "string", "Invalid binding type " + bindingType + " for bindingId " + bindingId);
         }
       }
       this.__bindingData.push({
