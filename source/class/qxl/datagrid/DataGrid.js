@@ -34,6 +34,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
    */
   construct(columns, styling) {
     super();
+    if (!columns) {
+      throw new Error("Columns must be provided!");
+    }
     this.__debounceUpdateWidgets = new qxl.datagrid.util.Debounce(() => this.updateWidgets(), 50);
     this.__selectionManager = new qxl.datagrid.ui.SelectionManager();
     this.__selectionManager.addListener("changeSelection", evt => {
@@ -41,12 +44,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       this.fireDataEvent("changeSelection", evt.getData(), evt.getOldData());
     });
 
-    columns = columns || null;
     styling = styling || new qxl.datagrid.ui.GridStyling();
     this.__sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, this);
-    if (columns) {
-      this.setColumns(columns);
-    }
+    this.setColumns(columns);
 
     this.getQxObject("widgetPane").addListener("modelDoubleTap", evt => this.fireDataEvent("modelDoubleTap", evt.getData()));
   },
