@@ -161,6 +161,66 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       return this.__sizes;
     },
 
+    getPaneBounds() {
+      let styling = this.getStyling();
+      let sizes = this.getSizes();
+      let width = 0;
+      let height = 0;
+      if (sizes) {
+        let skipColumns = styling.getNumFixedColumns();
+        for (let column of sizes.columns.slice(skipColumns)) {
+          width += column.width;
+        }
+        width += styling.getHorizontalSpacing() * (sizes.columns.length - skipColumns - 1);
+
+        let skipRows = styling.getNumFixedRows();
+        for (let row of sizes.rows.slice(skipRows)) {
+          height += row.height;
+        }
+        height += styling.getVerticalSpacing() * (sizes.rows.length - skipRows - 1);
+      }
+      return { width, height };
+    },
+
+    getColHeaderBounds() {
+      let styling = this.getStyling();
+      let sizes = this.getSizes();
+      let width = 0;
+      let height = 0;
+      if (sizes) {
+        for (let column of sizes.columns) {
+          width += column.width;
+        }
+        width += styling.getHorizontalSpacing() * (sizes.columns.length - 1);
+
+        let rowCount = styling.getNumHeaderRows() + styling.getNumFixedRows();
+        for (let i = 0; i < rowCount; i++) {
+          height += sizes.rows[i].height;
+        }
+        height += styling.getVerticalSpacing() * (rowCount - 1);
+      }
+      return { width, height };
+    },
+
+    getRowHeaderBounds() {
+      let styling = this.getStyling();
+      let sizes = this.getSizes();
+      let width = 0;
+      let height = 0;
+      if (sizes) {
+        let colCount = styling.getNumFixedColumns();
+        for (let i = 0; i < colCount; i++) {
+          width += sizes.columns[i].width;
+        }
+        width += styling.getHorizontalSpacing() * (colCount - 1);
+        for (let row of sizes.rows) {
+          height += row.height;
+        }
+        height += styling.getVerticalSpacing() * (sizes.rows.length - 1);
+      }
+      return { width, height };
+    },
+
     /**
      * Gets the left and top initial offsets
      *
@@ -212,7 +272,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
        * A map of absolute column indexes to their widths
        */
       let columnWidths = {};
-      let flexAvailable = this._width;
+      let flexAvailable = isFinite(this._width) ? this._width : 0;
       let horizontalSpacing = styling.getHorizontalSpacing();
       let verticalSpacing = styling.getVerticalSpacing();
       let totalColumnWidth = 0;
@@ -296,7 +356,9 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
               flexAmount = maxFlex;
             }
           }
-
+          if (flexAmount < 0) {
+            flexAmount = 0;
+          }
           flexAvailable -= flexAmount;
           totalColumnWidth += flexAmount;
           columnWidths[index] += flexAmount;
