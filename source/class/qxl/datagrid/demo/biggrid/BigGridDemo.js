@@ -81,7 +81,7 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
   objects: {
     dataSource() {
       // Create a massive data source with 1,000,000 rows and 10,000 columns
-      return new qxl.datagrid.demo.biggrid.DummyDataSource(1000 /* 000 */, 100 /* 00 */);
+      return new qxl.datagrid.demo.biggrid.DummyDataSource(1_000_000, 10_000);
     },
 
     grid() {

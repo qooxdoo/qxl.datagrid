@@ -199,15 +199,27 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
         return;
       }
 
-      let oldStartRowIndex = this.getStartRowIndex();
-      this.__updateScrollStartIndex(e.getDelta().y);
-      let newStartRowIndex = this.getStartRowIndex();
-      if (newStartRowIndex !== oldStartRowIndex) {
-        e.stop();
+      let delta = e.getDelta();
+
+      if (delta.y !== 0) {
+        let oldStartRowIndex = this.getStartRowIndex();
+        this.__updateScrollXStartIndex(delta.y);
+        let newStartRowIndex = this.getStartRowIndex();
+        if (newStartRowIndex !== oldStartRowIndex) {
+          e.stop();
+        }
+      }
+      if (delta.x !== 0) {
+        let oldStartColumnIndex = this.getStartColumnIndex();
+        this.__updateScrollYStartIndex(delta.x);
+        let newStartColumnIndex = this.getStartColumnIndex();
+        if (newStartColumnIndex !== oldStartColumnIndex) {
+          e.stop();
+        }
       }
     },
 
-    __updateScrollStartIndex(deltaY) {
+    __updateScrollXStartIndex(deltaY) {
       let dataSourceSize = this.getDataSource()?.getSize();
 
       let rowCount = dataSourceSize?.getRow();
@@ -217,6 +229,19 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
         const maxValue = deltaY < 0 ? currentStartRowIndex : rowCount - 1;
         let newStartRowIndex = qxl.datagrid.util.Math.clamp(minValue, maxValue, currentStartRowIndex + Math.floor(deltaY * qxl.datagrid.VirtualScrollDataGrid.SCROLLING_SPEED));
         this.setStartRowIndex(newStartRowIndex);
+      }
+    },
+
+    __updateScrollYStartIndex(deltaX) {
+      let dataSourceSize = this.getDataSource()?.getSize();
+
+      let colCount = dataSourceSize?.getColumn();
+      if (colCount) {
+        let currentStartColIndex = this.getStartColumnIndex();
+        const minValue = deltaX > 0 ? currentStartColIndex : 0;
+        const maxValue = deltaX < 0 ? currentStartColIndex : colCount - 1;
+        let newStartColIndex = qxl.datagrid.util.Math.clamp(minValue, maxValue, currentStartColIndex + Math.floor(deltaX * qxl.datagrid.VirtualScrollDataGrid.SCROLLING_SPEED));
+        this.setStartColumnIndex(newStartColIndex);
       }
     },
 
@@ -436,7 +461,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
         return;
       }
       if (!this.__inApplyStartRowIndex && !this.__inApplyStartColumnIndex) {
-        this.__updateScrollStartIndex(0);
+        this.__updateScrollXStartIndex(0);
+        this.__updateScrollYStartIndex(0);
       }
       return super.updateWidgets();
     },
@@ -451,7 +477,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
       const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
       return this.getSizeCalculator().setAvailableSize(
         width - this.getChildControl("scrollbar-y").getSizeHint().width - initialOffsetLeft - this.getQxObject("widgetPane").getPaddingRight(),
-        height,
+        height - this.getChildControl("scrollbar-x").getSizeHint().height - initialOffsetTop - this.getQxObject("widgetPane").getPaddingBottom(),
         this.getStartRowIndex(),
         this.getStartColumnIndex(),
         initialOffsetLeft,

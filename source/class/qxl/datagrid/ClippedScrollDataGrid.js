@@ -32,6 +32,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
   construct(...args) {
     super(...args);
 
+    this.getQxObject("widgetPane").setShouldDiscardWidgets(false);
     if (qx.core.Environment.get("os.scrollBarOverlayed")) {
       // use a plain canvas to overlay the scroll bars
       this._setLayout(new qx.ui.layout.Canvas());
@@ -59,6 +60,48 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
 
     var size = qx.ui.core.scroll.AbstractScrollArea.DEFAULT_SCROLLBAR_WIDTH * 2 + 14;
     this.set({ minHeight: size, minWidth: size });
+
+    // Roll listener for scrolling
+    this._addRollHandling();
+  },
+
+  properties: {
+    /**
+     * The policy, when the horizontal scrollbar should be shown.
+     * <ul>
+     *   <li><b>auto</b>: Show scrollbar on demand</li>
+     *   <li><b>on</b>: Always show the scrollbar</li>
+     *   <li><b>off</b>: Never show the scrollbar</li>
+     * </ul>
+     */
+    scrollbarX: {
+      check: ["auto", "on", "off"],
+      init: "auto",
+      themeable: true,
+      apply: "_updateScrollbarVisibility"
+    },
+
+    /**
+     * The policy, when the horizontal scrollbar should be shown.
+     * <ul>
+     *   <li><b>auto</b>: Show scrollbar on demand</li>
+     *   <li><b>on</b>: Always show the scrollbar</li>
+     *   <li><b>off</b>: Never show the scrollbar</li>
+     * </ul>
+     */
+    scrollbarY: {
+      check: ["auto", "on", "off"],
+      init: "auto",
+      themeable: true,
+      apply: "_updateScrollbarVisibility"
+    },
+
+    /**
+     * Group property, to set the overflow of both scroll bars.
+     */
+    scrollbar: {
+      group: ["scrollbarX", "scrollbarY"]
+    }
   },
 
   objects: {
@@ -120,10 +163,20 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
   },
 
   members: {
-    _setAvailableSize() {
+    _setAvailableSize(width, height) {
       const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
       const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
-      return this.getSizeCalculator().setAvailableSize(Infinity, Infinity, 0, 0, initialOffsetLeft, initialOffsetTop);
+      let scrollbarWidth = this.getChildControl("scrollbar-y").getVisibility() === "visible" ? this.getChildControl("scrollbar-y").getSizeHint().width : 0;
+      let scrollbarHeight = this.getChildControl("scrollbar-x").getVisibility() === "visible" ? this.getChildControl("scrollbar-x").getSizeHint().height : 0;
+      return this.getSizeCalculator().setAvailableSize(
+        width - initialOffsetLeft - this.getQxObject("widgetPane").getPaddingRight() - scrollbarWidth,
+        height - initialOffsetTop - this.getQxObject("widgetPane").getPaddingBottom() - scrollbarHeight,
+        0,
+        0,
+        initialOffsetLeft,
+        initialOffsetTop,
+        true
+      );
     },
 
     /**
@@ -136,7 +189,13 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       this.getQxObject("colHeaderScroll").getLayout().renderLayout();
       this.getQxObject("rowHeaderScroll").getLayout().renderLayout();
       this.getQxObject("paneScroll").getLayout().renderLayout();
+      this._updateScrollbarVisibility();
       return super.updateWidgets();
+    },
+
+    onPaneUpdated() {
+      this._updateScrollbarVisibility();
+      super.onPaneUpdated();
     },
 
     _createChildControlImpl(id) {
@@ -212,6 +271,138 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      */
     scrollByY(dy) {
       this.getQxObject("paneScroll").scrollByY(dy);
+    },
+
+    _updateScrollbarVisibility() {
+      let paneScroll = this.getQxObject("paneScroll");
+
+      let scrollX = this.getScrollbarX();
+      let scrollbarX = this.getChildControl("scrollbar-x");
+      if (scrollX === "off") {
+        scrollbarX.exclude();
+      } else if (scrollX === "on") {
+        scrollbarX.show();
+      } /* === "auto" */ else {
+        paneScroll.scrollByX(0);
+        if (paneScroll.getMaxX() > 0) {
+          scrollbarX.show();
+        } else {
+          scrollbarX.exclude();
+        }
+      }
+
+      let scrollY = this.getScrollbarY();
+      let scrollbarY = this.getChildControl("scrollbar-y");
+      if (scrollY === "off") {
+        scrollbarY.exclude();
+      } else if (scrollY === "on") {
+        scrollbarY.show();
+      } /* === "auto" */ else {
+        paneScroll.scrollByY(0);
+        if (paneScroll.getMaxY() > 0) {
+          scrollbarY.show();
+        } else {
+          scrollbarY.exclude();
+        }
+      }
+    },
+
+    _cancelRoll: null,
+
+    /**
+     * Roll event handler
+     *
+     * @param e {qx.event.type.Roll} Roll event
+     */
+    _onRoll(e) {
+      this._updateScrollbarVisibility();
+      // only wheel and touch
+      if (e.getPointerType() == "mouse") {
+        return;
+      }
+
+      if (this._cancelRoll && e.getMomentum()) {
+        e.stopMomentum();
+        this._cancelRoll = null;
+        return;
+      }
+      this._cancelRoll = null;
+
+      var showX = this._isChildControlVisible("scrollbar-x");
+      var showY = this._isChildControlVisible("scrollbar-y");
+
+      var scrollbarY = showY ? this.getChildControl("scrollbar-y", true) : null;
+      var scrollbarX = showX ? this.getChildControl("scrollbar-x", true) : null;
+
+      var deltaY = e.getDelta().y;
+      var deltaX = e.getDelta().x;
+
+      var endY = !showY;
+      var endX = !showX;
+
+      // y case
+      if (scrollbarY) {
+        if (deltaY !== 0) {
+          scrollbarY.scrollBy(parseInt(deltaY, 10));
+        }
+
+        var position = scrollbarY.getPosition();
+        var max = scrollbarY.getMaximum();
+
+        // pass the event to the parent if the scrollbar is at an edge
+        if ((deltaY < 0 && position <= 0) || (deltaY > 0 && position >= max)) {
+          endY = true;
+        }
+      }
+
+      // x case
+      if (scrollbarX) {
+        if (deltaX !== 0) {
+          scrollbarX.scrollBy(parseInt(deltaX, 10));
+        }
+
+        var position = scrollbarX.getPosition();
+        var max = scrollbarX.getMaximum();
+        // pass the event to the parent if the scrollbar is at an edge
+        if ((deltaX < 0 && position <= 0) || (deltaX > 0 && position >= max)) {
+          endX = true;
+        }
+      }
+
+      if (endX && endY) {
+        e.stopMomentum();
+      }
+
+      // pass the event to the parent if both scrollbars are at the end
+      if ((!endY && deltaX === 0) || (!endX && deltaY === 0) || ((!endX || !endY) && deltaX !== 0 && deltaY !== 0)) {
+        // Stop bubbling and native event only if a scrollbar is visible
+        e.stop();
+      }
+    },
+
+    /**
+     * Responsible for adding the event listener needed for scroll handling.
+     */
+    _addRollHandling() {
+      this.addListener("roll", this._onRoll, this);
+      this.addListener("pointerdown", this._onPointerDownForRoll, this);
+    },
+
+    /**
+     * Responsible for removing the event listener needed for scroll handling.
+     */
+    _removeRollHandling() {
+      this.removeListener("roll", this._onRoll, this);
+      this.removeListener("pointerdown", this._onPointerDownForRoll, this);
+    },
+
+    /**
+     * Handler for the pointerdown event which simply stops the momentum scrolling.
+     *
+     * @param e {qx.event.type.Pointer} pointerdown event
+     */
+    _onPointerDownForRoll(e) {
+      this._cancelRoll = e.getPointerId();
     }
   }
 });

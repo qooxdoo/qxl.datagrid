@@ -46,7 +46,7 @@ qx.Class.define("qxl.datagrid.clippedScroll.Container", {
      */
     scrollToX(x) {
       let widthLimit = this.getSizeCalculator().getPaneBounds().width;
-      let scrollPaneWidth = this.getBounds().width;
+      let scrollPaneWidth = this.getBounds()?.width ?? 0;
       let maxX = Math.max(0, widthLimit - scrollPaneWidth);
       this.setMaxX(maxX);
       this._content.setLayoutProperties({ left: -Math.min(x, maxX) });
@@ -68,7 +68,7 @@ qx.Class.define("qxl.datagrid.clippedScroll.Container", {
      */
     scrollToY(y) {
       let heightLimit = this.getSizeCalculator().getPaneBounds().height;
-      let scrollPaneHeight = this.getBounds().height;
+      let scrollPaneHeight = this.getBounds()?.height ?? 0;
       let maxY = Math.max(0, heightLimit - scrollPaneHeight);
       this.setMaxY(maxY);
       this._content.setLayoutProperties({ top: -Math.min(y, maxY) });

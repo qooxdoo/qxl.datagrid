@@ -112,6 +112,9 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     /** @type {Integer} the top scroll position */
     _top: null,
 
+    /** @type {Boolean} whether overflow is enabled */
+    _overflow: null,
+
     /**
      * Gets the sizes for a given available size and scroll position of a Visible Space
      *
@@ -138,8 +141,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
      * @param {Integer} top
      * @returns {Boolean} true if the widgets need to be redrawn because the previous data is invalid
      */
-    setAvailableSize(width, height, startRowIndex, startColumnIndex, left, top) {
-      if (width !== this._width || height !== this._height || startRowIndex != this._startRowIndex || startColumnIndex != this._startColumnIndex) {
+    setAvailableSize(width, height, startRowIndex, startColumnIndex, left, top, overflow = false) {
+      if (width !== this._width || height !== this._height || startRowIndex !== this._startRowIndex || startColumnIndex !== this._startColumnIndex || this._overflow !== overflow) {
         this.invalidate();
         this._width = width;
         this._height = height;
@@ -147,6 +150,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
         this._startColumnIndex = startColumnIndex;
         this._left = left;
         this._top = top;
+        this._overflow = overflow;
       }
       return !this.__sizes;
     },
@@ -272,7 +276,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
        * A map of absolute column indexes to their widths
        */
       let columnWidths = {};
-      let flexAvailable = isFinite(this._width) ? this._width : 0;
+      let flexAvailable = this._width;
       let horizontalSpacing = styling.getHorizontalSpacing();
       let verticalSpacing = styling.getVerticalSpacing();
       let totalColumnWidth = 0;
@@ -319,7 +323,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       if (startIndex.column >= 0) {
         // process the remaining columns, starting from the Visible Index
         for (let absoluteColumnIndex = startIndex.column; absoluteColumnIndex < this._columns.getLength(); absoluteColumnIndex++) {
-          if (totalColumnWidth >= this._width) {
+          if (!this._overflow && totalColumnWidth >= this._width) {
             break;
           }
           calculateColumnWidth(absoluteColumnIndex);
@@ -327,7 +331,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       } else {
         // process the remaining columns, starting from the end and working backwards until the space is filled
         for (let absoluteColumnIndex = this._columns.getLength() - 1; absoluteColumnIndex >= 0; absoluteColumnIndex--) {
-          if (totalColumnWidth >= this._width) {
+          if (!this._overflow && totalColumnWidth >= this._width) {
             break;
           }
           calculateColumnWidth(absoluteColumnIndex);
@@ -423,7 +427,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       if (startIndex.row >= 0) {
         // process the remaining rows, starting from the Visible Index
         for (let absoluteRowIndex = startIndex.row; absoluteRowIndex < numRows; absoluteRowIndex++) {
-          if (totalRowHeight >= this._height) {
+          if (!this._overflow && totalRowHeight >= this._height) {
             break;
           }
           // only calculate the row height if it hasn't already been calculated by the fixed rows/headers
@@ -434,7 +438,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       } else {
         // process the remaining rows, starting from the end and working backwards until the space is filled
         for (let absoluteRowIndex = numRows - 1; absoluteRowIndex >= 0; absoluteRowIndex--) {
-          if (totalRowHeight >= this._height) {
+          if (!this._overflow && totalRowHeight >= this._height) {
             break;
           }
           // only calculate the row height if it hasn't already been calculated by the fixed rows/headers

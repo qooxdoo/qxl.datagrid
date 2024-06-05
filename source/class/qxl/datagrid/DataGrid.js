@@ -261,10 +261,10 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       } else {
         let dynamicSizing = this.getDynamicSizing();
         if (dynamicSizing === "rows" || dynamicSizing === "both") {
-          height = widget?.getSizeHint()?.height;
+          height = widget?.getSizeHint(true).height;
         }
         if (dynamicSizing === "columns" || dynamicSizing === "both") {
-          width = widget?.getSizeHint()?.width;
+          width = widget?.getSizeHint(true).width;
         }
       }
 
@@ -273,6 +273,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       return size;
     },
 
+    /**
+     * Sets the grid size calculator's available size based on the requested width and height.
+     * @param {Integer} width
+     * @param {Integer} height
+     * @returns {boolean}
+     */
     _setAvailableSize(width, height) {
       const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
       const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();

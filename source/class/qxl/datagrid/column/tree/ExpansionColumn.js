@@ -46,7 +46,6 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
      * @Override
      */
     bindWidget(widget, model, factory) {
-      // debugger;
       let bindings = super.bindWidget(widget, model);
       let state = factory.getDataSource().getNodeStateFor(model);
       if (state == null) {
@@ -62,14 +61,15 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
           widget.setIcon(iconPath);
         }
       }
-      widget.addListener("changeState", evt => {
+      let listenerId = widget.addListener("changeState", async evt => {
         let state = evt.getData();
         if (state == "open") {
-          factory.getDataSource().expandNode(model);
+          await factory.getDataSource().expandNode(model);
         } else if (state == "closed") {
-          factory.getDataSource().collapseNode(model);
+          await factory.getDataSource().collapseNode(model);
         }
       });
+      bindings.add(widget, listenerId);
       return bindings;
     }
   }
