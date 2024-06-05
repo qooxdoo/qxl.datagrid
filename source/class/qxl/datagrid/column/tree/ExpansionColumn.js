@@ -69,7 +69,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
           await factory.getDataSource().collapseNode(model);
         }
       });
-      bindings.add(widget, listenerId);
+      bindings.add(widget, listenerId, "listener");
       return bindings;
     }
   }
