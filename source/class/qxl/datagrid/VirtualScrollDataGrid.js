@@ -475,9 +475,11 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
     _setAvailableSize(width, height) {
       const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
       const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
+      let scrollbarWidth = this.getChildControl("scrollbar-y").getVisibility() === "visible" ? this.getChildControl("scrollbar-y").getSizeHint().width : 0;
+      let scrollbarHeight = this.getChildControl("scrollbar-x").getVisibility() === "visible" ? this.getChildControl("scrollbar-x").getSizeHint().height : 0;
       return this.getSizeCalculator().setAvailableSize(
-        width - this.getChildControl("scrollbar-y").getSizeHint().width - initialOffsetLeft - this.getQxObject("widgetPane").getPaddingRight(),
-        height - this.getChildControl("scrollbar-x").getSizeHint().height - initialOffsetTop - this.getQxObject("widgetPane").getPaddingBottom(),
+        width - initialOffsetLeft - this.getQxObject("widgetPane").getPaddingRight() - scrollbarWidth,
+        height - initialOffsetTop - this.getQxObject("widgetPane").getPaddingBottom() - scrollbarHeight,
         this.getStartRowIndex(),
         this.getStartColumnIndex(),
         initialOffsetLeft,
