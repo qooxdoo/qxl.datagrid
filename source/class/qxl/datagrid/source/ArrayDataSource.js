@@ -27,6 +27,11 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
   extend: qx.core.Object,
   implement: [qxl.datagrid.source.IDataSource],
 
+  construct() {
+    super();
+    this.__debounceChangeSize = new qxl.datagrid.util.Debounce(() => this.fireDataEvent("changeSize", this.getSize()), 100);
+  },
+
   properties: {
     /**
      * The columns of the data.
@@ -58,6 +63,8 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
   },
 
   members: {
+    __debounceChangeSize: null,
+
     /**
      * Apply for `model`
      */
@@ -77,7 +84,7 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
      * @param {*} evt
      */
     __onModelChange(evt) {
-      this.fireDataEvent("changeSize", this.getSize());
+      this.__debounceChangeSize.run();
     },
 
     /**
