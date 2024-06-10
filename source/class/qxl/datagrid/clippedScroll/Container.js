@@ -8,7 +8,7 @@ qx.Class.define("qxl.datagrid.clippedScroll.Container", {
   },
 
   properties: {
-    SizeCalculator: {
+    sizeCalculator: {
       check: "qxl.datagrid.ui.GridSizeCalculator",
       nullable: true,
       init: null

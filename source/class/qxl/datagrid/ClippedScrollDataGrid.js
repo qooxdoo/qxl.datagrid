@@ -211,6 +211,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
           scrollbar.addListener("scroll", evt => paneScroll.scrollToX(evt.getData()));
           return scrollbar;
         },
+
         /**
          * @this {qxl.datagrid.ClippedScrollDataGrid}
          * @returns {qx.ui.core.scroll.IScrollBar}
@@ -222,6 +223,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
           scrollbar.addListener("scroll", evt => paneScroll.scrollToY(evt.getData()));
           return scrollbar;
         },
+
         /**
          * @this {qxl.datagrid.ClippedScrollDataGrid}
          * @returns {qx.ui.core.Widget}
