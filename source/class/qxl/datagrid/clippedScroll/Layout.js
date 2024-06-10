@@ -9,7 +9,10 @@ qx.Class.define("qxl.datagrid.clippedScroll.Layout", {
 
   members: {
     renderLayout() {
-      let child = this._getLayoutChildren()[0];
+      let child = this._getLayoutChildren()?.[0];
+      if (!child) {
+        return;
+      }
       let props = child.getLayoutProperties();
       let size = this.__cbGetBounds();
       child.renderLayout(props.left ?? 0, props.top ?? 0, size?.width ?? 0, size?.height ?? 0);
