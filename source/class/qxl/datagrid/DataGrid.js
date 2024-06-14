@@ -280,8 +280,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @returns {boolean}
      */
     _setAvailableSize(width, height) {
-      const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
-      const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
+      let initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
+      let initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
       return this.__sizeCalculator.setAvailableSize(width, height, 0, 0, initialOffsetLeft, initialOffsetTop);
     },
 

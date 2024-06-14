@@ -1,9 +1,9 @@
-qx.Class.define("qxl.datagrid.clippedScroll.Container", {
+qx.Class.define("qxl.datagrid.ui.clipped.Container", {
   extend: qx.ui.container.Composite,
 
-  construct(content, cbGetBounds) {
-    super(new qxl.datagrid.clippedScroll.Layout(cbGetBounds));
-    this.add(content, { left: 0, right: 0 });
+  construct(content) {
+    super(new qx.ui.layout.Canvas());
+    this.add(content, { left: 0, top: 0, right: 0, bottom: 0 });
     this._content = content;
   },
 
@@ -12,26 +12,7 @@ qx.Class.define("qxl.datagrid.clippedScroll.Container", {
       check: "qxl.datagrid.ui.GridSizeCalculator",
       nullable: true,
       init: null
-    },
-
-    maxX: {
-      check: "Integer",
-      nullable: true,
-      init: null,
-      event: "changeMaxX"
-    },
-
-    maxY: {
-      check: "Integer",
-      nullable: true,
-      init: null,
-      event: "changeMaxY"
     }
-  },
-
-  events: {
-    scrollX: "qx.event.type.Data",
-    scrollY: "qx.event.type.Data"
   },
 
   members: {

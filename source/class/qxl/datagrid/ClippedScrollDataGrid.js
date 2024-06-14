@@ -121,31 +121,31 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
 
     /**
      * @this {qxl.datagrid.ClippedScrollDataGrid}
-     * @returns {qxl.datagrid.clippedScroll.Container}
+     * @returns {qxl.datagrid.ui.clipped.Container}
      */
 
     colHeaderScroll() {
-      let scroll = new qxl.datagrid.clippedScroll.Container(this.getQxObject("header"), () => this.getSizeCalculator()?.getColHeaderBounds());
+      let scroll = new qxl.datagrid.ui.clipped.Container(this.getQxObject("header"));
       scroll.setSizeCalculator(this.getSizeCalculator());
       return scroll;
     },
 
     /**
      * @this {qxl.datagrid.ClippedScrollDataGrid}
-     * @returns {qxl.datagrid.clippedScroll.Container}
+     * @returns {qxl.datagrid.ui.clipped.Container}
      */
     rowHeaderScroll() {
-      let scroll = new qxl.datagrid.clippedScroll.Container(this.getQxObject("fixedColumns"), () => this.getSizeCalculator()?.getRowHeaderBounds());
+      let scroll = new qxl.datagrid.ui.clipped.Container(this.getQxObject("fixedColumns"));
       scroll.setSizeCalculator(this.getSizeCalculator());
       return scroll;
     },
 
     /**
      * @this {qxl.datagrid.ClippedScrollDataGrid}
-     * @returns {qxl.datagrid.clippedScroll.Container}
+     * @returns {qxl.datagrid.ui.clipped.Container}
      */
     paneScroll() {
-      let scroll = new qxl.datagrid.clippedScroll.Container(this.getQxObject("paneLayers"), () => this.getSizeCalculator()?.getPaneBounds());
+      let scroll = new qxl.datagrid.ui.clipped.Container(this.getQxObject("paneLayers"));
       scroll.setSizeCalculator(this.getSizeCalculator());
       return scroll;
     },
@@ -163,20 +163,19 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
   },
 
   members: {
+    /**
+     * @Override
+     */
     _setAvailableSize(width, height) {
-      const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
-      const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
+      let initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
+      let initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
       let scrollbarWidth = this.getChildControl("scrollbar-y").getVisibility() === "visible" ? this.getChildControl("scrollbar-y").getSizeHint().width : 0;
       let scrollbarHeight = this.getChildControl("scrollbar-x").getVisibility() === "visible" ? this.getChildControl("scrollbar-x").getSizeHint().height : 0;
-      return this.getSizeCalculator().setAvailableSize(
-        width - initialOffsetLeft - this.getQxObject("widgetPane").getPaddingRight() - scrollbarWidth,
-        height - initialOffsetTop - this.getQxObject("widgetPane").getPaddingBottom() - scrollbarHeight,
-        0,
-        0,
-        initialOffsetLeft,
-        initialOffsetTop,
-        true
-      );
+      let sc = this.getSizeCalculator();
+      l;
+      let redrawNeeded = sc.setAvailableSize(width - scrollbarWidth, height - scrollbarHeight, 0, 0, initialOffsetLeft, initialOffsetTop, true);
+
+      return redrawNeeded;
     },
 
     /**
@@ -186,9 +185,6 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       if (this._updatingPromise) {
         return;
       }
-      this.getQxObject("colHeaderScroll").getLayout().renderLayout();
-      this.getQxObject("rowHeaderScroll").getLayout().renderLayout();
-      this.getQxObject("paneScroll").getLayout().renderLayout();
       this._updateScrollbarVisibility();
       return super.updateWidgets();
     },
@@ -246,6 +242,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      */
     scrollToX(x) {
       this.getQxObject("paneScroll").scrollToX(x);
+      this.getQxObject("rowHeaderScroll").scrollToX(x);
     },
 
     /**
@@ -255,6 +252,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      */
     scrollByX(dx) {
       this.getQxObject("paneScroll").scrollByX(dx);
+      this.getQxObject("rowHeaderScroll").scrollByX(dx);
     },
 
     /**
@@ -264,6 +262,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      */
     scrollToY(y) {
       this.getQxObject("paneScroll").scrollToY(y);
+      this.getQxObject("colHeaderScroll").scrollToY(y);
     },
 
     /**
@@ -273,6 +272,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      */
     scrollByY(dy) {
       this.getQxObject("paneScroll").scrollByY(dy);
+      this.getQxObject("colHeaderScroll").scrollByY(dy);
     },
 
     _updateScrollbarVisibility() {
