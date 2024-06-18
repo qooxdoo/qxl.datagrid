@@ -99,6 +99,12 @@ qx.Class.define("qxl.datagrid.column.Column", {
       event: "changeEnabled"
     },
 
+    /**
+     * @type {(widget: qx.ui.core.Widget, model: qx.core.Object) => Object}
+     * A factory for the binding options when the model property is bound to the widget.
+     * It's return value is passed into parameter `options` of `qx.data.SingleValueBinding#bind`
+     * @see {qx.data.SingleValueBinding#bind}
+     */
     bindingOptions: {
       init: () => undefined
     },
@@ -257,7 +263,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * Called to implement the binding
      *
      * @param {qx.ui.core.Widget} widget
-     * @param {qx.core.Object} model
+     * @param {qx.core.Object} model Model object representing the row
      * @param {qxl.datagrid.ui.factory.IWidgetFactory} factory
      * @returns {qxl.datagrid.binding.Bindings} the object to dispose of to remove the binding
      */
