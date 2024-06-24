@@ -81,7 +81,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
   events: {
     /** Fired when the sizes change */
-    change: "qx.data.event.Event"
+    change: "qx.event.type.Data"
   },
 
   members: {
@@ -161,6 +161,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     getSizes() {
       if (!this.__sizes && this._width && this._height) {
         this.__sizes = this._calculateSizes();
+        this.fireDataEvent("change", this.__sizes);
       }
       return this.__sizes;
     },

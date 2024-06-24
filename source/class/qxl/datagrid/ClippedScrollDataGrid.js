@@ -63,6 +63,8 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
 
     // Roll listener for scrolling
     this._addRollHandling();
+
+    this.getSizeCalculator().addListener("change", this._updateSizes, this);
   },
 
   properties: {
@@ -110,44 +112,20 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      * @returns {qx.ui.container.Composite}
      */
     dataPane() {
-      let comp = new qx.ui.container.Composite(new qx.ui.layout.VBox());
-      let colHeaderScroll = this.getQxObject("colHeaderScroll");
-      comp.add(colHeaderScroll, { flex: 0 });
-      let paneScroll = this.getQxObject("paneScroll");
-      comp.add(paneScroll, { flex: 1 });
-      paneScroll.addListener("scrollX", evt => colHeaderScroll.scrollToX(evt.getData()));
+      let comp = new qx.ui.container.Composite(new qx.ui.layout.Canvas());
+
+      let paneLayers = this.getQxObject("paneLayers");
+      comp.add(paneLayers);
+
+      let header = this.getQxObject("header");
+      comp.add(header);
+      header.setZIndex(100);
+
+      let fixedColumns = this.getQxObject("fixedColumns");
+      comp.add(fixedColumns);
+      fixedColumns.setZIndex(200);
+
       return comp;
-    },
-
-    /**
-     * @this {qxl.datagrid.ClippedScrollDataGrid}
-     * @returns {qxl.datagrid.clippedScroll.Container}
-     */
-
-    colHeaderScroll() {
-      let scroll = new qxl.datagrid.clippedScroll.Container(this.getQxObject("header"), () => this.getSizeCalculator()?.getColHeaderBounds());
-      scroll.setSizeCalculator(this.getSizeCalculator());
-      return scroll;
-    },
-
-    /**
-     * @this {qxl.datagrid.ClippedScrollDataGrid}
-     * @returns {qxl.datagrid.clippedScroll.Container}
-     */
-    rowHeaderScroll() {
-      let scroll = new qxl.datagrid.clippedScroll.Container(this.getQxObject("fixedColumns"), () => this.getSizeCalculator()?.getRowHeaderBounds());
-      scroll.setSizeCalculator(this.getSizeCalculator());
-      return scroll;
-    },
-
-    /**
-     * @this {qxl.datagrid.ClippedScrollDataGrid}
-     * @returns {qxl.datagrid.clippedScroll.Container}
-     */
-    paneScroll() {
-      let scroll = new qxl.datagrid.clippedScroll.Container(this.getQxObject("paneLayers"), () => this.getSizeCalculator()?.getPaneBounds());
-      scroll.setSizeCalculator(this.getSizeCalculator());
-      return scroll;
     },
 
     /**
@@ -186,9 +164,6 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       if (this._updatingPromise) {
         return;
       }
-      this.getQxObject("colHeaderScroll").getLayout().renderLayout();
-      this.getQxObject("rowHeaderScroll").getLayout().renderLayout();
-      this.getQxObject("paneScroll").getLayout().renderLayout();
       this._updateScrollbarVisibility();
       return super.updateWidgets();
     },
@@ -206,9 +181,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
          */
         "scrollbar-x"() {
           let scrollbar = this._createScrollBar("horizontal");
-          let paneScroll = this.getQxObject("paneScroll");
-          paneScroll.bind("maxX", scrollbar, "maximum", { converter: value => value ?? 0 });
-          scrollbar.addListener("scroll", evt => paneScroll.scrollToX(evt.getData()));
+          scrollbar.addListener("scroll", this._updateScrollPositions, this);
           return scrollbar;
         },
 
@@ -218,9 +191,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
          */
         "scrollbar-y"() {
           let scrollbar = this._createScrollBar("vertical");
-          let paneScroll = this.getQxObject("paneScroll");
-          paneScroll.bind("maxY", scrollbar, "maximum", { converter: value => value ?? 0 });
-          scrollbar.addListener("scroll", evt => paneScroll.scrollToY(evt.getData()));
+          scrollbar.addListener("scroll", this._updateScrollPositions, this);
           return scrollbar;
         },
 
@@ -245,7 +216,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      * @param {Integer} x
      */
     scrollToX(x) {
-      this.getQxObject("paneScroll").scrollToX(x);
+      this.getChildControl("scrollbar-x").setPosition(x);
     },
 
     /**
@@ -254,7 +225,8 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      * @param {Integer} dx
      */
     scrollByX(dx) {
-      this.getQxObject("paneScroll").scrollByX(dx);
+      let scrollX = this.getChildControl("scrollbar-x");
+      scrollX.setPosition(scrollX.getPosition() + dx);
     },
 
     /**
@@ -263,7 +235,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      * @param {Integer} y
      */
     scrollToY(y) {
-      this.getQxObject("paneScroll").scrollToY(y);
+      this.getChildControl("scrollbar-y").setPosition(y);
     },
 
     /**
@@ -272,12 +244,11 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      * @param {Integer} dy
      */
     scrollByY(dy) {
-      this.getQxObject("paneScroll").scrollByY(dy);
+      let scrollY = this.getChildControl("scrollbar-y");
+      scrollY.setPosition(scrollY.getPosition() + dy);
     },
 
     _updateScrollbarVisibility() {
-      let paneScroll = this.getQxObject("paneScroll");
-
       let scrollX = this.getScrollbarX();
       let scrollbarX = this.getChildControl("scrollbar-x");
       if (scrollX === "off") {
@@ -285,8 +256,8 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       } else if (scrollX === "on") {
         scrollbarX.show();
       } /* === "auto" */ else {
-        paneScroll.scrollByX(0);
-        if (paneScroll.getMaxX() > 0) {
+        this.scrollByX(0);
+        if (scrollbarX.getMaximum() > 0) {
           scrollbarX.show();
         } else {
           scrollbarX.exclude();
@@ -300,13 +271,58 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       } else if (scrollY === "on") {
         scrollbarY.show();
       } /* === "auto" */ else {
-        paneScroll.scrollByY(0);
-        if (paneScroll.getMaxY() > 0) {
+        this.scrollByY(0);
+        if (scrollbarY.getMaximum() > 0) {
           scrollbarY.show();
         } else {
           scrollbarY.exclude();
         }
       }
+    },
+
+    _updateScrollPositions() {
+      let scrollX = this.getChildControl("scrollbar-x").getPosition();
+      let scrollY = this.getChildControl("scrollbar-y").getPosition();
+
+      let header = this.getQxObject("header");
+      let fixedColumns = this.getQxObject("fixedColumns");
+      let paneLayers = this.getQxObject("paneLayers");
+
+      header.setLayoutProperties({ top: 0, left: -scrollX });
+      fixedColumns.setLayoutProperties({ top: -scrollY, left: 0 });
+      paneLayers.setLayoutProperties({
+        top: -scrollY + header.getSizeHint().height,
+        left: -scrollX + fixedColumns.getSizeHint().width
+      });
+      this._updateScrollbarVisibility();
+    },
+
+    _updateSizes() {
+      let sizeCalculator = this.getSizeCalculator();
+      let thisSize = this.getBounds();
+
+      let fixedColumns = this.getQxObject("fixedColumns");
+      let fixedColumnsSize = this.getSizeCalculator().getRowHeaderBounds();
+      fixedColumns.setWidth(fixedColumnsSize.width);
+      fixedColumns.setHeight(fixedColumnsSize.height);
+
+      let header = this.getQxObject("header");
+      let headerSize = sizeCalculator.getColHeaderBounds();
+      header.setWidth(headerSize.width);
+      header.setHeight(headerSize.height);
+
+      let paneLayers = this.getQxObject("paneLayers");
+      let paneLayersSize = sizeCalculator.getPaneBounds();
+      paneLayers.setWidth(paneLayersSize.width);
+      paneLayers.setHeight(paneLayersSize.height);
+
+      let scrollbarX = this.getChildControl("scrollbar-x");
+      scrollbarX.setMaximum(Math.max(0, paneLayersSize.width + fixedColumnsSize.width - thisSize.width));
+
+      let scrollbarY = this.getChildControl("scrollbar-y");
+      scrollbarY.setMaximum(Math.max(0, paneLayersSize.height + headerSize.height - thisSize.height));
+
+      this._updateScrollPositions();
     },
 
     _cancelRoll: null,
