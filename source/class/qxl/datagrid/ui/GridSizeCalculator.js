@@ -81,7 +81,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
   events: {
     /** Fired when the sizes change */
-    change: "qx.data.event.Event"
+    change: "qx.event.type.Data"
   },
 
   members: {
@@ -112,6 +112,9 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     /** @type {Integer} the top scroll position */
     _top: null,
 
+    /** @type {Boolean} whether overflow is enabled */
+    _overflow: null,
+
     /**
      * Gets the sizes for a given available size and scroll position of a Visible Space
      *
@@ -138,8 +141,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
      * @param {Integer} top
      * @returns {Boolean} true if the widgets need to be redrawn because the previous data is invalid
      */
-    setAvailableSize(width, height, startRowIndex, startColumnIndex, left, top) {
-      if (width !== this._width || height !== this._height || startRowIndex != this._startRowIndex || startColumnIndex != this._startColumnIndex) {
+    setAvailableSize(width, height, startRowIndex, startColumnIndex, left, top, overflow = false) {
+      if (width !== this._width || height !== this._height || startRowIndex !== this._startRowIndex || startColumnIndex !== this._startColumnIndex || this._overflow !== overflow) {
         this.invalidate();
         this._width = width;
         this._height = height;
@@ -147,6 +150,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
         this._startColumnIndex = startColumnIndex;
         this._left = left;
         this._top = top;
+        this._overflow = overflow;
       }
       return !this.__sizes;
     },
@@ -157,8 +161,69 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     getSizes() {
       if (!this.__sizes && this._width && this._height) {
         this.__sizes = this._calculateSizes();
+        this.fireDataEvent("change", this.__sizes);
       }
       return this.__sizes;
+    },
+
+    getPaneBounds() {
+      let styling = this.getStyling();
+      let sizes = this.getSizes();
+      let width = 0;
+      let height = 0;
+      if (sizes) {
+        let skipColumns = styling.getNumFixedColumns();
+        for (let column of sizes.columns.slice(skipColumns)) {
+          width += column.width;
+        }
+        width += styling.getHorizontalSpacing() * (sizes.columns.length - skipColumns - 1);
+
+        let skipRows = styling.getNumFixedRows();
+        for (let row of sizes.rows.slice(skipRows)) {
+          height += row.height;
+        }
+        height += styling.getVerticalSpacing() * (sizes.rows.length - skipRows - 1);
+      }
+      return { width, height };
+    },
+
+    getColHeaderBounds() {
+      let styling = this.getStyling();
+      let sizes = this.getSizes();
+      let width = 0;
+      let height = 0;
+      if (sizes) {
+        for (let column of sizes.columns) {
+          width += column.width;
+        }
+        width += styling.getHorizontalSpacing() * (sizes.columns.length - 1);
+
+        let rowCount = styling.getNumHeaderRows() + styling.getNumFixedRows();
+        for (let i = 0; i < rowCount; i++) {
+          height += sizes.rows[i].height;
+        }
+        height += styling.getVerticalSpacing() * (rowCount - 1);
+      }
+      return { width, height };
+    },
+
+    getRowHeaderBounds() {
+      let styling = this.getStyling();
+      let sizes = this.getSizes();
+      let width = 0;
+      let height = 0;
+      if (sizes) {
+        let colCount = styling.getNumFixedColumns();
+        for (let i = 0; i < colCount; i++) {
+          width += sizes.columns[i].width;
+        }
+        width += styling.getHorizontalSpacing() * (colCount - 1);
+        for (let row of sizes.rows) {
+          height += row.height;
+        }
+        height += styling.getVerticalSpacing() * (sizes.rows.length - 1);
+      }
+      return { width, height };
     },
 
     /**
@@ -259,7 +324,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       if (startIndex.column >= 0) {
         // process the remaining columns, starting from the Visible Index
         for (let absoluteColumnIndex = startIndex.column; absoluteColumnIndex < this._columns.getLength(); absoluteColumnIndex++) {
-          if (totalColumnWidth >= this._width) {
+          if (!this._overflow && totalColumnWidth >= this._width) {
             break;
           }
           calculateColumnWidth(absoluteColumnIndex);
@@ -267,7 +332,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       } else {
         // process the remaining columns, starting from the end and working backwards until the space is filled
         for (let absoluteColumnIndex = this._columns.getLength() - 1; absoluteColumnIndex >= 0; absoluteColumnIndex--) {
-          if (totalColumnWidth >= this._width) {
+          if (!this._overflow && totalColumnWidth >= this._width) {
             break;
           }
           calculateColumnWidth(absoluteColumnIndex);
@@ -296,7 +361,9 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
               flexAmount = maxFlex;
             }
           }
-
+          if (flexAmount < 0) {
+            flexAmount = 0;
+          }
           flexAvailable -= flexAmount;
           totalColumnWidth += flexAmount;
           columnWidths[index] += flexAmount;
@@ -361,7 +428,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       if (startIndex.row >= 0) {
         // process the remaining rows, starting from the Visible Index
         for (let absoluteRowIndex = startIndex.row; absoluteRowIndex < numRows; absoluteRowIndex++) {
-          if (totalRowHeight >= this._height) {
+          if (!this._overflow && totalRowHeight >= this._height) {
             break;
           }
           // only calculate the row height if it hasn't already been calculated by the fixed rows/headers
@@ -372,7 +439,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       } else {
         // process the remaining rows, starting from the end and working backwards until the space is filled
         for (let absoluteRowIndex = numRows - 1; absoluteRowIndex >= 0; absoluteRowIndex--) {
-          if (totalRowHeight >= this._height) {
+          if (!this._overflow && totalRowHeight >= this._height) {
             break;
           }
           // only calculate the row height if it hasn't already been calculated by the fixed rows/headers

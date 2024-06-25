@@ -180,19 +180,6 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     },
 
     /**
-     * @override
-     * Disposes of a row meta data obect
-     *
-     * @param {RowMetaData} rowMeta
-     */
-    __disposeRowMetaData(rowMeta) {
-      if (rowMeta.childrenChangeBinding) {
-        rowMeta.childrenChangeBinding.dispose();
-        delete rowMeta.childrenChangeBinding;
-      }
-    },
-
-    /**
      * Returns node metadata for the node object
      */
     _getNodeMetaData(node) {

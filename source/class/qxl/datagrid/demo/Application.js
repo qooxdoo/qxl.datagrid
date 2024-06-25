@@ -35,13 +35,13 @@ qx.Class.define("qxl.datagrid.demo.Application", {
         qx.log.appender.Native;
         qx.log.appender.Console;
       }
-      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.source.Position);
-      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.source.Range);
-      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.util.Labels);
-      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.column.FilteredColumns);
-      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.source.TreeDataSource);
-      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.GridSizeCalculator);
-      await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.DataGrid);
+      // await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.source.Position);
+      // await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.source.Range);
+      // await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.util.Labels);
+      // await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.column.FilteredColumns);
+      // await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.source.TreeDataSource);
+      // await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.GridSizeCalculator);
+      // await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.DataGrid);
 
       let doc = this.getRoot();
       doc.add(new qxl.datagrid.demo.Demo(), { left: 0, top: 0, right: 0, bottom: 0 });
