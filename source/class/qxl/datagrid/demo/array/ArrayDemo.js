@@ -40,7 +40,7 @@ qx.Class.define("qxl.datagrid.demo.array.ArrayDemo", {
     },
 
     grid() {
-      return new qxl.datagrid.DataGrid(this.getQxObject("columns")).set({
+      return new qxl.datagrid.ClippedScrollDataGrid(this.getQxObject("columns")).set({
         dataSource: this.getQxObject("dataSource")
       });
     },

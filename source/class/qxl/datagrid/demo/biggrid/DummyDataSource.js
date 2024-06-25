@@ -178,6 +178,12 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
     },
 
     /**
+     * @Override
+     */
+    isModelValid(value) {
+      return !!this.getPositionOfModel(value);
+    },
+    /**
      * @override
      */
     getSize() {

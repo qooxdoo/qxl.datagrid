@@ -106,6 +106,7 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
 
       let rowWidth = 0;
       sizesData.columns.forEach(cd => (rowWidth += cd.width));
+      rowWidth += styling.getHorizontalSpacing() * (sizesData.columns.length - 1);
 
       let top = this.__sizeCalculator.getInitialOffsets().top;
       let verticalSpacing = styling.getVerticalSpacing();

@@ -60,6 +60,12 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     appearance: {
       init: "qxl-datagrid-widgetpane",
       refine: true
+    },
+
+    shouldDiscardWidgets: {
+      check: "Boolean",
+      init: true,
+      event: "changeShouldDiscardWidgets"
     }
   },
 
@@ -183,7 +189,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           }
 
           let model = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, columnSizeData.columnIndex));
-          if (!child) {
+          if (!child || invalidateAll) {
             child = this.__widgetFactory.getWidgetFor(rowSizeData.rowIndex, columnSizeData.columnIndex);
             children[id] = child;
             child.setUserData("qxl.datagrid.cellData", {
@@ -269,9 +275,11 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         this.__widgetFactory.unbindWidget(child);
         child.setUserData("qxl.datagrid.cellData", null);
         this._remove(child);
-        this.__widgetFactory.disposeWidget(child);
+        if (this.getShouldDiscardWidgets()) {
+          this.__widgetFactory.disposeWidget(child);
+        }
       }
-      if (id in this.__children) {
+      if (this.getShouldDiscardWidgets() && id in this.__children) {
         delete this.__children[id];
       }
     },
