@@ -274,7 +274,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       if (child) {
         this.__widgetFactory.unbindWidget(child);
         child.setUserData("qxl.datagrid.cellData", null);
-        this._remove(child);
+        if (child.getLayoutParent() === this) {
+          this._remove(child);
+        }
         if (this.getShouldDiscardWidgets()) {
           this.__widgetFactory.disposeWidget(child);
         }
