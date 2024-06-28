@@ -207,6 +207,13 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * Event handler for changes in the data source's size
      */
     __onDataSourceChangeSize() {
+      this.forceUpdate();
+    },
+
+    /**
+     * Forces the grid to fully update it's display. Use sparingly.
+     */
+    forceUpdate() {
       this.getQxObject("widgetPane").invalidateAll();
       this.__sizeCalculator.invalidate();
       this.updateWidgets();
