@@ -24,8 +24,8 @@ qx.Class.define("qxl.datagrid.column.NumberColumn", {
 
   construct() {
     super();
-    this.setBindingOptions((widget, model) => {
-      converter: value => (value ? value.toFixed(2) : "");
-    });
+    this.setBindingOptions((widget, model) => ({
+      converter: value => (value ? value.toFixed(2) : "")
+    }));
   }
 });
