@@ -22,14 +22,10 @@
 qx.Class.define("qxl.datagrid.column.NumberColumn", {
   extend: qxl.datagrid.column.Column,
 
-  properties: {
-    bindingOptions: {
-      refine: true,
-      init: () => {
-        return {
-          converter: value => (value ? value.toFixed(2) : "")
-        };
-      }
-    }
+  construct() {
+    super();
+    this.setBindingOptions((widget, model) => ({
+      converter: value => (value ? value.toFixed(2) : "")
+    }));
   }
 });
