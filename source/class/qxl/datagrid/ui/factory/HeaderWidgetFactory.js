@@ -67,7 +67,7 @@ qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
      * @override
      */
     _createWidget() {
-      let widget = new qxl.datagrid.ui.ColumnHeaderCell();
+      let widget = new qxl.datagrid.ui.ColumnHeaderCell().set({ appearance: this.getWidgetAppearance() });
       return widget;
     }
   }
