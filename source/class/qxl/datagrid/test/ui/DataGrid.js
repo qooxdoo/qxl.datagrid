@@ -62,7 +62,7 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
       };
       let sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, widgetSizeSource);
       sizeCalculator.setAvailableSize(400, 200, 1, 1);
-      let headerWidgetFactory = new qxl.datagrid.ui.factory.HeaderWidgetFactory(columns, "qxl-datagrid-header-cell");
+      let headerWidgetFactory = new qxl.datagrid.ui.factory.HeaderWidgetFactory(columns);
       let header = new qxl.datagrid.ui.HeaderRows(sizeCalculator, headerWidgetFactory, dataSource);
       let paneWidgetFactory = new qxl.datagrid.ui.factory.SimpleWidgetFactory(columns, "qxl-datagrid-cell");
       let widgetPane = new qxl.datagrid.ui.WidgetPane(sizeCalculator, paneWidgetFactory, dataSource, new qxl.datagrid.ui.SelectionManager());
