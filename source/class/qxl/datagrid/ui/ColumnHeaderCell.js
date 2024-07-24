@@ -37,11 +37,6 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
   },
 
   properties: {
-    appearance: {
-      refine: true,
-      init: "qxl-datagrid-column-header-cell"
-    },
-
     /**
      * The caption of the column.
      */
