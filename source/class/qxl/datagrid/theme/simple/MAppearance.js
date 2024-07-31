@@ -58,6 +58,7 @@ qx.Theme.define("qxl.datagrid.theme.simple.MAppearance", {
         };
       }
     },
+
     "qxl-datagrid-row": {
       style(states) {
         let backgroundColor = "qxl-datagrid-row-background-even";
@@ -76,6 +77,27 @@ qx.Theme.define("qxl.datagrid.theme.simple.MAppearance", {
           backgroundColor,
           textColor,
           decorator
+        };
+      }
+    },
+
+    "qxl-datagrid-column-header-cell": "widget",
+
+    "qxl-datagrid-column-header-cell/sortIcon": {
+      style(states) {
+        let icon = null;
+        /*
+        if (states.sortAsc) {
+          icon = qx.theme.tangible.Image.URLS["arrow-up-small"];
+        } else if (states.sortDesc) {
+          icon = qx.theme.tangible.Image.URLS["arrow-down-small"];
+        } else if (states.sortable) {
+          icon = qx.theme.tangible.Image.URLS["angles-forward"];
+        }
+          */
+        return {
+          source: icon,
+          width: 18
         };
       }
     }

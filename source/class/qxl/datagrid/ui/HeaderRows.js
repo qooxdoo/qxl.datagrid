@@ -47,6 +47,28 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
     __widgetFactory: null,
 
     /**
+     * @Override
+     */
+    _computeSizeHint() {
+      let hint = super._computeSizeHint();
+      let sizesData = this.__sizeCalculator.getSizes();
+      if (sizesData) {
+        let height = 0;
+        for (let rowSizeData of sizesData.rows) {
+          let left = 0;
+          if (rowSizeData.rowIndex >= 0) {
+            continue;
+          }
+          height += rowSizeData.height;
+        }
+        if (!hint.height || hint.height < height) {
+          hint.height = height;
+        }
+      }
+      return hint;
+    },
+
+    /**
      * Called to update the widgets and synchronise the sizes, creating widgets via the factory
      * if required and pooling/disposing of unused widgets
      */
