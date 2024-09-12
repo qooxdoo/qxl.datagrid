@@ -82,20 +82,20 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * Apply for root
      */
     async __applyRoot(value, oldValue) {
-      this._data = {};
-      this.__rowMetaDatas = [];
-      if (oldValue) {
-        let oldRowMetaDatas = this.__rowMetaDatas;
-        this.__rowMetaDataByNode = {};
+      await this.queue(async () => {
+        this._data = {};
         this.__rowMetaDatas = [];
-        for (let rowMeta in oldRowMetaDatas) {
-          this.__disposeRowMetaData(rowMeta);
+        if (oldValue) {
+          let oldRowMetaDatas = this.__rowMetaDatas;
+          this.__rowMetaDataByNode = {};
+          this.__rowMetaDatas = [];
+          for (let rowMeta in oldRowMetaDatas) {
+            this.__disposeRowMetaData(rowMeta);
+          }
         }
-      }
-      if (value) {
-        let inspector = this.getNodeInspectorFactory()(value);
+        if (value) {
+          let inspector = this.getNodeInspectorFactory()(value);
 
-        await this.queue(async () => {
           let row = this.__createRowMetaData(value, -1);
           this.__rowMetaDataByNode[value.toHashCode()] = row;
           row.canHaveChildren = inspector.canHaveChildren(value);
@@ -106,9 +106,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
             row.childrenChangeBinding = inspector.createChildrenChangeBinding(value, () => this.refreshNodeChildren(value));
           }
           await this._insertChildRows(value);
-        });
-      }
-      this.fireDataEvent("changeSize", this.getSize());
+        }
+        this.fireDataEvent("changeSize", this.getSize());
+      });
     },
 
     async _insertChildRows(node) {
