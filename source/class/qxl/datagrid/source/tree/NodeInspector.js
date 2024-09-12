@@ -76,9 +76,9 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
     /**
      * @override
      */
-    createChildrenChangeBinding(node, fn, context) {
+    createChildrenChangeBinding(node, cb, context) {
       let children = node.get(this.getChildrenPath());
-      return new qxl.datagrid.binding.Bindings(children, children.addListener("change", fn, context), "listener");
+      return new qxl.datagrid.binding.Bindings(children, children.addListener("change", cb, context), "listener");
     },
 
     /**
