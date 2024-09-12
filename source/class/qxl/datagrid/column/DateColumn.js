@@ -44,6 +44,8 @@ qx.Class.define("qxl.datagrid.column.DateColumn", {
           let format = this.getDateFormat() || qx.util.format.DateFormat.getDateInstance();
           if (typeof data == "string") {
             data = new Date(Date.parse(data));
+          } else if (typeof data == "number") {
+            data = new Date(data);
           }
           return format.format(data);
         }
