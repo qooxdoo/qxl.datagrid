@@ -63,20 +63,25 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @typedef RowMetaData
      * @property {qx.core.Object} node the node object for the row
      * @property {Integer} level indentation level
-     * @property {Boolean} canHaveChildren whether the node might have children
-     * @property {qxl.datagrid.binding.Bindings} childrenChangeListener Binding object for the change listener of the node's children
-     *
-     * @type{RowMetaData[]} array of objects for each visible row*/
+     * @property {boolean} canHaveChildren whether the node might have children
+     * @property {qxl.datagrid.binding.Bindings} childrenChangeBinding Binding object for the change listener of the node's children
+     * @prop {RowMetaData[]} [childRowMetas] array of child row metadata
+     */
+
+    /** @type {RowMetaData[]} array of objects for each visible row */
     __rowMetaDatas: null,
 
-    /** @type{Map<String,RowMetaData>} map of row metadatas for all visible rows, indexed by hash code of the node */
+    /** @type {Record<string, RowMetaData>} map of row metadatas for all visible rows, indexed by hash code of the node */
     __rowMetaDataByNode: null,
 
-    /** @type{Promise[]?} queue of promises of background actions, eg loading nodes */
+    /** @type {(() => Promise<void>)[] | null} queue of promises of background actions, eg loading nodes */
     __queue: null,
 
-    /** @type{Promise} resolves when the queue empties, is null if the queue is already empty */
+    /** @type {Promise<void>} resolves when the queue empties, is null if the queue is already empty */
     __promiseQueueEmpty: null,
+
+    /**@type {boolean} */
+    __hasExecution: false,
 
     /**
      * Apply for root
@@ -86,6 +91,8 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       this.__rowMetaDatas = [];
       if (oldValue) {
         let oldRowMetaDatas = this.__rowMetaDatas;
+        this.__queue = [];
+        await this.flushQueue();
         this.__rowMetaDataByNode = {};
         this.__rowMetaDatas = [];
         for (let rowMeta in oldRowMetaDatas) {
@@ -198,32 +205,32 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     async _expandNode(node) {
       let inspector = this.getNodeInspectorFactory()(node);
       let children = await inspector.getChildrenOf(node);
-      let rowMetadata = this._getNodeMetaData(node);
-      if (!rowMetadata) {
+      let rowMeta = this._getNodeMetaData(node);
+      if (!rowMeta) {
         throw new Error(`Cannot find ${node} in rows`);
       }
-      if (rowMetadata.childRowMetas || !rowMetadata.canHaveChildren) {
+      if (rowMeta.childRowMetas || !rowMeta.canHaveChildren) {
         return;
       }
-      rowMetadata.childrenChangeBinding = inspector.createChildrenChangeBinding(node, () => this.refreshNodeChildren(node));
-      let parentRowIndex = this.__rowMetaDatas.indexOf(rowMetadata);
+      rowMeta.childrenChangeBinding = inspector.createChildrenChangeBinding(node, () => this.refreshNodeChildren(node));
+      let parentRowIndex = this.__rowMetaDatas.indexOf(rowMeta);
       let childRowMetas = [];
       for (let childNode of children) {
         if (!childNode) {
           continue;
         }
         const childInspector = this.getNodeInspectorFactory()(childNode);
-        let childRowMeta = this.__createRowMetaData(childNode, rowMetadata.level + 1);
+        let childRowMeta = this.__createRowMetaData(childNode, rowMeta.level + 1);
         childRowMeta.canHaveChildren = childInspector.canHaveChildren(childNode);
         childRowMetas.push(childRowMeta);
-        childRowMeta.parentMeta = rowMetadata;
+        childRowMeta.parentMeta = rowMeta;
         this.__rowMetaDataByNode[childNode.toHashCode()] = childRowMeta;
       }
       let before = this.__rowMetaDatas.slice(0, parentRowIndex + 1);
       let after = parentRowIndex == this.__rowMetaDatas.length - 1 ? [] : this.__rowMetaDatas.slice(parentRowIndex + 1);
       qx.lang.Array.append(before, childRowMetas);
       qx.lang.Array.append(before, after);
-      rowMetadata.childRowMetas = childRowMetas;
+      rowMeta.childRowMetas = childRowMetas;
       this.__rowMetaDatas = before;
       this.fireDataEvent("changeSize", this.getSize());
     },
@@ -231,13 +238,13 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     /**
      * Reveals node in tree, even if it's not currently shown.
      * All ancestors of node are expanded.
-     * @param {qx.data.Object} node
+     * @param {qx.core.Object} node
      */
     async revealNode(node) {
       /**
        * returns the path to a node (target) in the tree;
-       * @param {qx.data.Object} node The node to return the path for
-       * @returns {qx.data.Array} The path. It does not include the root and the node itself.
+       * @param {qx.core.Object} node The node to return the path for
+       * @returns {Promise<qx.data.Array>} The path. It does not include the root and the node itself.
        */
       const getPathToNode = async node => {
         let path = new qx.data.Array();
@@ -273,7 +280,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @param {*} node
      */
     async _collapseNode(node) {
-      let rowMeta = this.__rowMetaDataByNode[node.toHashCode()];
+      let rowMeta = this._getNodeMetaData(node);
       if (!rowMeta) {
         throw new Error(`Cannot find ${node} in rows`);
       }
@@ -298,7 +305,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
 
     /**
      * Recursively removes metatdats of children of specified row, from this.__rowMetaDatas
-     * @param {JavaScript Object} row Metadata for row for which to remove children
+     * @param {RowMetaData} rowMeta Metadata for row for which to remove children
      */
     _removeChildRows(rowMeta) {
       let toRemove = [];
@@ -325,7 +332,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * completed
      *
      * @param {Function} fn
-     * @returns {*} whatever the function returns
+     * @returns {Promise<void>}
      */
     async queue(fn) {
       this.__queue.push(fn);
@@ -338,11 +345,13 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * Executes the next function in the queue
      */
     async __executeNextQueue() {
+      this.__hasExecution = true;
       if (this.__queue.length == 0) {
         if (this.__promiseQueueEmpty) {
           this.__promiseQueueEmpty.resolve();
           this.__promiseQueueEmpty = null;
         }
+        this.__hasExecution = false;
         return;
       }
       let fn = this.__queue[0];
@@ -355,6 +364,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * Called to flush the queue and wait for all the promises to be complete
      */
     async flushQueue() {
+      if (!this.__hasExecution) {
+        return;
+      }
       if (this.__promiseQueueEmpty) {
         await this.__promiseQueueEmpty;
       } else if (this.__queue.length) {
