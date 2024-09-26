@@ -92,8 +92,6 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         this.__rowMetaDatas = [];
         if (oldValue) {
           let oldRowMetaDatas = this.__rowMetaDatas;
-          this.__queue = [];
-          await this.flushQueue();
           this.__rowMetaDataByNode = {};
           this.__rowMetaDatas = [];
           for (let rowMeta in oldRowMetaDatas) {
@@ -197,6 +195,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     async expandNode(node) {
       await this.queue(() => this._expandNode(node));
     },
+
     /**
      * Expands given node.
      * Is called inside of this class, so its operation is not queued.
@@ -271,7 +270,13 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @override
      */
     async collapseNode(node) {
-      await this.queue(() => this._collapseNode(node));
+      await this.queue(() => {
+        let rowMeta = this._getNodeMetaData(node);
+        // Check that the node is in the tree - it might have been removed since we were queued
+        if (rowMeta) {
+          this._collapseNode(node);
+        }
+      });
     },
 
     /**
