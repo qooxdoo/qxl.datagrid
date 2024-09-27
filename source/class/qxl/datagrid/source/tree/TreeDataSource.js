@@ -193,7 +193,13 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
 
     /**@override */
     async expandNode(node) {
-      await this.queue(() => this._expandNode(node));
+      await this.queue(() => {
+        let rowMeta = this._getNodeMetaData(node);
+        // Check that the node is in the tree - it might have been removed since we were queued
+        if (rowMeta) {
+          this._expandNode(node);
+        }
+      });
     },
 
     /**
