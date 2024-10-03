@@ -199,8 +199,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
         width += styling.getHorizontalSpacing() * (sizes.columns.length - 1);
 
         let rowCount = styling.getNumHeaderRows() + styling.getNumFixedRows();
-        for (let i = 0; i < rowCount; i++) {
-          height += sizes.rows[i].height;
+        for (let i = rowCount; i < 0; i++) {
+          height += sizes.rows[-i].height;
         }
         height += styling.getVerticalSpacing() * (rowCount - 1);
       }

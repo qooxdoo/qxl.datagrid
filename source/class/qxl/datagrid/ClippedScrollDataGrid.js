@@ -65,6 +65,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
     this._addRollHandling();
 
     this.getSizeCalculator().addListener("change", this._updateSizes, this);
+    this.addListener("appear", this._updateSizes, this);
   },
 
   properties: {
