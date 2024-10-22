@@ -258,11 +258,15 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
         scrollbarX.show();
       } /* === "auto" */ else {
         this.scrollByX(0);
-        if (scrollbarX.getMaximum() > 0) {
-          scrollbarX.show();
-        } else {
-          scrollbarX.exclude();
-        }
+
+        /*
+         * NOTE: Scrollbar auto does not work, it can create a race condition where it toggles on and off
+         */
+        //if (scrollbarX.getMaximum() > 0) {
+        scrollbarX.show();
+        //} else {
+        //  scrollbarX.exclude();
+        // }
       }
 
       let scrollY = this.getScrollbarY();
@@ -273,11 +277,14 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
         scrollbarY.show();
       } /* === "auto" */ else {
         this.scrollByY(0);
-        if (scrollbarY.getMaximum() > 0) {
-          scrollbarY.show();
-        } else {
-          scrollbarY.exclude();
-        }
+        /*
+         * NOTE: Scrollbar auto does not work, it can create a race condition where it toggles on and off
+         */
+        //if (scrollbarY.getMaximum() > 0) {
+        scrollbarY.show();
+        //} else {
+        //  scrollbarY.exclude();
+        //}
       }
     },
 

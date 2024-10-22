@@ -214,14 +214,18 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
       let height = 0;
       if (sizes) {
         let colCount = styling.getNumFixedColumns();
-        for (let i = 0; i < colCount; i++) {
-          width += sizes.columns[i].width;
+        if (colCount > 0) {
+          for (let i = 0; i < colCount; i++) {
+            width += sizes.columns[i].width;
+          }
+          width += styling.getHorizontalSpacing() * (colCount - 1);
         }
-        width += styling.getHorizontalSpacing() * (colCount - 1);
-        for (let row of sizes.rows) {
-          height += row.height;
+        if (sizes.rows.length > 0) {
+          for (let row of sizes.rows) {
+            height += row.height;
+          }
+          height += styling.getVerticalSpacing() * (sizes.rows.length - 1);
         }
-        height += styling.getVerticalSpacing() * (sizes.rows.length - 1);
       }
       return { width, height };
     },

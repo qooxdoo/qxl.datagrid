@@ -212,7 +212,8 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       let children = await inspector.getChildrenOf(node);
       let rowMeta = this._getNodeMetaData(node);
       if (!rowMeta) {
-        throw new Error(`Cannot find ${node} in rows`);
+        this.error(`Cannot find ${node} in rows`);
+        return null;
       }
       if (rowMeta.childRowMetas || !rowMeta.canHaveChildren) {
         return;
@@ -264,7 +265,8 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       await this.queue(async () => {
         let ancestors = await getPathToNode(node);
         if (!ancestors) {
-          throw new Error("Cannot find node in tree");
+          this.error("Cannot find node in tree");
+          return;
         }
         for (var a = 0; a < ancestors.length; a++) {
           await this._expandNode(ancestors.getItem(a));
@@ -293,7 +295,8 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     async _collapseNode(node) {
       let rowMeta = this._getNodeMetaData(node);
       if (!rowMeta) {
-        throw new Error(`Cannot find ${node} in rows`);
+        this.warn(`Cannot find ${node} in rows`);
+        return;
       }
       if (!rowMeta.childRowMetas) {
         return;
@@ -461,7 +464,8 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     getParentOf(node) {
       let meta = this.__rowMetaDataByNode[node.toHashCode()];
       if (!meta) {
-        throw new Error("Cannot get parent of node. Node is not displayed in tree.");
+        this.error("Cannot get parent of node. Node is not displayed in tree.");
+        return null;
       }
 
       return meta.parentMeta?.node ?? null;
