@@ -61,6 +61,16 @@ qx.Interface.define("qxl.datagrid.ui.factory.IWidgetFactory", {
     unbindWidget(widget) {},
 
     /**
+     * Called to allow the column to update the state of the widget based on the model;
+     * this is typically used by the expansion column to show the correct icon for
+     * expanding/collapsing
+     *
+     * @param {qx.ui.core.Widget} widget
+     * @param {qx.core.Object} model
+     */
+    updateState(widget, model) {},
+
+    /**
      * Obtains the model which is bound to the widget
      *
      * @param {qx.ui.core.Widget} widget

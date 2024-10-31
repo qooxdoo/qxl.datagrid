@@ -271,7 +271,10 @@ qx.Class.define("qxl.datagrid.column.Column", {
       let path = this.getPath();
       let bindings = new qxl.datagrid.binding.Bindings(model);
       if (path) {
-        if (model) {
+        if (path == ".") {
+          widget.setValue(model);
+          bindings.add(model, () => widget.setValue(null));
+        } else if (model) {
           let bindingId = model.bind(path, widget, "value", this.getBindingOptions()(widget, model));
           bindings.add(model, bindingId);
         }
@@ -321,6 +324,19 @@ qx.Class.define("qxl.datagrid.column.Column", {
       return new qx.ui.basic.Label().set({
         appearance: "qxl-datagrid-cell"
       });
+    },
+
+    /**
+     * Called to allow the column to update the state of the widget based on the model;
+     * this is typically used by the expansion column to show the correct icon for
+     * expanding/collapsing
+     *
+     * @param {qx.ui.core.Widget} widget
+     * @param {qx.core.Object} model
+     * @param {qxl.datagrid.ui.factory.IWidgetFactory} factory
+     */
+    updateState(widget, model, factory) {
+      // Nothing to do
     },
 
     /**

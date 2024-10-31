@@ -124,6 +124,14 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
     },
 
     /**
+     * @override
+     */
+    updateState(widget, model) {
+      let bindingData = widget.getUserData("qxl.datagrid.factory.AbstractWidgetFactory.bindingData");
+      bindingData.column.updateState(widget, model, this);
+    },
+
+    /**
      * Called to create a widget
      *
      * @param {qxl.datagrid.column.Column} column the column to create for

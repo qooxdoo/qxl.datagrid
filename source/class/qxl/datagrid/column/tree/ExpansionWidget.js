@@ -28,17 +28,20 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
   construct() {
     super();
     this._setLayout(new qxl.datagrid.column.tree.ExpansionLayout());
-    this._add(this.getChildControl("expander"));
+    let expander = this.getChildControl("expander");
+    this._add(expander);
     this._add(this.getChildControl("icon"));
     this._add(this.getChildControl("label"));
 
-    this.addListener("tap", evt => {
+    expander.addListener("tap", evt => {
       let state = this.getState();
       if (state == "open") {
         this.setState("closed");
       } else if (state == "closed") {
         this.setState("open");
       }
+      evt.preventDefault();
+      evt.stopPropagation();
     });
   },
 
@@ -182,7 +185,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
 
       let expander = this.getChildControl("expander");
       if (!icon) {
-        expander.setVisibility("hidden");
+        expander.setVisibility("excluded");
       } else {
         expander.set({
           source: icon,
@@ -198,8 +201,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
       switch (id) {
         case "expander":
           var expander = new qx.ui.basic.Image().set({
-            visibility: "hidden",
-            anonymous: true
+            visibility: "hidden"
           });
           return expander;
 

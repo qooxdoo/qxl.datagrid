@@ -33,7 +33,9 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
    *
    * @param {qx.data.Object} model The model to add the binding to
    * @param {String} bindingId Id of binding
-   * @param {String?"binding"} bindingType The type of the binding. Either "binding" or "listener". Defaults to binding. Set to "binding " if this is a binding to a property, or "listener" if it's for a listener added with "addListener".
+   * @param {String?"binding"} bindingType The type of the binding. Either "binding", "listener", or "callback".
+   *  Defaults to binding. Set to "binding" if this is a binding to a property, or "listener" if it's
+   *  for a listener added with "addListener".
    */
   construct(model, bindingId, bindingType) {
     super();
@@ -72,18 +74,22 @@ qx.Class.define("qxl.datagrid.binding.Bindings", {
      *
      * @param {qx.core.Object} model the object with a binding
      * @param {*} bindingId the binding ID to release
-     * @param {String?} bindingType The type of the binding. Either "binding" or "listener". Defaults to auto detect.
+     * @param {String?} bindingType The type of the binding. Either "binding", "listener", or "callback". Defaults to auto detect.
      */
     add(model, bindingId, bindingType) {
       if (bindingType === undefined) {
         if (typeof bindingId == "string") {
           bindingType = "listener";
+        } else if (typeof bindingId == "function") {
+          bindingType = "callback";
         } else {
           bindingType = "binding";
         }
       } else if (qx.core.Environment.get("qx.debug")) {
         if (bindingType === "listener") {
           this.assertTrue(typeof bindingId == "string", "Invalid binding type " + bindingType + " for bindingId " + bindingId);
+        } else if (bindingType === "callback") {
+          this.assertTrue(typeof bindingId == "function", "Invalid binding type " + bindingType + " for bindingId " + bindingId);
         } else {
           this.assertTrue(typeof bindingId != "string", "Invalid binding type " + bindingType + " for bindingId " + bindingId);
         }

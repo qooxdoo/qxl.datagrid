@@ -46,7 +46,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       this.setDataSource(dataSource);
     }
     this._setLayout(new qxl.datagrid.ui.layout.Fixed());
-    this.addListener("tap", this.__onTap, this, true);
+    this.addListener("tap", this.__onTap, this);
   },
 
   properties: {
@@ -200,6 +200,8 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             this._add(child);
             qx.ui.core.queue.Layout.add(child);
             this.__widgetFactory.bindWidget(child, model);
+          } else {
+            this.__widgetFactory.updateState(child, model);
           }
 
           const callbackArguments = [model, child, currentRelativePosition, currentAbsolutePosition];
