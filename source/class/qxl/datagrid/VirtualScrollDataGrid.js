@@ -199,19 +199,23 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
         return;
       }
 
-      let delta = e.getDelta();
+      let rollDelta = e.getDelta();
 
-      if (delta.y !== 0) {
+      let sizeData = this.getSizeCalculator().getSizes();
+      let totalColumns = this.getColumns().getLength();
+      let totalRows = this.getDataSource().getSize().getRow() + this.getStyling().getNumHeaderRows();
+
+      if (rollDelta.y !== 0 && sizeData.rows.length < totalRows) {
         let oldStartRowIndex = this.getStartRowIndex();
-        this.__updateScrollXStartIndex(delta.y);
+        this.__updateScrollXStartIndex(rollDelta.y);
         let newStartRowIndex = this.getStartRowIndex();
         if (newStartRowIndex !== oldStartRowIndex) {
           e.stop();
         }
       }
-      if (delta.x !== 0) {
+      if (rollDelta.x !== 0 && sizeData.columns.length < totalColumns) {
         let oldStartColumnIndex = this.getStartColumnIndex();
-        this.__updateScrollYStartIndex(delta.x);
+        this.__updateScrollYStartIndex(rollDelta.x);
         let newStartColumnIndex = this.getStartColumnIndex();
         if (newStartColumnIndex !== oldStartColumnIndex) {
           e.stop();
@@ -356,7 +360,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
       }
 
       const calculateScrollbar = (show, scrollbar, currentCount, totalCount, startIndex, percentCalc) => {
-        if (show === "off" || (show == "auto" && currentCount >= totalCount)) {
+        if (show === "off" || (show === "auto" && currentCount >= totalCount)) {
           scrollbar.setVisibility("excluded");
         } else {
           scrollbar.setVisibility("visible");
