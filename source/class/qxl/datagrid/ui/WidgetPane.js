@@ -47,6 +47,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     }
     this._setLayout(new qxl.datagrid.ui.layout.Fixed());
     this.addListener("tap", this.__onTap, this);
+    this.addListener("dbltap", this.__onDoubleTap, this);
   },
 
   properties: {
@@ -150,7 +151,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         let id = cellData.row + ":" + cellData.column;
         // prettier-ignore
         if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
-          this.__fullDiscardWidget(child, id); 
+          this.__fullDiscardWidget(child, id);
         } else {
           children[id] = child;
         }
