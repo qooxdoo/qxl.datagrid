@@ -217,7 +217,8 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      * @param {Integer} x
      */
     scrollToX(x) {
-      this.getChildControl("scrollbar-x").setPosition(x);
+      let scrollX = this.getChildControl("scrollbar-x");
+      scrollX.setPosition(qxl.datagrid.util.Math.clamp(0, scrollX.getMaximum(), x));
     },
 
     /**
@@ -227,7 +228,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      */
     scrollByX(dx) {
       let scrollX = this.getChildControl("scrollbar-x");
-      scrollX.setPosition(scrollX.getPosition() + dx);
+      scrollX.setPosition(qxl.datagrid.util.Math.clamp(0, scrollX.getMaximum(), scrollX.getPosition() + dx));
     },
 
     /**
@@ -236,7 +237,8 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      * @param {Integer} y
      */
     scrollToY(y) {
-      this.getChildControl("scrollbar-y").setPosition(y);
+      let scrollY = this.getChildControl("scrollbar-y");
+      scrollY.setPosition(qxl.datagrid.util.Math.clamp(0, scrollY.getMaximum(), y));
     },
 
     /**
@@ -246,7 +248,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      */
     scrollByY(dy) {
       let scrollY = this.getChildControl("scrollbar-y");
-      scrollY.setPosition(scrollY.getPosition() + dy);
+      scrollY.setPosition(qxl.datagrid.util.Math.clamp(0, scrollY.getMaximum(), scrollY.getPosition() + dy));
     },
 
     _updateScrollbarVisibility() {
