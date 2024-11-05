@@ -265,7 +265,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
     },
 
     /**
-     * Scrolls the tree such that the selected item is in view.
+     * Scrolls the grid such that the selected item is in view.
      * If selection is already in view, nothing happens.
      * Otherwise, the selection is scrolled to the center of the view.
      * If it's not possible to center the item (i.e. we would have to scroll past the top), it is shown as close to the center as possible.

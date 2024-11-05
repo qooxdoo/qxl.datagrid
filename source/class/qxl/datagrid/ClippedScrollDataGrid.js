@@ -251,6 +251,35 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       scrollY.setPosition(qxl.datagrid.util.Math.clamp(0, scrollY.getMaximum(), scrollY.getPosition() + dy));
     },
 
+    /**
+     * Scrolls the grid such that the selected item is in view.
+     * If selection is already in view, nothing happens.
+     * Otherwise, the selection is scrolled to the center of the view.
+     * If it's not possible to center the item (i.e. we would have to scroll past the top), it is shown as close to the center as possible.
+     */
+    scrollToSelection() {
+      debugger;
+      let selectedModel = this.getSelection().getLength() ? this.getSelection().getItem(0) : null;
+      if (!selectedModel) {
+        return;
+      }
+
+      let positionForModel = this.getDataSource().getPositionOfModel(selectedModel);
+      let rowIdx = positionForModel.getRow();
+      let colIdx = positionForModel.getColumn();
+
+      let styling = this.getStyling();
+      if (rowIdx < styling.getNumFixedRows() || colIdx < styling.getNumFixedColumns()) {
+        return;
+      }
+
+      let selectedWidget = this.getQxObject("widgetPane").getChildAtPosition(rowIdx, colIdx);
+      let selectedBounds = selectedWidget.getBounds();
+
+      this.scrollToX(selectedBounds.left - this.getQxObject("fixedColumns").getSizeHint().width);
+      this.scrollToY(selectedBounds.top);
+    },
+
     _updateScrollbarVisibility() {
       let scrollX = this.getScrollbarX();
       let scrollbarX = this.getChildControl("scrollbar-x");
