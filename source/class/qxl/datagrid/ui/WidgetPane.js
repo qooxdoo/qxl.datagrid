@@ -67,6 +67,17 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       check: "Boolean",
       init: true,
       event: "changeShouldDiscardWidgets"
+    },
+
+    /**
+     * The context menu to be used for widgets on the pane which do not have their own context menu
+     */
+    widgetsContextMenu: {
+      check: "qx.ui.menu.Menu",
+      init: null,
+      nullable: true,
+      event: "changeWidgetsContextMenu",
+      apply: "_applyWidgetsContextMenu"
     }
   },
 
@@ -90,6 +101,15 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     /**@type {Record<string, qx.ui.core.Widget>}*/
     __children: null,
+
+    _applyWidgetsContextMenu(value, old) {
+      for (let child of Object.values(this.__children)) {
+        let ctxMenu = child.getContextMenu();
+        if (!ctxMenu || ctxMenu === old) {
+          child.setContextMenu(value);
+        }
+      }
+    },
 
     /**
      * Invalidates all widgets, meaning that they will be recalculated next time `updateWidget` is called
@@ -145,17 +165,21 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let invalidateAll = this.__invalidateAll;
       this.__invalidateAll = false;
 
-      let children = this.__children;
-      qx.lang.Array.clone(this._getChildren()).forEach(child => {
+      for (let child of qx.lang.Array.clone(this._getChildren())) {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         let id = cellData.row + ":" + cellData.column;
-        // prettier-ignore
         if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
           this.__fullDiscardWidget(child, id);
         } else {
-          children[id] = child;
+          this.__children[id] = child;
         }
-      });
+      }
+
+      for (let child of Object.values(this.__children)) {
+        if (!child.getContextMenu()) {
+          child.setContextMenu(this.getWidgetsContextMenu());
+        }
+      }
 
       let horizontalSpacing = styling.getHorizontalSpacing();
       let verticalSpacing = styling.getVerticalSpacing();
@@ -182,7 +206,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           let id = rowSizeData.rowIndex + ":" + columnSizeData.columnIndex;
           let filledWidth = columnSizeData.width;
 
-          let child = children[id];
+          let child = this.__children[id];
 
           if (relativeColumnIndex < lastColSpanEndIndex || fillFromColumnIndex !== null) {
             this.__fullDiscardWidget(child, id);
@@ -192,7 +216,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           let model = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, columnSizeData.columnIndex));
           if (!child || invalidateAll) {
             child = this.__widgetFactory.getWidgetFor(rowSizeData.rowIndex, columnSizeData.columnIndex);
-            children[id] = child;
+            this.__children[id] = child;
             child.setUserData("qxl.datagrid.cellData", {
               row: rowSizeData.rowIndex,
               column: columnSizeData.columnIndex,
@@ -291,6 +315,11 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     getChildAtPosition(row, column) {
       return this.__children[`${row}:${column}`] ?? null;
+    },
+
+    getPositionOfChild(child) {
+      let cellData = child.getUserData("qxl.datagrid.cellData");
+      return cellData ? new qxl.datagrid.source.Position(cellData.row, cellData.column) : null;
     },
 
     /**

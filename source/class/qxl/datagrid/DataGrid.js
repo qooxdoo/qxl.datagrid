@@ -88,6 +88,13 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       init: "none",
       check: ["rows", "columns", "both", "none"],
       event: "changeDynamicSizing"
+    },
+
+    widgetsContextMenu: {
+      check: "qx.ui.menu.Menu",
+      init: null,
+      nullable: true,
+      event: "changeWidgetsContextMenu"
     }
   },
 
@@ -111,7 +118,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     widgetPane() {
-      return new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource(), this.__selectionManager);
+      let widgetPane = new qxl.datagrid.ui.WidgetPane(this.__sizeCalculator, this.getQxObject("paneWidgetFactory"), this.getDataSource(), this.__selectionManager);
+      this.bind("widgetsContextMenu", widgetPane, "widgetsContextMenu");
+      return widgetPane;
     },
 
     headerWidgetFactory() {
