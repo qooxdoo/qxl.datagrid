@@ -258,7 +258,6 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
      * If it's not possible to center the item (i.e. we would have to scroll past the top), it is shown as close to the center as possible.
      */
     scrollToSelection() {
-      debugger;
       let selectedModel = this.getSelection().getLength() ? this.getSelection().getItem(0) : null;
       if (!selectedModel) {
         return;
