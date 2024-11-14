@@ -86,6 +86,10 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
     getWidgetFor(rowIndex, columnIndex) {
       let id = rowIndex + ":" + columnIndex;
       let widget = this.__widgets[id];
+      if (widget?.isDisposed()) {
+        delete this.__widgets[id];
+        widget = null;
+      }
       if (!widget) {
         let column = this.getColumns().getColumn(columnIndex);
         widget = this.__widgets[id] = this._createWidget(column);
