@@ -280,6 +280,10 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
     },
 
     _updateScrollbarVisibility() {
+      if (this.__inUpdateScrollbarVisibility) {
+        return;
+      }
+      this.__inUpdateScrollbarVisibility = true;
       let scrollX = this.getScrollbarX();
       let scrollbarX = this.getChildControl("scrollbar-x");
       if (scrollX === "off") {
@@ -288,15 +292,11 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
         scrollbarX.show();
       } /* === "auto" */ else {
         this.scrollByX(0);
-
-        /*
-         * NOTE: Scrollbar auto does not work, it can create a race condition where it toggles on and off
-         */
-        //if (scrollbarX.getMaximum() > 0) {
-        scrollbarX.show();
-        //} else {
-        //  scrollbarX.exclude();
-        // }
+        if (scrollbarX.getMaximum() > 0) {
+          scrollbarX.show();
+        } else {
+          scrollbarX.exclude();
+        }
       }
 
       let scrollY = this.getScrollbarY();
@@ -307,15 +307,13 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
         scrollbarY.show();
       } /* === "auto" */ else {
         this.scrollByY(0);
-        /*
-         * NOTE: Scrollbar auto does not work, it can create a race condition where it toggles on and off
-         */
-        //if (scrollbarY.getMaximum() > 0) {
-        scrollbarY.show();
-        //} else {
-        //  scrollbarY.exclude();
-        //}
+        if (scrollbarY.getMaximum() > 0) {
+          scrollbarY.show();
+        } else {
+          scrollbarY.exclude();
+        }
       }
+      this.__inUpdateScrollbarVisibility = false;
     },
 
     _updateScrollPositions() {
