@@ -338,6 +338,9 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
     _updateSizes() {
       let sizeCalculator = this.getSizeCalculator();
       let thisSize = this.getBounds();
+      if (!thisSize) {
+        return;
+      }
 
       let fixedColumns = this.getQxObject("fixedColumns");
       let fixedColumnsSize = this.getSizeCalculator().getRowHeaderBounds();
