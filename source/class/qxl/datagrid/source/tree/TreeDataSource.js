@@ -148,12 +148,12 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     },
 
     /**
-     * Returns an array of nodes whcih are on display
+     * Returns an array of nodes which are on display
      * @param {*} node
-     * @returns {Object[]}
+     * @returns {Object[]?} Null if this node is not expanded
      */
     getShownChildren(node) {
-      return this._getNodeMetaData(node).childRowMetas.map(md => md.node);
+      return this._getNodeMetaData(node).childRowMetas?.map(md => md.node) ?? null;
     },
 
     /**
@@ -193,11 +193,11 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
 
     /**@override */
     async expandNode(node) {
-      await this.queue(() => {
+      await this.queue(async () => {
         let rowMeta = this._getNodeMetaData(node);
         // Check that the node is in the tree - it might have been removed since we were queued
         if (rowMeta) {
-          this._expandNode(node);
+          await this._expandNode(node);
         }
       });
     },
