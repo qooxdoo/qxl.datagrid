@@ -82,6 +82,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
   },
 
   events: {
+    /** Fired when the user clicks on a model item */
+    modelTap: "qx.event.type.Data",
+
     /** Fired when the user double clicks on a model item */
     modelDoubleTap: "qx.event.type.Data"
   },
@@ -341,10 +344,11 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let manager = this.__selectionManager;
       let style = manager.getSelectionStyle();
       let mode = manager.getSelectionMode();
+
       /**@type {Array<any>|qxl.datagrid.source.Range}*/
       let selection;
       if (style === "area") {
-        const widgetPosition = this.getDataSource().getPositionOfModel(model);
+        let widgetPosition = this.getDataSource().getPositionOfModel(model);
         if (evt.getNativeEvent().shiftKey) {
           let lastSelection = manager.getSelectionRange();
           if (!(lastSelection instanceof qxl.datagrid.source.Range)) {
@@ -386,6 +390,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         this.__selectionManager.setFocused(model);
       }
       this.__selectionManager.setSelection(selection);
+      this.fireDataEvent("modelTap", model);
     },
 
     /**

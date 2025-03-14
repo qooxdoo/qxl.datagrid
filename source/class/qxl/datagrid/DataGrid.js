@@ -49,6 +49,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     this.setColumns(columns);
 
     this.getQxObject("widgetPane").addListener("modelDoubleTap", evt => this.fireDataEvent("modelDoubleTap", evt.getData()));
+    this.getQxObject("widgetPane").addListener("modelTap", evt => this.fireDataEvent("modelTap", evt.getData()));
   },
 
   properties: {
@@ -141,7 +142,10 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     /** Fired when the `selection` pseudo property changes */
     changeSelection: "qx.event.type.Data",
 
-    /** Fired when the user double clicks on a model item */
+    /** Fired when the user clicks on a model item, the data is the model */
+    modelTap: "qx.event.type.Data",
+
+    /** Fired when the user double clicks on a model item, the data is the model */
     modelDoubleTap: "qx.event.type.Data"
   },
 
