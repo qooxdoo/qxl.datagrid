@@ -288,7 +288,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         }
       }
 
-      const size = { minWidth, width, maxWidth, minHeight, height, maxHeight };
+      let size = { minWidth, width, maxWidth, minHeight, height, maxHeight };
       widget?.setUserData("qxl.datagrid.lastSize", size);
       return size;
     },
@@ -300,8 +300,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @returns {boolean}
      */
     _setAvailableSize(width, height) {
-      const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
-      const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
+      let initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
+      let initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
       return this.__sizeCalculator.setAvailableSize(width, height, 0, 0, initialOffsetLeft, initialOffsetTop);
     },
 
@@ -310,19 +310,19 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     renderLayout(left, top, width, height) {
       let changed = this._setAvailableSize(width, height);
-      const dynamicSizing = this.getDynamicSizing();
-      const dsRows = dynamicSizing === "rows" || dynamicSizing === "both";
-      const dsCols = dynamicSizing === "columns" || dynamicSizing === "both";
+      let dynamicSizing = this.getDynamicSizing();
+      let dsRows = dynamicSizing === "rows" || dynamicSizing === "both";
+      let dsCols = dynamicSizing === "columns" || dynamicSizing === "both";
       if (!changed && (dsRows || dsCols)) {
-        for (const widget of this.getQxObject("widgetPane").getLayoutChildren()) {
-          const target = widget.getSizeHint();
-          const current = widget.getUserData("qxl.datagrid.lastSize");
+        for (let widget of this.getQxObject("widgetPane").getLayoutChildren()) {
+          let target = widget.getSizeHint();
+          let current = widget.getUserData("qxl.datagrid.lastSize");
           if (!target) {
             continue;
           }
           if (dsRows) {
-            const tooBig = (current?.height ?? Infinity) > (target.maxHeight ?? Infinity);
-            const tooSmall = (current?.height ?? -Infinity) < (target.minHeight ?? 0);
+            let tooBig = (current?.height ?? Infinity) > (target.maxHeight ?? Infinity);
+            let tooSmall = (current?.height ?? -Infinity) < (target.minHeight ?? 0);
             if (tooBig || tooSmall) {
               changed = true;
               this.__sizeCalculator.invalidate();
@@ -330,8 +330,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
             }
           }
           if (dsCols) {
-            const tooBig = (current?.width ?? Infinity) > (target.maxWidth ?? Infinity);
-            const tooSmall = (current?.width ?? -Infinity) < (target.minWidth ?? 0);
+            let tooBig = (current?.width ?? Infinity) > (target.maxWidth ?? Infinity);
+            let tooSmall = (current?.width ?? -Infinity) < (target.minWidth ?? 0);
             if (tooBig || tooSmall) {
               changed = true;
               this.__sizeCalculator.invalidate();

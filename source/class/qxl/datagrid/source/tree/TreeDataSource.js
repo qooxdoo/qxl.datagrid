@@ -225,7 +225,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
         if (!childNode) {
           continue;
         }
-        const childInspector = this.getNodeInspectorFactory()(childNode);
+        let childInspector = this.getNodeInspectorFactory()(childNode);
         let childRowMeta = this.__createRowMetaData(childNode, rowMeta.level + 1);
         childRowMeta.canHaveChildren = childInspector.canHaveChildren(childNode);
         childRowMetas.push(childRowMeta);

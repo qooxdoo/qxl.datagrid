@@ -124,7 +124,7 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       await dataSource.makeAvailable(new qxl.datagrid.source.Range([0, 0], [10, 10]));
 
       let grid = this.getQxObject("grid");
-      const valueAt = (row, column) => dataSource.getModelForPosition(new qxl.datagrid.source.Position(row, column));
+      let valueAt = (row, column) => dataSource.getModelForPosition(new qxl.datagrid.source.Position(row, column));
       grid.getSelection().replace([valueAt(1, 0), valueAt(2, 0), valueAt(3, 0)]);
       grid.getSelectionManager().setFocused(valueAt(4, 4));
     }

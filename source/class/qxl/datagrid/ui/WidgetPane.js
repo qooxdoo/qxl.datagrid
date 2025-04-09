@@ -188,7 +188,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let verticalSpacing = styling.getVerticalSpacing();
       let top = 0;
 
-      const gridStyleColSpanFn = styling.getColSpan();
+      let gridStyleColSpanFn = styling.getColSpan();
 
       let currentRelativePosition = new qxl.datagrid.source.Position();
       let currentAbsolutePosition = new qxl.datagrid.source.Position();
@@ -232,13 +232,13 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             this.__widgetFactory.updateState(child, model);
           }
 
-          const callbackArguments = [model, child, currentRelativePosition, currentAbsolutePosition];
+          let callbackArguments = [model, child, currentRelativePosition, currentAbsolutePosition];
           // if no idx found...
           if (fillFromColumnIndex === null) {
             currentRelativePosition.set({ row: relativeRowIndex, column: relativeColumnIndex });
             currentAbsolutePosition.set({ row: rowSizeData.rowIndex, column: columnSizeData.columnIndex });
             //  check if this col should fill
-            const shouldFillFn = columns.getColumn(columnSizeData.columnIndex).getShouldFillWidth();
+            let shouldFillFn = columns.getColumn(columnSizeData.columnIndex).getShouldFillWidth();
             let shouldFill = shouldFillFn ? shouldFillFn(...callbackArguments) : false;
             if (shouldFill) {
               // assign and fill width
@@ -247,7 +247,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
                 filledWidth += sizesData.columns[i].width + horizontalSpacing;
               }
             } else {
-              const columnColSpanFn = columns.getColumn(columnSizeData.columnIndex).getColSpan();
+              let columnColSpanFn = columns.getColumn(columnSizeData.columnIndex).getColSpan();
               let colSpan = 1;
               if (columnColSpanFn) {
                 colSpan = columnColSpanFn(() => gridStyleColSpanFn?.(...callbackArguments), ...callbackArguments);

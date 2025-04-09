@@ -237,8 +237,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
       let rowCount = dataSourceSize?.getRow();
       if (rowCount) {
         let currentStartRowIndex = this.getStartRowIndex();
-        const minValue = deltaY > 0 ? currentStartRowIndex : 0;
-        const maxValue = deltaY < 0 ? currentStartRowIndex : rowCount - 1;
+        let minValue = deltaY > 0 ? currentStartRowIndex : 0;
+        let maxValue = deltaY < 0 ? currentStartRowIndex : rowCount - 1;
         let newStartRowIndex = qxl.datagrid.util.Math.clamp(minValue, maxValue, currentStartRowIndex + Math.floor(deltaY * qxl.datagrid.VirtualScrollDataGrid.SCROLLING_SPEED));
         this.setStartRowIndex(newStartRowIndex);
       }
@@ -250,8 +250,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
       let colCount = dataSourceSize?.getColumn();
       if (colCount) {
         let currentStartColIndex = this.getStartColumnIndex();
-        const minValue = deltaX > 0 ? currentStartColIndex : 0;
-        const maxValue = deltaX < 0 ? currentStartColIndex : colCount - 1;
+        let minValue = deltaX > 0 ? currentStartColIndex : 0;
+        let maxValue = deltaX < 0 ? currentStartColIndex : colCount - 1;
         let newStartColIndex = qxl.datagrid.util.Math.clamp(minValue, maxValue, currentStartColIndex + Math.floor(deltaX * qxl.datagrid.VirtualScrollDataGrid.SCROLLING_SPEED));
         this.setStartColumnIndex(newStartColIndex);
       }
@@ -261,8 +261,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
      * @returns The number of maximum rows that the data grid can display in view.
      */
     getMaxRows() {
-      const styling = this.getSizeCalculator().getStyling();
-      const oddEvenBounds = this.getQxObject("oddEvenRows").getBounds();
+      let styling = this.getSizeCalculator().getStyling();
+      let oddEvenBounds = this.getQxObject("oddEvenRows").getBounds();
       if (oddEvenBounds && "height" in oddEvenBounds) {
         return Math.floor(oddEvenBounds.height / (styling.getMaxRowHeight() ?? styling.getMinRowHeight()));
       }
@@ -459,7 +459,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
             }
             let position = e.getData();
             let rowCount = this.getDataSource().getSize().getRow();
-            const startRowIndex = Math.floor(qxl.datagrid.util.Math.interpolate(0, 100, 0, Math.max(0, rowCount - this.getMaxRows()), position));
+            let startRowIndex = Math.floor(qxl.datagrid.util.Math.interpolate(0, 100, 0, Math.max(0, rowCount - this.getMaxRows()), position));
             this.setStartRowIndex(startRowIndex);
             this._constrainScrollPosition();
           });
@@ -497,8 +497,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
     },
 
     _setAvailableSize(width, height) {
-      const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
-      const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
+      let initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
+      let initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
       let scrollbarWidth = this.getChildControl("scrollbar-y").getVisibility() === "visible" ? this.getChildControl("scrollbar-y").getSizeHint().width : 0;
       let scrollbarHeight = this.getChildControl("scrollbar-x").getVisibility() === "visible" ? this.getChildControl("scrollbar-x").getSizeHint().height : 0;
       return this.getSizeCalculator().setAvailableSize(

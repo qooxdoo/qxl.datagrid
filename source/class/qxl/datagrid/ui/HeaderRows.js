@@ -102,7 +102,7 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
       let verticalSpacing = styling.getVerticalSpacing();
       let top = 0;
 
-      const gridStyleColSpanFn = styling.getColSpan();
+      let gridStyleColSpanFn = styling.getColSpan();
 
       let currentRelativePosition = new qxl.datagrid.source.Position();
       let currentAbsolutePosition = new qxl.datagrid.source.Position();
@@ -138,12 +138,12 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
             this.__widgetFactory.bindWidget(child);
           }
 
-          const callbackArguments = [null, child, currentRelativePosition, currentAbsolutePosition];
+          let callbackArguments = [null, child, currentRelativePosition, currentAbsolutePosition];
 
           currentRelativePosition.set({ row: rowIndex, column: relativeColumnIndex });
           currentAbsolutePosition.set({ row: rowIndex, column: columnSizeData.columnIndex });
 
-          const columnColSpanFn = columns.getColumn(columnSizeData.columnIndex).getColSpan();
+          let columnColSpanFn = columns.getColumn(columnSizeData.columnIndex).getColSpan();
           let colSpan = 1;
           if (columnColSpanFn) {
             colSpan = columnColSpanFn(() => gridStyleColSpanFn?.(...callbackArguments), ...callbackArguments);

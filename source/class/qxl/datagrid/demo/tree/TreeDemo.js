@@ -153,7 +153,7 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
       var grid = new qxl.datagrid.ClippedScrollDataGrid(this.getQxObject("columns")).set({
         dataSource: dataSource
       });
-      const sel = grid.getSelection();
+      let sel = grid.getSelection();
       sel.addListener("change", this._updateUi, this);
       return grid;
     }

@@ -58,7 +58,7 @@ qx.Class.define("qxl.datagrid.demo.Demo", {
 
   objects: {
     pgArrayDemo() {
-      const arrayPage = new qx.ui.tabview.Page("Array Demo");
+      let arrayPage = new qx.ui.tabview.Page("Array Demo");
       arrayPage.setLayout(new qx.ui.layout.Grow());
       arrayPage.addListenerOnce("appear", async () => {
         let demo = new qxl.datagrid.demo.array.ArrayDemo();
@@ -69,7 +69,7 @@ qx.Class.define("qxl.datagrid.demo.Demo", {
     },
 
     pgTreeDemo() {
-      const treePage = new qx.ui.tabview.Page("Tree Demo");
+      let treePage = new qx.ui.tabview.Page("Tree Demo");
       treePage.setLayout(new qx.ui.layout.Grow());
       treePage.addListenerOnce("appear", async () => {
         let demo = new qxl.datagrid.demo.tree.TreeDemo();
@@ -80,7 +80,7 @@ qx.Class.define("qxl.datagrid.demo.Demo", {
     },
 
     pgBigGridDemo() {
-      const bigGridPage = new qx.ui.tabview.Page("Big Grid Demo");
+      let bigGridPage = new qx.ui.tabview.Page("Big Grid Demo");
       bigGridPage.setLayout(new qx.ui.layout.Grow());
       bigGridPage.addListenerOnce("appear", async () => {
         let demo = new qxl.datagrid.demo.biggrid.BigGridDemo();

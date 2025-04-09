@@ -51,7 +51,7 @@ qx.Class.define("qxl.datagrid.demo.array.DummyModel", {
 
   members: {
     _randomNoun() {
-      const nouns = [
+      let nouns = [
         "Cat",
         "Dog",
         "Mouse",
@@ -101,27 +101,27 @@ qx.Class.define("qxl.datagrid.demo.array.DummyModel", {
     },
 
     _randomTitle() {
-      const noun1 = this._randomNoun();
-      const noun2 = this._randomNoun();
-      const title = [`The ${noun1} and The ${noun2}`, `The ${noun1}'s ${noun2}`, `The ${noun1}`][Math.floor(Math.random() * 3)];
+      let noun1 = this._randomNoun();
+      let noun2 = this._randomNoun();
+      let title = [`The ${noun1} and The ${noun2}`, `The ${noun1}'s ${noun2}`, `The ${noun1}`][Math.floor(Math.random() * 3)];
       return title;
     },
 
     _randomSurname() {
-      const surnames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Garcia", "Rodriguez", "Wilson", "Martinez", "Anderson", "Taylor", "Thomas"];
+      let surnames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Garcia", "Rodriguez", "Wilson", "Martinez", "Anderson", "Taylor", "Thomas"];
       return surnames[Math.floor(Math.random() * surnames.length)];
     },
 
     _randomAuthor() {
-      const forenameInitial = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
-      const surname = this._randomSurname();
-      const title = ["Mr", "Mrs", "Dr", "Prof"][Math.floor(Math.random() * 4)];
+      let forenameInitial = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+      let surname = this._randomSurname();
+      let title = ["Mr", "Mrs", "Dr", "Prof"][Math.floor(Math.random() * 4)];
       return `${title} ${forenameInitial}. ${surname}`;
     },
 
     _randomDate() {
-      const now = new Date();
-      const then = new Date(now.getTime() - Math.floor(Math.random() * 15 * 365 * 24 * 60 * 60 * 1000));
+      let now = new Date();
+      let then = new Date(now.getTime() - Math.floor(Math.random() * 15 * 365 * 24 * 60 * 60 * 1000));
       return then;
     }
   }

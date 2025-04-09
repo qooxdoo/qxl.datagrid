@@ -143,8 +143,8 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
 
   members: {
     _setAvailableSize(width, height) {
-      const initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
-      const initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
+      let initialOffsetLeft = this.getQxObject("widgetPane").getPaddingLeft();
+      let initialOffsetTop = this.getQxObject("widgetPane").getPaddingTop();
       let scrollbarWidth = this.getChildControl("scrollbar-y").getVisibility() === "visible" ? this.getChildControl("scrollbar-y").getSizeHint().width : 0;
       let scrollbarHeight = this.getChildControl("scrollbar-x").getVisibility() === "visible" ? this.getChildControl("scrollbar-x").getSizeHint().height : 0;
       return this.getSizeCalculator().setAvailableSize(
@@ -175,7 +175,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
     },
 
     _createChildControlImpl(id) {
-      const controls = {
+      let controls = {
         /**
          * @this {qxl.datagrid.ClippedScrollDataGrid}
          * @returns {qx.ui.core.scroll.IScrollBar}

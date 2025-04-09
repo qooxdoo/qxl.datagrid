@@ -46,7 +46,7 @@ qx.Class.define("qxl.datagrid.demo.array.ArrayDemo", {
     },
 
     columns() {
-      const columns = new qxl.datagrid.column.Columns();
+      let columns = new qxl.datagrid.column.Columns();
 
       columns.add(
         new qxl.datagrid.column.TextColumn().set({
@@ -80,7 +80,7 @@ qx.Class.define("qxl.datagrid.demo.array.ArrayDemo", {
   members: {
     async init() {
       this.getQxObject("dataSource").setColumns(this.getQxObject("columns"));
-      const model = new qx.data.Array(...Array.from({ length: 100 }, () => new qxl.datagrid.demo.array.DummyModel()));
+      let model = new qx.data.Array(...Array.from({ length: 100 }, () => new qxl.datagrid.demo.array.DummyModel()));
       this.getQxObject("dataSource").setModel(model);
     }
   }

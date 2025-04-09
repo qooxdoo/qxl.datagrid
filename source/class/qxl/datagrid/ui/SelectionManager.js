@@ -213,15 +213,15 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     },
 
     __cellsFromRange(range) {
-      const dataSource = this.getDataSource();
-      const x1 = Math.min(range.getStart().getColumn(), range.getEnd().getColumn());
-      const x2 = Math.max(range.getStart().getColumn(), range.getEnd().getColumn());
-      const y1 = Math.min(range.getStart().getRow(), range.getEnd().getRow());
-      const y2 = Math.max(range.getStart().getRow(), range.getEnd().getRow());
-      const items = new qx.data.Array();
+      let dataSource = this.getDataSource();
+      let x1 = Math.min(range.getStart().getColumn(), range.getEnd().getColumn());
+      let x2 = Math.max(range.getStart().getColumn(), range.getEnd().getColumn());
+      let y1 = Math.min(range.getStart().getRow(), range.getEnd().getRow());
+      let y2 = Math.max(range.getStart().getRow(), range.getEnd().getRow());
+      let items = new qx.data.Array();
       for (let y = y1; y <= y2; y++) {
         for (let x = x1; x <= x2; x++) {
-          const nextItem = dataSource.getModelForPosition(new qxl.datagrid.source.Position(y, x));
+          let nextItem = dataSource.getModelForPosition(new qxl.datagrid.source.Position(y, x));
           if (qx.core.Environment.get("qx.debug")) {
             this.assertNotNull(nextItem, `Failed to set selection in area selection style. There is no item at position (${x},${y}) in the DataGrid.`);
           }
@@ -233,7 +233,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
 
     __setSelectionStandard(items) {
       if (qx.core.Environment.get("qx.debug")) {
-        const dataSource = this.getDataSource();
+        let dataSource = this.getDataSource();
         items.forEach(item => {
           this.assertNotNull(dataSource.getPositionOfModel(item), "Failed to set selection. The item " + item + " is not found in the DataGrid!");
         });

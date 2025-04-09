@@ -24,7 +24,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
 
   members: {
     testSimpleGrid() {
-      const columns = new qxl.datagrid.column.Columns();
+      let columns = new qxl.datagrid.column.Columns();
       columns.addAll([
         new qxl.datagrid.column.TextColumn("a").set({ width: 1 }),
         new qxl.datagrid.column.TextColumn("b").set({ width: 2 }),
@@ -32,7 +32,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
         new qxl.datagrid.column.TextColumn("d").set({ width: 4 }),
         new qxl.datagrid.column.TextColumn("e").set({ width: 5 })
       ]);
-      const widgetSizeSource = {
+      let widgetSizeSource = {
         widgetHeights: [
           [1, 1, 1, 1, 1],
           [2, 2, 2, 2, 2],
@@ -43,7 +43,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
         headerHeights: [10, 10, 10, 10, 10],
         init() {},
         getWidgetSize(rowIndex, columnIndex) {
-          const arr = rowIndex < 0 ? this.headerHeights : this.widgetHeights[rowIndex];
+          let arr = rowIndex < 0 ? this.headerHeights : this.widgetHeights[rowIndex];
           let height = arr[columnIndex] === undefined ? null : arr[columnIndex];
           return {
             minWidth: null,
@@ -59,25 +59,25 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
           return this._size;
         }
       };
-      const styling = new qxl.datagrid.ui.GridStyling().set({
+      let styling = new qxl.datagrid.ui.GridStyling().set({
         horizontalSpacing: 0,
         verticalSpacing: 0,
         minRowHeight: 0,
         numHeaderRows: 0
       });
-      const sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, widgetSizeSource);
+      let sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, widgetSizeSource);
 
       /**
        * @param {0|1|2} scrollX - either 0, 1, or 2, the number of rows scrolled past
        * @param {0|1|2} scrollY - either 0, 1, or 2, the number of columns scrolled past
        */
-      const subcase = (scrollX, scrollY) => {
+      let subcase = (scrollX, scrollY) => {
         //! do not modify this tester's limits without also modifying the size source to accommodate
         if (![0, 1, 2].includes(scrollX) || ![0, 1, 2].includes(scrollY)) {
           return;
         }
 
-        const sizes = sizeCalculator.getSizesFor(3 * scrollY + 6, 3 * scrollX + 6, scrollX, scrollY);
+        let sizes = sizeCalculator.getSizesFor(3 * scrollY + 6, 3 * scrollX + 6, scrollX, scrollY);
 
         this.assertArrayEquals(
           [scrollX, scrollX + 1, scrollX + 2],
@@ -116,7 +116,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
     },
 
     testWithFixed() {
-      const columns = new qxl.datagrid.column.Columns();
+      let columns = new qxl.datagrid.column.Columns();
       columns.addAll([
         new qxl.datagrid.column.TextColumn("a").set({ width: 1 }),
         new qxl.datagrid.column.TextColumn("b").set({ width: 2 }),
@@ -124,7 +124,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
         new qxl.datagrid.column.TextColumn("d").set({ width: 4 }),
         new qxl.datagrid.column.TextColumn("e").set({ width: 5 })
       ]);
-      const widgetSizeSource = {
+      let widgetSizeSource = {
         widgetHeights: [
           [1, 1, 1, 1, 1],
           [2, 2, 2, 2, 2],
@@ -135,7 +135,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
         headerHeights: [10, 10, 10, 10, 10],
         init() {},
         getWidgetSize(rowIndex, columnIndex) {
-          const arr = rowIndex < 0 ? this.headerHeights : this.widgetHeights[rowIndex];
+          let arr = rowIndex < 0 ? this.headerHeights : this.widgetHeights[rowIndex];
           let height = arr[columnIndex] === undefined ? null : arr[columnIndex];
           return {
             minWidth: null,
@@ -151,7 +151,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
           return this._size;
         }
       };
-      const styling = new qxl.datagrid.ui.GridStyling().set({
+      let styling = new qxl.datagrid.ui.GridStyling().set({
         horizontalSpacing: 0,
         verticalSpacing: 0,
         minRowHeight: 0,
@@ -160,13 +160,13 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
         numFixedRows: 0 // will change
       });
 
-      const sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, widgetSizeSource);
+      let sizeCalculator = new qxl.datagrid.ui.GridSizeCalculator(columns, styling, widgetSizeSource);
 
       /**
        * @param {0|1|2|3} fixedCols - either 0, 1, 2, or 3 the number of fixed columns
        * @param {0|1|2|3} fixedRows - either 0, 1, 2, or 3 the number of fixed rows
        */
-      const subcase = (fixedCols, fixedRows) => {
+      let subcase = (fixedCols, fixedRows) => {
         //! do not modify this tester's limits without also modifying the size source to accommodate
         if (![0, 1, 2, 3].includes(fixedCols) || ![0, 1, 2, 3].includes(fixedRows)) {
           return;
@@ -175,7 +175,7 @@ qx.Class.define("qxl.datagrid.test.ui.GridSizeCalculator", {
         styling.setNumFixedColumns(fixedCols);
         styling.setNumFixedRows(fixedRows);
 
-        const sizes = sizeCalculator.getSizesFor(12 - 2 * fixedCols, 12 - 2 * fixedRows, 2, 2);
+        let sizes = sizeCalculator.getSizesFor(12 - 2 * fixedCols, 12 - 2 * fixedRows, 2, 2);
         // see above; grid is offset by 2 in both directions, without fixed the idxs are [2, 3, 4], widths are [3, 4, 5]
 
         this.assertArrayEquals(
