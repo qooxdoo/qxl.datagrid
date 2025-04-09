@@ -205,21 +205,21 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     _applyDataSource(value, oldValue) {
       if (oldValue) {
-        oldValue.removeListener("changeSize", this.__onDataSourceChangeSize, this);
+        oldValue.removeListener("changeSize", this._onDataSourceChangeSize, this);
       }
       this.__selectionManager.resetSelection();
       ["headerWidgetFactory", "paneWidgetFactory", "widgetPane", "oddEvenRows"].forEach(id => this.getQxObject(id).setDataSource(value));
       this.__selectionManager.setDataSource(value);
       this.updateWidgets();
       if (value) {
-        value.addListener("changeSize", this.__onDataSourceChangeSize, this);
+        value.addListener("changeSize", this._onDataSourceChangeSize, this);
       }
     },
 
     /**
      * Event handler for changes in the data source's size
      */
-    __onDataSourceChangeSize() {
+    _onDataSourceChangeSize() {
       this.forceUpdate();
     },
 
