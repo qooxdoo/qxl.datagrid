@@ -232,12 +232,14 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     },
 
     __setSelectionStandard(items) {
-      if (qx.core.Environment.get("qx.debug")) {
-        let dataSource = this.getDataSource();
-        items.forEach(item => {
-          this.assertNotNull(dataSource.getPositionOfModel(item), "Failed to set selection. The item " + item + " is not found in the DataGrid!");
-        });
-      }
+      let dataSource = this.getDataSource();
+      items = items.filter(item => {
+        if (!dataSource.getPositionOfModel(item)) {
+          this.error("Failed to set selection. The item " + item + " is not found in the DataGrid!");
+          return false;
+        }
+        return true;
+      });
       if (items instanceof qx.data.Array) {
         items = items.toArray();
       }
