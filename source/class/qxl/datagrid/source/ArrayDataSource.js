@@ -20,6 +20,7 @@
  * *********************************************************************** */
 
 /**
+ * @template T The type of the data in the model array
  * Provides an implementation of `qxl.datagrid.source.IDataSource` for displaying a simple
  * 1-dimensional array of data.
  */
@@ -45,6 +46,7 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
 
     /**
      * The data model to display.
+     * @type {qx.data.Array<T>}
      */
     model: {
       init: null,
