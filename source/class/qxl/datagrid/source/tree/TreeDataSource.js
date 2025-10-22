@@ -432,7 +432,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @override
      */
     getNodeStateFor(node) {
-      let row = this.__rowMetaDataByNode[node.toHashCode()] || null;
+      let row = this.__rowMetaDataByNode[node?.toHashCode()] || null;
       if (!row) {
         return null;
       }
