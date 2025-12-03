@@ -291,6 +291,9 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     __forceRowModel(model) {
       let dataSource = this.getDataSource();
       let pos = dataSource.getPositionOfModel(model);
+      if (!pos) {
+        return model;
+      }
       if (pos.getColumn() != 0) {
         model = dataSource.getModelForPosition(new qxl.datagrid.source.Position(pos.getRow(), 0));
       }
