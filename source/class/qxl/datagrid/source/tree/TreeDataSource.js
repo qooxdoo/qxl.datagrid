@@ -141,8 +141,20 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      */
     async refreshNodeChildren(node) {
       await this.queue(async () => {
+        let rowMeta = this._getNodeMetaData(node);
+        let expandedNodes = [];
+        if (rowMeta.childRowMetas) {
+          for (let childRowMeta of rowMeta.childRowMetas) {
+            if (childRowMeta.childRowMetas) {
+              expandedNodes.push(childRowMeta.node);
+            }
+          }
+        }
         await this._collapseNode(node);
         await this._expandNode(node);
+        for (let expandedNode of expandedNodes) {
+          await this._expandNode(expandedNode);
+        }
         this.fireDataEvent("changeSize", this.getSize());
       });
     },
