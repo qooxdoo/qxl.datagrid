@@ -142,6 +142,9 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     async refreshNodeChildren(node) {
       await this.queue(async () => {
         let rowMeta = this._getNodeMetaData(node);
+        if (!rowMeta) {
+          return;
+        }
         let expandedNodes = [];
         if (rowMeta.childRowMetas) {
           for (let childRowMeta of rowMeta.childRowMetas) {
