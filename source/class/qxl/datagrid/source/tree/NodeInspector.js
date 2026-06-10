@@ -29,11 +29,32 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
   /**
    * Constructor
    *
-   * @param {Boolean?true} canHaveChildren default return value for `canHaveChildren()`
+   * @param {(Boolean | CanHaveChildren) ? true} canHaveChildren default return value for `canHaveChildren()`
+   * @param {GetChildrenOf ? null} getChildrenOf function to get children of a node
+   *
+   * @callback CanHaveChildren
+   * @param {Object} node
+   * @returns {Boolean}
+   *
+   * @callback GetChildrenOf
+   * @param {Object} node
+   * @returns {Promise<qx.data.Array>}
    */
-  construct(canHaveChildren) {
+  construct(canHaveChildren, getChildrenOf) {
     super();
-    this.__canHaveChildren = !(canHaveChildren === false);
+
+    this.__getChildrenOfImpl =
+      getChildrenOf ??
+      async function (node) {
+        if (node) {
+          let upname = qx.lang.String.firstUp(this.getChildrenPath());
+          let children = await node["get" + upname]();
+          return children;
+        }
+        return null;
+      };
+
+    this.__canHaveChildrenImpl = typeof canHaveChildren == "function" ? canHaveChildren : () => !(canHaveChildren === false);
   },
 
   properties: {
@@ -51,26 +72,24 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
   },
 
   members: {
-    /** @type{Boolean} default return value for `canHaveChildren()` */
-    __canHaveChildren: true,
+    /** @type {CanHaveChildren} default return value for `canHaveChildren()` */
+    __canHaveChildrenImpl: true,
+
+    /** @type {GetChildrenOf} function to get children of a node */
+    __getChildrenOfImpl: null,
 
     /**
      * @override
      */
     async getChildrenOf(node) {
-      if (node) {
-        let upname = qx.lang.String.firstUp(this.getChildrenPath());
-        let children = await node["get" + upname]();
-        return children;
-      }
-      return null;
+      return this.__getChildrenOfImpl(node);
     },
 
     /**
      * @override
      */
     canHaveChildren(node) {
-      return this.__canHaveChildren;
+      return this.__canHaveChildrenImpl(node);
     },
 
     /**
