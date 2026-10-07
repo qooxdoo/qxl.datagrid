@@ -2,11 +2,21 @@
   "$schema": "https://qooxdoo.org/schema/Manifest-2-0-0.json",
   "info": {
     "name": "qxl.datagrid",
-    "summary": "undefined",
-    "description": "undefined",
-    "homepage": "undefined",
-    "license": "MIT license",
-    "authors": [],
+    "summary": "Virtual, scrolling, spreadsheet-like and tree-like DataGrid widget",
+    "description": "DataGrid provides a virtual, scrolling, spreadsheet-like and tree-like control with asynchronous on-demand data sources supporting millions of rows, rich columns and full theme support (Tangible, Indigo, Simple). Demo: https://qooxdoo.org/qxl.datagrid/",
+    "homepage": "https://github.com/qooxdoo/qxl.datagrid",
+    "license": "MIT",
+    "authors": [
+      {
+        "name": "John Spackman",
+        "email": "john.spackman@zenesis.com",
+        "githubUser": "johnspackman"
+      },
+      {
+        "name": "Will Johnson",
+        "githubUser": "WillsterJohnson"
+      }
+    ],
     "version": "1.0.0"
   },
 
@@ -19,6 +29,6 @@
   },
 
   "requires": {
-    "@qooxdoo/framework": ">=7.5.1"
+    "@qooxdoo/framework": "^7.7.0"
   }
 }
