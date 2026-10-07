@@ -44,7 +44,14 @@ qx.Class.define("qxl.datagrid.demo.Application", {
       // await qxl.datagrid.test.TestRunner.runAll(qxl.datagrid.test.ui.DataGrid);
 
       let doc = this.getRoot();
-      doc.add(new qxl.datagrid.demo.Demo(), { left: 0, top: 0, right: 0, bottom: 0 });
+      try {
+        doc.add(new qxl.datagrid.demo.Demo(), { left: 0, top: 0, right: 0, bottom: 0 });
+      } catch (ex) {
+        // main() is async, so without this an exception is swallowed and leaves a blank page
+        console.error("Failed to start the qxl.datagrid demo", ex);
+        let label = new qx.ui.basic.Label("Failed to start the demo: " + ex).set({ rich: true, padding: 20, textColor: "red" });
+        doc.add(label, { left: 0, top: 0, right: 0 });
+      }
     }
   }
 });
