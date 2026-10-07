@@ -16,7 +16,7 @@ NOTE:: This is beta release, but will be in active use and development over he n
 
 ## Trying the Demos
 
-Included in this repo is a demo application - it's running live at http://qooxdoo.org/qxl-datagrid.qooxdoo.github.io/
+Included in this repo is a demo application - it's running live at https://qooxdoo.org/qxl.datagrid/
 
 The included demo application will create a tabview showing several styles of DataGrid usage; if you would like
 to try it out on your own computer, check out this repo and run it:
