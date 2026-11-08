@@ -5,10 +5,12 @@
  * URL parameters:
  * - `perf`  : "virtual" (default), "clipped" or "table" (qx.ui.table as baseline)
  * - `rows`  : number of rows (default 1000)
- * - `cells` : "label" (default) or "editors" (an editor widget in every cell)
+ * - `cells` : "label" (default: labels in the cells, typed columns, an editor opens on demand) or
+ *             "editors" (an editor widget in every cell)
  * - `dyn`   : "1" for `dynamicSizing: "rows"`
  *
- * In the console: `await perf.runAll()` returns the results as an object.
+ * In the console: `await perf.runAll()` returns the results as an object; `perf.focusLatency()` and
+ * `perf.editLatency()` measure keyboard focus and opening editors.
  */
 qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
   extend: qx.ui.container.Composite,
@@ -79,12 +81,13 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       } else {
         const columns = new qxl.datagrid.column.Columns();
         for (const [path, kind] of this.constructor.COLUMNS) {
-          columns.add(new qxl.datagrid.demo.perf.PerfColumn(path, kind, cfg.cells === "editors"));
+          // "editors" puts an editor into every cell, otherwise the grid opens one on demand
+          columns.add(cfg.cells === "editors" ? new qxl.datagrid.demo.perf.PerfColumn(path, kind, true) : this.__createColumn(path, kind));
         }
         const dataSource = new qxl.datagrid.source.ArrayDataSource();
         dataSource.setColumns(columns);
         const GridClass = cfg.grid === "clipped" ? qxl.datagrid.ClippedScrollDataGrid : qxl.datagrid.VirtualScrollDataGrid;
-        this.__grid = new GridClass(columns);
+        this.__grid = new GridClass(columns).set({ editable: cfg.cells !== "editors" });
         if (cfg.dyn) {
           this.__grid.setDynamicSizing("rows");
         }
@@ -226,11 +229,93 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       const result = { config: this.__config, init: this.__initResult };
       result.lines = await this.scrollLines();
       result.jumps = await this.scrollJumps();
+      if (this.__grid.getEditable?.()) {
+        result.focus = await this.focusLatency();
+        result.edit = await this.editLatency();
+      }
       result.changes = await this.changes();
       result.afterPasses = await this.passes();
       // eslint-disable-next-line no-console
       console.log("PERF " + JSON.stringify(result));
       return result;
+    },
+
+    /**
+     * Measures from an arrow key to the focus on the next cell, scrolling along beyond the rows on
+     * display; the key events take the way of real key strokes
+     *
+     * @param {Integer} steps number of key strokes
+     * @return {Promise<Object>} statistics of JS work and time to the next frame per key stroke
+     */
+    async focusLatency(steps = 60) {
+      const grid = this.__grid;
+      this.__scrollToRow(0);
+      grid.focus();
+      grid.setFocusedPosition(0, 0);
+      await this.__settle();
+      const work = [];
+      const frames = [];
+      for (let i = 0; i < steps; i++) {
+        const t = performance.now();
+        qxl.datagrid.test.util.InputHelper.press(i % 10 == 9 ? "Right" : "Down");
+        work.push(performance.now() - t);
+        frames.push((await this.__nextFrame()) - t);
+      }
+      return { workMs: this.__stats(work), frameMs: this.__stats(frames) };
+    },
+
+    /**
+     * Measures from F2 to the editor on display, alternating text, number and select columns
+     *
+     * @param {Integer} steps number of editors opened
+     * @return {Promise<Object>} statistics of JS work and time to the next frame per editor
+     */
+    async editLatency(steps = 30) {
+      const grid = this.__grid;
+      const helper = qxl.datagrid.test.util.InputHelper;
+      this.__scrollToRow(0);
+      grid.focus();
+      await this.__settle();
+      const work = [];
+      const frames = [];
+      const columns = [1, 5, 3];
+      for (let i = 0; i < steps; i++) {
+        grid.setFocusedPosition(i % 20, columns[i % columns.length]);
+        await this.__nextFrame();
+        const t = performance.now();
+        helper.press("F2");
+        work.push(performance.now() - t);
+        frames.push((await this.__nextFrame()) - t);
+        if (!grid.isEditing()) {
+          throw new Error("No editor after F2");
+        }
+        helper.press("Escape");
+      }
+      return { workMs: this.__stats(work), frameMs: this.__stats(frames) };
+    },
+
+    /**
+     * Creates a column for a kind of value, with the editor the column brings along
+     *
+     * @param {String} path property of the row model
+     * @param {"text"|"number"|"bool"|"select"} kind kind of value
+     * @return {qxl.datagrid.column.Column}
+     */
+    __createColumn(path, kind) {
+      let column;
+      if (kind == "number") {
+        column = new qxl.datagrid.column.NumberColumn(path);
+      } else if (kind == "bool") {
+        column = new qxl.datagrid.column.BooleanColumn(path);
+      } else if (kind == "select") {
+        column = new qxl.datagrid.column.SelectColumn(
+          path,
+          qxl.datagrid.demo.perf.PerfModel.ICONS.map(name => ({ label: name, model: name }))
+        );
+      } else {
+        column = new qxl.datagrid.column.TextColumn(path);
+      }
+      return column.set({ caption: path, minWidth: kind == "bool" ? 60 : 110 });
     },
 
     /**
