@@ -29,6 +29,7 @@ qx.Class.define("qxl.datagrid.column.Columns", {
   construct() {
     super();
     this._columns = [];
+    this.__sortColumns = [];
   },
 
   events: {
@@ -41,16 +42,14 @@ qx.Class.define("qxl.datagrid.column.Columns", {
      * Fired when the list of columns changes; data is {ChangeData}
      */
     change: "qx.event.type.Data",
+
     /**
-     * @type {{column: qxl.datagrid.column.Column, sortOrder: "asc" | "desc"}}
-     * Fired when the sortOrder property of one of the columns changes.
-     * This can be triggered when the user clicks on a column to sort it,
-     * or when the programmer sets it programmatically.
-     *
-     * The user can subscribe to this event to know when sorting is requested,
-     * an update the dataSource {@link qxl.datagrid.source.AbstractDataSource} accordingly.
+     * Fired once when the sorting has changed, by a click, a key or `setSortOrder`; data is
+     * `{column, sortOrder, columns}` with the column changed last, its new sort order and all sorted
+     * columns in the order of their priority (see `getSortColumns`). `ArrayDataSource` and
+     * `TreeDataSource` sort their rows on it.
      */
-    changeSortingColumn: "qx.event.type.Data"
+    changeSort: "qx.event.type.Data"
   },
 
   members: {
@@ -78,9 +77,7 @@ qx.Class.define("qxl.datagrid.column.Columns", {
       }
       let moved = !!qx.lang.Array.remove(this._columns, column);
       this._columns.push(column);
-
-      column.addListener("changeSortOrder", this.__onColumnSortOrderChange, this);
-
+      this.__watchColumn(column, moved);
       this.fireDataEvent("change", {
         type: "add",
         column: column,
@@ -111,8 +108,26 @@ qx.Class.define("qxl.datagrid.column.Columns", {
           type: "remove",
           column: column
         });
-
         column.removeListener("changeSortOrder", this.__onColumnSortOrderChange, this);
+        if (qx.lang.Array.remove(this.__sortColumns, column)) {
+          this.__fireChangeSort(column);
+        }
+      }
+    },
+
+    /**
+     * Listens to the sort order of a column which has been added
+     *
+     * @param {qxl.datagrid.column.Column} column
+     * @param {Boolean} moved whether the column was in the list already
+     */
+    __watchColumn(column, moved) {
+      if (moved) {
+        return;
+      }
+      column.addListener("changeSortOrder", this.__onColumnSortOrderChange, this);
+      if (column.getSortOrder() && !this.__sortColumns.includes(column)) {
+        this.__sortColumns.push(column);
       }
     },
 
@@ -134,6 +149,7 @@ qx.Class.define("qxl.datagrid.column.Columns", {
       } else {
         qx.lang.Array.insertBefore(this._columns, column, insertBeforeColumn);
       }
+      this.__watchColumn(column, moved);
       this.fireDataEvent("change", {
         type: "add",
         column: column,
@@ -159,6 +175,7 @@ qx.Class.define("qxl.datagrid.column.Columns", {
       } else {
         qx.lang.Array.insertAfter(this._columns, column, insertAfterColumn);
       }
+      this.__watchColumn(column, moved);
       this.fireDataEvent("change", {
         type: "add",
         column: column,
@@ -221,30 +238,195 @@ qx.Class.define("qxl.datagrid.column.Columns", {
       return this._columns;
     },
 
+    /** @type {qxl.datagrid.column.Column[]} the sorted columns in the order of their priority */
+    __sortColumns: null,
+
+    /** @type {Boolean} while `toggleSort` adds a column, the other sorted columns stay */
+    __addingSort: false,
+
+    /** @type {Integer} nesting of sort order changes, `changeSort` is fired for the outermost one */
+    __sortDepth: 0,
+
     /**
-     * Called when the sortOrder property of any of the columns changes.
+     * Returns the sorted columns in the order of their priority: the first one sorts, the next one
+     * sorts rows with equal values, and so on
      *
-     * Ensures that only one column can be sorted at a time.
-     * @param {*} evt
+     * @return {qxl.datagrid.column.Column[]} a copy
+     */
+    getSortColumns() {
+      return [...this.__sortColumns];
+    },
+
+    /**
+     * Whether at least one column is sorted; cheaper than `getSortColumns`, eg for every cell
+     *
+     * @return {Boolean}
+     */
+    isSorted() {
+      return this.__sortColumns.length > 0;
+    },
+
+    /**
+     * Returns the sort order which `toggleSort` would give a column, eg for `beforeSort`
+     *
+     * @param {qxl.datagrid.column.Column} column
+     * @param {Boolean?} add whether the column is added to the other sorted columns (Shift)
+     * @return {"asc"|"desc"|null}
+     */
+    nextSortOrder(column, add) {
+      let sortOrder = column.getSortOrder();
+      if (add) {
+        return sortOrder == "asc" ? "desc" : "asc";
+      }
+      return !sortOrder ? "asc" : sortOrder == "asc" ? "desc" : null;
+    },
+
+    /**
+     * Changes the sorting like a click on the header of a column:
+     *
+     * - without `add` the column changes from ascending to descending to unsorted, all other columns
+     *   are no longer sorted
+     * - with `add` (Shift) an unsorted column is added as the last criterion (ascending), a sorted one
+     *   switches between ascending and descending, the other columns stay
+     *
+     * Setting `sortOrder` of a column directly unsorts the other columns, like a click.
+     *
+     * @param {qxl.datagrid.column.Column} column
+     * @param {Boolean?} add whether the column is added to the other sorted columns
+     * @return {"asc"|"desc"|null} the new sort order of the column
+     */
+    toggleSort(column, add) {
+      let sortOrder = this.nextSortOrder(column, add);
+      this.__sortDepth++;
+      try {
+        if (add) {
+          this.__addingSort = true;
+          column.setSortOrder(sortOrder);
+        } else {
+          for (let other of this.getSortColumns()) {
+            if (other !== column) {
+              other.setSortOrder(null);
+            }
+          }
+          column.setSortOrder(sortOrder);
+        }
+      } finally {
+        this.__addingSort = false;
+        this.__sortDepth--;
+      }
+      this.__fireChangeSort(column);
+      return sortOrder;
+    },
+
+    /**
+     * Sorts models by the sorted columns (`getSortColumns`): the values of `Column.getSortValue` are
+     * read once per model and compared with `compareValues`, criterion by criterion. The sort is
+     * stable, models with equal values keep their order.
+     *
+     * @param {qx.core.Object[]} models
+     * @return {qx.core.Object[]} a new array with the same models, sorted; the models themselves if no
+     *  column is sorted
+     */
+    sortModels(models) {
+      let sortColumns = this.__sortColumns;
+      if (!sortColumns.length) {
+        return models;
+      }
+      let directions = sortColumns.map(column => (column.getSortOrder() == "desc" ? -1 : 1));
+      let entries = models.map(model => ({ model, keys: sortColumns.map(column => column.getSortValue(model)) }));
+      const compare = qxl.datagrid.column.Columns.compareValues;
+      entries.sort((a, b) => {
+        for (let i = 0; i < directions.length; i++) {
+          let result = compare(a.keys[i], b.keys[i], directions[i]);
+          if (result) {
+            return result;
+          }
+        }
+        return 0;
+      });
+      return entries.map(entry => entry.model);
+    },
+
+    /**
+     * Called when the sortOrder property of any of the columns changes: keeps the order of the sorted
+     * columns; unless `toggleSort` adds a column, a newly sorted column unsorts the others
+     *
+     * @param {qx.event.type.Data} evt
      */
     __onColumnSortOrderChange(evt) {
       let column = evt.getTarget();
       let sortOrder = evt.getData();
-
-      if (!sortOrder) {
-        return;
-      }
-
-      this.fireDataEvent("changeSort", {
-        column: column,
-        sortOrder
-      });
-
-      for (let otherColumn of this._columns) {
-        if (otherColumn !== column) {
-          otherColumn.setSortOrder(null);
+      this.__sortDepth++;
+      try {
+        if (!sortOrder) {
+          qx.lang.Array.remove(this.__sortColumns, column);
+        } else {
+          if (!this.__sortColumns.includes(column)) {
+            this.__sortColumns.push(column);
+          }
+          if (!this.__addingSort) {
+            for (let other of this.getSortColumns()) {
+              if (other !== column) {
+                other.setSortOrder(null);
+              }
+            }
+          }
         }
+      } finally {
+        this.__sortDepth--;
       }
+      if (this.__sortDepth == 0) {
+        this.__fireChangeSort(column);
+      }
+    },
+
+    /**
+     * Fires `changeSort`
+     *
+     * @param {qxl.datagrid.column.Column} column the column changed last
+     */
+    __fireChangeSort(column) {
+      this.fireDataEvent("changeSort", { column, sortOrder: column.getSortOrder(), columns: this.getSortColumns() });
+    }
+  },
+
+  statics: {
+    /** @type {Intl.Collator?} compares texts, made for the locale on first use */
+    __collator: null,
+
+    /** @type {String?} the locale of `__collator` */
+    __collatorLocale: null,
+
+    /**
+     * Compares two values for sorting: empty values (null, undefined, "") come last in both
+     * directions, numbers and dates compare by value, booleans false before true, texts by the current
+     * locale with numbers inside compared as numbers ("Type 2" before "Type 10")
+     *
+     * @param {*} a
+     * @param {*} b
+     * @param {Integer?} direction 1 ascending (default), -1 descending
+     * @return {Integer} negative, 0 or positive like for `Array.sort`
+     */
+    compareValues(a, b, direction = 1) {
+      const isEmpty = value => value === null || value === undefined || value === "";
+      if (isEmpty(a) || isEmpty(b)) {
+        return isEmpty(a) == isEmpty(b) ? 0 : isEmpty(a) ? 1 : -1;
+      }
+      let result;
+      if (typeof a == "string" || typeof b == "string") {
+        let statics = qxl.datagrid.column.Columns;
+        let locale = qx.locale.Manager.getInstance().getLocale().replace("_", "-");
+        if (!statics.__collator || statics.__collatorLocale !== locale) {
+          statics.__collator = new Intl.Collator(locale, { numeric: true, sensitivity: "base" });
+          statics.__collatorLocale = locale;
+        }
+        result = statics.__collator.compare(String(a), String(b));
+      } else {
+        let valueA = a instanceof Date ? a.getTime() : Number(a);
+        let valueB = b instanceof Date ? b.getTime() : Number(b);
+        result = valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+      }
+      return result * direction;
     }
   },
 

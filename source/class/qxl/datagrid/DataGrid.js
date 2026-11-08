@@ -243,7 +243,15 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * `{model, column, row, columnIndex, value, oldValue}`, eg to keep a list of changes with the
      * original values
      */
-    cellValueChanged: "qx.event.type.Data"
+    cellValueChanged: "qx.event.type.Data",
+
+    /**
+     * Fired before the user sorts by a click or a key on the header; data is
+     * `{column, sortOrder, add}` with the new sort order of the column and whether it is added to the
+     * other sorted columns (Shift). `preventDefault()` cancels the sorting. Setting `sortOrder` in code
+     * does not fire it.
+     */
+    beforeSort: "qx.event.type.Data"
   },
 
   members: {
@@ -606,6 +614,27 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     selectAll() {
       return this.__selectionManager.selectAll();
+    },
+
+    /**
+     * Sorts like a click on the header of a column (see `Columns.toggleSort`): an open editor takes
+     * its value first, then `beforeSort` may cancel
+     *
+     * @param {qxl.datagrid.column.Column} column
+     * @param {Boolean?} add whether the column is added to the other sorted columns (Shift)
+     * @return {Boolean} true if the sorting has changed
+     */
+    toggleSort(column, add) {
+      let columns = this.getColumns();
+      if (!column.getSortable() || !this.__editingController.commitEditing()) {
+        return false;
+      }
+      let sortOrder = columns.nextSortOrder(column, add);
+      if (!this.fireDataEvent("beforeSort", { column, sortOrder, add: !!add }, null, true)) {
+        return false;
+      }
+      columns.toggleSort(column, add);
+      return true;
     },
 
     /**

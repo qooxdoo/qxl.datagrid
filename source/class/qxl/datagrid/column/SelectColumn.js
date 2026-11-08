@@ -91,6 +91,15 @@ qx.Class.define("qxl.datagrid.column.SelectColumn", {
     },
 
     /**
+     * Sorts by the label which is shown
+     *
+     * @override
+     */
+    getSortValue(model) {
+      return this.getLabelFor(this.getModelValue(model));
+    },
+
+    /**
      * Accepts the label or the model value of an option; an empty text is null
      *
      * @override

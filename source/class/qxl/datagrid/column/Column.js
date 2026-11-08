@@ -421,6 +421,17 @@ qx.Class.define("qxl.datagrid.column.Column", {
     },
 
     /**
+     * Returns the value a model is sorted by in this column, compared with
+     * `qxl.datagrid.column.Columns.compareValues`; by default the value of the model
+     *
+     * @param {qx.core.Object} model
+     * @return {*}
+     */
+    getSortValue(model) {
+      return this.getModelValue(model);
+    },
+
+    /**
      * Puts a value into the editor
      *
      * @param {qx.ui.core.Widget} editor as created by `createWidgetForEdit`
