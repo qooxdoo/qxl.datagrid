@@ -192,6 +192,7 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
 
     /**
      * Allows row appearance to be set outside of the constructor
+     * @param appearance
      */
     setRowAppearance(appearance) {
       this.__widgetAppearance = appearance;

@@ -117,9 +117,7 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
           path: "name",
           minWidth: 160,
           flex: 1,
-          iconPathProvider: node => {
-            return node.getType() == "directory" ? "@MaterialIcons/folder/16" : "@MaterialIcons/description/16";
-          }
+          iconPathProvider: node => (node.getType() == "directory" ? "@MaterialIcons/folder/16" : "@MaterialIcons/description/16")
         })
       );
       columns.add(

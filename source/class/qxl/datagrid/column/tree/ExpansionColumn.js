@@ -47,7 +47,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
      */
     updateState(widget, model, factory) {
       let state = factory.getDataSource().getNodeStateFor(model);
-      if (state == null) {
+      if (!state) {
         return;
       }
       widget.setIndentationLevel(state.level);
@@ -60,7 +60,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
     bindWidget(widget, model, factory) {
       let bindings = super.bindWidget(widget, model);
       let state = factory.getDataSource().getNodeStateFor(model);
-      if (state == null) {
+      if (!state) {
         return bindings;
       }
       widget.setIndentationLevel(state.level);

@@ -110,6 +110,7 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       });
       grid.addListener("changeSelection", evt => {
         let sel = evt.getData();
+        // eslint-disable-next-line no-console
         console.log("Selection changed to " + sel.map(model => model.toString()).join(","));
       });
       return grid;

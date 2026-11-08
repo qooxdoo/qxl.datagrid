@@ -83,8 +83,8 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
         }
         const dataSource = new qxl.datagrid.source.ArrayDataSource();
         dataSource.setColumns(columns);
-        const gridClass = cfg.grid === "clipped" ? qxl.datagrid.ClippedScrollDataGrid : qxl.datagrid.VirtualScrollDataGrid;
-        this.__grid = new gridClass(columns);
+        const GridClass = cfg.grid === "clipped" ? qxl.datagrid.ClippedScrollDataGrid : qxl.datagrid.VirtualScrollDataGrid;
+        this.__grid = new GridClass(columns);
         if (cfg.dyn) {
           this.__grid.setDynamicSizing("rows");
         }
@@ -228,6 +228,7 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       result.jumps = await this.scrollJumps();
       result.changes = await this.changes();
       result.afterPasses = await this.passes();
+      // eslint-disable-next-line no-console
       console.log("PERF " + JSON.stringify(result));
       return result;
     },

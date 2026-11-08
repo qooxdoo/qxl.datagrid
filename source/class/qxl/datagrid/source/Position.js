@@ -33,13 +33,11 @@ qx.Class.define("qxl.datagrid.source.Position", {
   /**
    * Constructor
    *
-   * The arguments for this constructor can be either:
-   * @param {Integer} row the row
-   * @param {Integer} column the column
+   * The arguments for this constructor can be either row and column as two integers, an object
+   * where the keys are `row` and `column`, or an array where the values are `row` and `column`
+   * in that order
    *
-   * Or an object where the keys are `row` and `column`;
-   * Or an array, where the values are `row` and `column` in that order
-   *
+   * @param {...any} args row and column in one of the forms above
    * @see {qxl.datagrid.source.Position.__coerceValues}
    */
   construct(...args) {
@@ -124,6 +122,8 @@ qx.Class.define("qxl.datagrid.source.Position", {
 
     /**
      * Apply for `row`
+     * @param _
+     * @param oldValue
      */
     __applyRow(_, oldValue) {
       if (oldValue !== undefined && oldValue !== null) {
@@ -133,6 +133,8 @@ qx.Class.define("qxl.datagrid.source.Position", {
 
     /**
      * Apply for `column`
+     * @param _
+     * @param oldValue
      */
     __applyColumn(_, oldValue) {
       if (oldValue !== undefined && oldValue !== null) {
@@ -154,10 +156,12 @@ qx.Class.define("qxl.datagrid.source.Position", {
      *
      * Nulls are mapped to be `undefined`
      *
+     * @param args
      * @returns {SimpleCoords}
      */
     __coerceValues(args) {
-      let row, column;
+      let row;
+      let column;
       if (args.length == 1) {
         if (args[0] instanceof qxl.datagrid.source.Position) {
           row = args[0].getRow();

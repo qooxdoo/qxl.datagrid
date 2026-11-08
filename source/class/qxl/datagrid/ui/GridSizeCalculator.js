@@ -139,6 +139,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
      * @param {Integer} startColumnIndex - an Absolute Column Index representing the first column to be included in the Visible Space
      * @param {Integer} left
      * @param {Integer} top
+     * @param overflow
      * @returns {Boolean} true if the widgets need to be redrawn because the previous data is invalid
      */
     setAvailableSize(width, height, startRowIndex, startColumnIndex, left, top, overflow = false) {
@@ -342,16 +343,15 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
       if (flexColumnIndexes.length) {
         let flexColumns = flexColumnIndexes.map(index => ({ index, column: this._columns.getColumn(index) }));
-        flexColumns.sort((a, b) => {
-          return (
+        flexColumns.sort(
+          (a, b) =>
             // smallest minWidth
             (a.column.getMinWidth() ?? 0) - (b.column.getMinWidth() ?? 0) ||
             // smallest maxWidth
             (a.column.getMaxWidth() ?? 0) - (b.column.getMaxWidth() ?? 0) ||
             // smallest flex
             (a.column.getFlex() ?? 0) - (b.column.getFlex() ?? 0)
-          );
-        });
+        );
 
         for (let { column, index } of flexColumns) {
           let flexAmount = Math.floor((flexAvailable / totalFlex) * column.getFlex());
@@ -476,6 +476,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
     /**
      * Apply for `styling`
+     * @param value
+     * @param oldValue
      */
     __applyStyling(value, oldValue) {
       if (oldValue) {

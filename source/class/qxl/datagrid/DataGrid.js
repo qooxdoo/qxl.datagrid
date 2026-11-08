@@ -164,6 +164,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     /**
      * Apply for `columns`
+     * @param value
+     * @param oldValue
      */
     _applyColumns(value, oldValue) {
       if (oldValue) {
@@ -202,6 +204,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     /**
      * Apply for `dataSource`
+     * @param value
+     * @param oldValue
      */
     _applyDataSource(value, oldValue) {
       if (oldValue) {

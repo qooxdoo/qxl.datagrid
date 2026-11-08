@@ -70,6 +70,8 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
 
     /**
      * Apply for `model`
+     * @param value
+     * @param oldValue
      */
     _applyModel(value, oldValue) {
       if (oldValue) {

@@ -140,18 +140,18 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
      * Widgets staying on display keep their bound model, so a data source which replaces the model at
      * a position must fire `changeSize`; the grid then rebinds all widgets via `invalidateAll`.
      *
-     * @return {Promise?}
+     * @return {Promise?} a promise if the data has to be made available first
      */
     updateWidgets() {
       if (!this.__widgetFactory.getColumns()) {
-        return;
+        return null;
       }
       let columns = this.__widgetFactory.getColumns();
       let dataSource = this.getDataSource();
       let styling = this.__sizeCalculator.getStyling();
       let sizesData = this.__sizeCalculator.getSizes();
       if (!sizesData) {
-        return;
+        return null;
       }
       let minColumnIndex = sizesData.columns[0]?.columnIndex ?? 0;
       let maxColumnIndex = sizesData.columns[sizesData.columns.length - 1]?.columnIndex ?? 0;
@@ -244,7 +244,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           continue;
         }
         rowTops[rowSizeData.rowIndex] = top;
-        let rowModel = undefined;
+        let rowModel;
 
         let fillFromColumnIndex = null;
         // exclusive endIndex
@@ -365,6 +365,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         widgets.forEach(widget => this.__discardSpareWidget(widget));
       }
       this.__applyFirstTop(firstTop);
+      return null;
     },
 
     /**
@@ -466,6 +467,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     /**
      * Event handler for tap events
+     * @param evt
      */
     __onTap(evt) {
       let widget = qx.ui.core.Widget.getWidgetByElement(evt.getOriginalTarget());

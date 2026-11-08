@@ -384,26 +384,31 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
     /**
      * Apply for `width` property
+     * @param value
      */
     _applyWidth(value) {},
 
     /**
      * Apply for `minWidth` property
+     * @param value
      */
     _applyMinWidth(value) {},
 
     /**
      * Apply for `maxWidth` property
+     * @param value
      */
     _applyMaxWidth(value) {},
 
     /**
      * Apply for `flex` property
+     * @param value
      */
     _applyFlex(value) {},
 
     /**
      * Apply for `readOnly` property
+     * @param value
      */
     _applyReadOnly(value) {
       this.__fireEffectiveChanges();
@@ -411,6 +416,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
     /**
      * Apply for `enabled` property
+     * @param value
      */
     _applyEnabled(value) {
       this.__fireEffectiveChanges();

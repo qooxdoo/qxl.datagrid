@@ -113,7 +113,7 @@ qx.Class.define("qxl.datagrid.ui.GridStyling", {
       event: "changeVerticalSpacing"
     },
 
-    // todo: colspan here, use it in wpane/hrows/oeBgs, col-specific colspan takes priority over this.
+    // colspan of the whole grid, used by WidgetPane, HeaderRows and OddEvenRowBackgrounds; a column specific colspan takes priority
     /**
      * A callback used to determine how many columns a cell should fill. This
      * also includes header cells at negative indexes.

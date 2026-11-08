@@ -85,6 +85,8 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
 
     /**
      * Apply for root
+     * @param value
+     * @param oldValue
      */
     async __applyRoot(value, oldValue) {
       await this.queue(async () => {
@@ -201,6 +203,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
 
     /**
      * Returns node metadata for the node object
+     * @param node
      */
     _getNodeMetaData(node) {
       return this.__rowMetaDataByNode[node.toHashCode()];
@@ -228,7 +231,7 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       let rowMeta = this._getNodeMetaData(node);
       if (!rowMeta) {
         this.error(`Cannot find ${node} in rows`);
-        return null;
+        return;
       }
       if (rowMeta.childRowMetas || !rowMeta.canHaveChildren) {
         return;

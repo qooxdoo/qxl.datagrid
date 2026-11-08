@@ -132,6 +132,8 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
     }
   },
 
+  // _forwardStates is a map that qooxdoo only reads, it is never changed
+  // eslint-disable-next-line @qooxdoo/qx/no-refs-in-members
   members: {
     _forwardStates: {
       selected: true
@@ -139,6 +141,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
 
     /**
      * Apply for `value`
+     * @param value
      */
     __applyValue(value) {
       this.getChildControl("label").setValue(value || "");
@@ -146,6 +149,7 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
 
     /**
      * Apply for `icon`
+     * @param value
      */
     __applyIcon(value) {
       this.getChildControl("icon").setSource(value || null);
@@ -153,6 +157,8 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
 
     /**
      * Apply for `indentationLevel`
+     * @param value
+     * @param oldValue
      */
     __applyIndentationLevel(value, oldValue) {
       qx.ui.core.queue.Layout.add(this);
@@ -160,6 +166,8 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionWidget", {
 
     /**
      * Apply for `state`
+     * @param value
+     * @param oldValue
      */
     __applyState(value, oldValue) {
       this._updateIcon();

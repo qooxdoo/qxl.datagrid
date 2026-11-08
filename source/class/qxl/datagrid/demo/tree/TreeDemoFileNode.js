@@ -81,8 +81,8 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemoFileNode", {
 
   statics: {
     async createDummyRoot() {
-      const download = (url, opts) => {
-        return new qx.Promise((resolve, reject) => {
+      const download = (url, opts) =>
+        new qx.Promise((resolve, reject) => {
           var req = new qx.io.request.Xhr(url);
           if (opts) {
             req.set(opts);
@@ -98,7 +98,6 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemoFileNode", {
           });
           req.send();
         });
-      };
 
       let uri = qx.util.ResourceManager.getInstance().toUri("qxl/datagrid/demo/tree/dummy-tree-data.json");
       let data = await download(uri);

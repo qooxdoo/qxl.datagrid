@@ -31,6 +31,10 @@ qx.Class.define("qxl.datagrid.test.TestRunner", {
      *  @return {qx.Promise} promise for completion of all tests
      */
     async runAll(clazz, methodNames) {
+      /**
+       *
+       * @param arr
+       */
       function showExceptions(arr) {
         arr.forEach(item => {
           qx.log.Logger.error(item.test.getClassName() + "." + item.test.getName() + ": " + item.exception);
@@ -67,6 +71,9 @@ qx.Class.define("qxl.datagrid.test.TestRunner", {
         testResult.addListener("skip", evt => showExceptions(evt.getData()));
 
         var methodNameIndex = -1;
+        /**
+         *
+         */
         function next() {
           methodNameIndex++;
           if (!methodNames) {
@@ -75,10 +82,10 @@ qx.Class.define("qxl.datagrid.test.TestRunner", {
             } else {
               resolve();
             }
+          } else if (methodNameIndex < methodNames.length) {
+            loader.runTests(testResult, clazz.classname, methodNames[methodNameIndex]);
           } else {
-            if (methodNameIndex < methodNames.length) {
-              loader.runTests(testResult, clazz.classname, methodNames[methodNameIndex]);
-            } else resolve();
+            resolve();
           }
         }
 

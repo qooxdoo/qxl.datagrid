@@ -138,6 +138,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
 
     /**
      * Apply for `startRowIndex`
+     * @param value
+     * @param oldValue
      */
     _applyStartRowIndex(value, oldValue) {
       this.__inApplyStartRowIndex = true;
@@ -148,6 +150,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
 
     /**
      * Apply for `startColumnIndex`
+     * @param value
+     * @param oldValue
      */
     _applyStartColumnIndex(value, oldValue) {
       this.__inApplyStartColumnIndex = true;
@@ -204,7 +208,6 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
      * Event handler for rolling
      *
      * @param {qx.event.type.Roll} e
-     * @returns
      */
     _onRoll(e) {
       // only wheel and touch
@@ -271,7 +274,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
     },
 
     /**
-     * @returns The number of maximum rows that the data grid can display in view.
+     * @returns {Integer} The number of maximum rows that the data grid can display in view.
      */
     getMaxRows() {
       let styling = this.getSizeCalculator().getStyling();
@@ -331,10 +334,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
         if (!showX) {
           this.scrollToX(0);
         }
-      } else {
-        if (!showY) {
-          this.scrollToY(0);
-        }
+      } else if (!showY) {
+        this.scrollToY(0);
       }
 
       showX && showY ? this._showChildControl("corner") : this._excludeChildControl("corner");
@@ -435,9 +436,10 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
      * @override
      */
     _createChildControlImpl(id) {
+      let control;
       switch (id) {
         case "scrollbar-x":
-          var control = this._createScrollBar("horizontal").set({
+          control = this._createScrollBar("horizontal").set({
             minWidth: 0,
             maximum: 100
           });
@@ -460,7 +462,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
           return control;
 
         case "scrollbar-y":
-          var control = this._createScrollBar("vertical").set({
+          control = this._createScrollBar("vertical").set({
             minHeight: 0,
             maximum: 100
           });
@@ -480,7 +482,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
           return control;
 
         case "corner":
-          var control = new qx.ui.core.Widget();
+          control = new qx.ui.core.Widget();
           control.setWidth(0);
           control.setHeight(0);
           control.exclude();
@@ -501,7 +503,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
         this.__updateScrollXStartIndex(0);
         this.__updateScrollYStartIndex(0);
       }
-      return super.updateWidgets();
+      super.updateWidgets();
     },
 
     onPaneUpdated() {

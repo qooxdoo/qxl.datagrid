@@ -88,6 +88,8 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
 
     /**
      * Apply for `dataSource` property
+     * @param value
+     * @param oldValue
      */
     _applyDataSource(value, oldValue) {
       if (oldValue) {
@@ -118,6 +120,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
 
     /**
      * Apply for `selectionStyle`
+     * @param value
      */
     _applySelectionStyle(value) {
       if (value === "row") {
@@ -138,6 +141,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
 
     /**
      * Apply for `selectionMode`
+     * @param value
      */
     _applySelectionMode(value) {
       if (value === "one" && this.__selection.getLength() > 1) {
@@ -153,6 +157,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
 
     /**
      * Transform for `focused`
+     * @param value
      */
     __transformFocused(value) {
       if (this.getSelectionStyle() === "row") {

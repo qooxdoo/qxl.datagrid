@@ -34,13 +34,9 @@ qx.Class.define("qxl.datagrid.column.FileSizeColumn", {
   },
   construct() {
     super();
-    this.setBindingOptions((widget, model) => {
-      return {
-        converter: (data, model, source, target) => {
-          return !data ? "" : this._convertValueForDisplay(data);
-        }
-      };
-    });
+    this.setBindingOptions((widget, model) => ({
+      converter: (data, model, source, target) => (!data ? "" : this._convertValueForDisplay(data))
+    }));
   },
 
   members: {

@@ -37,7 +37,9 @@ qx.Class.define("qxl.datagrid.test.column.FilteredColumns", {
 
       src.remove(columns[1]);
       arr = [];
-      for (let column of src) arr.push(column);
+      for (let column of src) {
+        arr.push(column);
+      }
       this.assertArrayEquals(arr, [columns[0], columns[2]]);
     },
 
@@ -59,7 +61,9 @@ qx.Class.define("qxl.datagrid.test.column.FilteredColumns", {
       let filtered = new qxl.datagrid.column.FilteredColumns(src);
       filtered.addRange(2, 5);
       let arr = [];
-      for (let column of filtered) arr.push(column);
+      for (let column of filtered) {
+        arr.push(column);
+      }
       this.assertArrayEquals(arr, [columns[2], columns[3], columns[4]]);
 
       filtered.sort((a, b) => {
@@ -68,11 +72,15 @@ qx.Class.define("qxl.datagrid.test.column.FilteredColumns", {
         return a < b ? 1 : a > b ? -1 : 0;
       });
       arr = [];
-      for (let column of filtered) arr.push(column);
+      for (let column of filtered) {
+        arr.push(column);
+      }
       this.assertArrayEquals(arr, [columns[4], columns[3], columns[2]]);
 
       arr = [];
-      for (let column of src) arr.push(column);
+      for (let column of src) {
+        arr.push(column);
+      }
       this.assertArrayEquals(arr, [columns[0], columns[1], columns[2], columns[3], columns[4], columns[5]]);
     }
   }

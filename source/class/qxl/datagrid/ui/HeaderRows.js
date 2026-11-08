@@ -55,7 +55,6 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
       if (sizesData) {
         let height = 0;
         for (let rowSizeData of sizesData.rows) {
-          let left = 0;
           if (rowSizeData.rowIndex >= 0) {
             continue;
           }

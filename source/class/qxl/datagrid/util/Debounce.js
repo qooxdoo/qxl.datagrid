@@ -138,7 +138,7 @@ qx.Class.define("qxl.datagrid.util.Debounce", {
       this.__timerId = null;
       let promise = this.__runPromise;
       try {
-        let result = undefined;
+        let result;
         while (true) {
           result = await this._runImpl();
           if (this.__queuedRepeat) {

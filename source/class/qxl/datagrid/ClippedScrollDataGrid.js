@@ -166,7 +166,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
         return;
       }
       this._updateScrollbarVisibility();
-      return super.updateWidgets();
+      super.updateWidgets();
     },
 
     onPaneUpdated() {
@@ -418,8 +418,8 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
           scrollbarX.scrollBy(parseInt(deltaX, 10));
         }
 
-        var position = scrollbarX.getPosition();
-        var max = scrollbarX.getMaximum();
+        position = scrollbarX.getPosition();
+        max = scrollbarX.getMaximum();
         // pass the event to the parent if the scrollbar is at an edge
         if ((deltaX < 0 && position <= 0) || (deltaX > 0 && position >= max)) {
           endX = true;

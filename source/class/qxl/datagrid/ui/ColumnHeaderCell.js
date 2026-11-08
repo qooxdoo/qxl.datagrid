@@ -24,7 +24,9 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
     this.addListener("pointerup", this._onPointerUp);
 
     this.addListener("execute", e => {
-      if (!this.getSortable()) return;
+      if (!this.getSortable()) {
+        return;
+      }
 
       if (this.getSortOrder() === "asc") {
         this.setSortOrder("desc");
@@ -82,6 +84,8 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
     }
   },
 
+  // _forwardStates is a map that qooxdoo only reads, it is never changed
+  // eslint-disable-next-line @qooxdoo/qx/no-refs-in-members
   members: {
     _forwardStates: {
       sortAsc: true,

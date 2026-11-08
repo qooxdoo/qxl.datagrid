@@ -91,7 +91,7 @@ qx.Class.define("qxl.datagrid.column.Columns", {
     /**
      * Adds all columns in an array
      *
-     * @param {qxl.datagrid.column.Column[]|qx.data.Array<qxl.datagrid.column.Column>} column the new column
+     * @param {qxl.datagrid.column.Column[]|qx.data.Array<qxl.datagrid.column.Column>} columns the new columns
      */
     addAll(columns) {
       for (let column of columns) {
@@ -226,13 +226,14 @@ qx.Class.define("qxl.datagrid.column.Columns", {
      *
      * Ensures that only one column can be sorted at a time.
      * @param {*} evt
-     * @returns
      */
     __onColumnSortOrderChange(evt) {
       let column = evt.getTarget();
       let sortOrder = evt.getData();
 
-      if (!sortOrder) return;
+      if (!sortOrder) {
+        return;
+      }
 
       this.fireDataEvent("changeSort", {
         column: column,

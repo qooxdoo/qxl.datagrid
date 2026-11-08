@@ -35,21 +35,19 @@ qx.Class.define("qxl.datagrid.column.DateColumn", {
 
   construct() {
     super();
-    this.setBindingOptions((widget, model) => {
-      return {
-        converter: (data, model, source, target) => {
-          if (!data) {
-            return "";
-          }
-          let format = this.getDateFormat() || qx.util.format.DateFormat.getDateInstance();
-          if (typeof data == "string") {
-            data = new Date(Date.parse(data));
-          } else if (typeof data == "number") {
-            data = new Date(data);
-          }
-          return format.format(data);
+    this.setBindingOptions((widget, model) => ({
+      converter: (data, model, source, target) => {
+        if (!data) {
+          return "";
         }
-      };
-    });
+        let format = this.getDateFormat() || qx.util.format.DateFormat.getDateInstance();
+        if (typeof data == "string") {
+          data = new Date(Date.parse(data));
+        } else if (typeof data == "number") {
+          data = new Date(data);
+        }
+        return format.format(data);
+      }
+    }));
   }
 });

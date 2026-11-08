@@ -136,11 +136,10 @@ qx.Class.define("qxl.datagrid.source.Range", {
             return {
               value: pos
             };
-          } else {
-            return {
-              done: true
-            };
           }
+          return {
+            done: true
+          };
         },
         [Symbol.iterator]() {
           return this;
@@ -200,11 +199,10 @@ qx.Class.define("qxl.datagrid.source.Range", {
             return {
               value: pos
             };
-          } else {
-            return {
-              done: true
-            };
           }
+          return {
+            done: true
+          };
         },
         [Symbol.iterator]() {
           return this;
@@ -236,11 +234,10 @@ qx.Class.define("qxl.datagrid.source.Range", {
             return {
               value: pos
             };
-          } else {
-            return {
-              done: true
-            };
           }
+          return {
+            done: true
+          };
         },
         [Symbol.iterator]() {
           return this;
@@ -261,7 +258,12 @@ qx.Class.define("qxl.datagrid.source.Range", {
     },
 
     /**
-     * Transform for `start` and `end`
+     * Transform for `start` and `end`; an existing position object is kept and updated, so that
+     * listeners on it stay attached
+     *
+     * @param {qxl.datagrid.source.Position} value the new position
+     * @param {qxl.datagrid.source.Position?} oldValue the current position
+     * @return {qxl.datagrid.source.Position} the position object to store
      */
     __transformXxx(value, oldValue) {
       if (!oldValue) {
@@ -273,6 +275,7 @@ qx.Class.define("qxl.datagrid.source.Range", {
 
     /**
      * Apply for `start` and `end`
+     * @param value
      */
     __applyXxxx(value) {
       if (value) {

@@ -29,6 +29,7 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
 
   /**
    * Constructor
+   * @param columns
    */
   construct(columns) {
     super();
@@ -65,6 +66,8 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
 
     /**
      * Apply for `columns`
+     * @param value
+     * @param oldValue
      */
     _applyColumns(value, oldValue) {
       this.disposeAllWidgets();

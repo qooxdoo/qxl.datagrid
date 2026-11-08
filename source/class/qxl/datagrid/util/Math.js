@@ -6,7 +6,7 @@ qx.Class.define("qxl.datagrid.util.Math", {
      * @param {*} lo
      * @param {*} hi
      * @param {*} x
-     * @returns
+     * @returns {*} x clamped between lo and hi
      */
     clamp(lo, hi, x) {
       x = Math.max(lo, x);

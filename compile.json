@@ -21,6 +21,14 @@
   "environment": {
     "qx.icontheme": "Tango"
   },
+  "eslintConfig": {
+    "globals": {
+      "setTimeout": "readonly",
+      "clearTimeout": "readonly",
+      "performance": "readonly",
+      "URLSearchParams": "readonly"
+    }
+  },
   "applications": [
     {
       "class": "qxl.datagrid.demo.Application",

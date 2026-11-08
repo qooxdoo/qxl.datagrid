@@ -64,7 +64,8 @@ qx.Class.define("qxl.datagrid.ui.layout.Fixed", {
       var children = this._getLayoutChildren();
       var neededWidth = 0;
       var neededHeight = 0;
-      var localWidth, localHeight;
+      var localWidth;
+      var localHeight;
 
       // Iterate over children
       for (var i = 0, l = children.length; i < l; i++) {
