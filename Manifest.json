@@ -14,7 +14,12 @@
       },
       {
         "name": "Will Johnson",
+        "email": "",
         "githubUser": "WillsterJohnson"
+      },
+      {
+        "name": "Henner Kollmann (hkollmann)",
+        "email": "Henner.Kollmann@gmx.de"
       }
     ],
     "version": "1.0.0"
