@@ -32,6 +32,11 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
     this.__rowMetaDatas = [];
     this.__rowMetaDataByNode = {};
     this.__queue = [];
+    // the rows follow the sorting of the columns
+    this.addListener("changeColumns", evt => {
+      evt.getOldData()?.removeListener("changeSort", this.sort, this);
+      evt.getData()?.addListener("changeSort", this.sort, this);
+    });
     if (nodeInspectorFactory) {
       this.setNodeInspectorFactory(nodeInspectorFactory);
     }
@@ -66,6 +71,8 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      * @property {boolean} canHaveChildren whether the node might have children
      * @property {qxl.datagrid.binding.Bindings} childrenChangeBinding Binding object for the change listener of the node's children
      * @prop {RowMetaData[]} [childRowMetas] array of child row metadata
+     * @prop {Integer} sourceIndex position among its siblings as the node inspector returned them,
+     *  the order without sorting
      */
 
     /** @type {RowMetaData[]} array of objects for each visible row */
@@ -125,15 +132,16 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       this.__rowMetaDataByNode[node.toHashCode()] = rowMeta;
       for (let i = 0, nodes = await inspector.getChildrenOf(node); i < nodes.length; i++) {
         let node = nodes.getItem(i);
-        let childRowMeta = this.__createRowMetaData(node, 0);
+        let childRowMeta = this.__createRowMetaData(node, 0, i);
         let childInspector = this.getNodeInspectorFactory()(node);
 
         childRowMeta.canHaveChildren = childInspector.canHaveChildren(node);
         childRowMeta.parentMeta = rowMeta;
-        this.__rowMetaDatas.push(childRowMeta);
         this.__rowMetaDataByNode[node.toHashCode()] = childRowMeta;
         rowMeta.childRowMetas.push(childRowMeta);
       }
+      rowMeta.childRowMetas = this.__sortRowMetas(rowMeta.childRowMetas);
+      qx.lang.Array.append(this.__rowMetaDatas, rowMeta.childRowMetas);
       this.fireDataEvent("changeSize", this.getSize());
     },
 
@@ -178,15 +186,65 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
      *
      * @param {qx.core.Object} node
      * @param {Integer} level the indentation level
+     * @param {Integer?} sourceIndex position among its siblings as the node inspector returned them
      * @returns {RowMetaData}
      */
-    __createRowMetaData(node, level) {
+    __createRowMetaData(node, level, sourceIndex = 0) {
       return {
         node: node,
         level: level,
+        sourceIndex,
         canHaveChildren: undefined,
         childrenChangeBinding: undefined
       };
+    },
+
+    /**
+     * Sorts the rows of siblings by the sorted columns (`Columns.sortModels`), or in the order of the
+     * node inspector if no column is sorted
+     *
+     * @param {RowMetaData[]} rowMetas siblings
+     * @return {RowMetaData[]} a new array
+     */
+    __sortRowMetas(rowMetas) {
+      let columns = this.getColumns();
+      if (!columns?.isSorted?.()) {
+        return [...rowMetas].sort((a, b) => a.sourceIndex - b.sourceIndex);
+      }
+      let metaOf = new Map(rowMetas.map(rowMeta => [rowMeta.node, rowMeta]));
+      return columns.sortModels(rowMetas.map(rowMeta => rowMeta.node)).map(node => metaOf.get(node));
+    },
+
+    /**
+     * Sorts the siblings on every level again by the sorted columns, or brings back the order of the
+     * node inspector if no column is sorted; open nodes stay open. This happens by itself when the
+     * sorting changes and for nodes which are opened, but not when values change, so that rows do not
+     * jump while they are edited. To sort after editing, call it on `cellValueChanged` of the grid.
+     *
+     * @return {Promise<void>}
+     */
+    async sort() {
+      await this.queue(async () => {
+        let root = this.getRoot();
+        let rootMeta = root ? this._getNodeMetaData(root) : null;
+        if (!rootMeta) {
+          return;
+        }
+        let rows = [];
+        const sortLevel = rowMeta => {
+          if (!rowMeta.childRowMetas) {
+            return;
+          }
+          rowMeta.childRowMetas = this.__sortRowMetas(rowMeta.childRowMetas);
+          for (let childRowMeta of rowMeta.childRowMetas) {
+            rows.push(childRowMeta);
+            sortLevel(childRowMeta);
+          }
+        };
+        sortLevel(rootMeta);
+        this.__rowMetaDatas = rows;
+        this.fireDataEvent("changeSize", this.getSize());
+      });
     },
 
     /**
@@ -239,17 +297,19 @@ qx.Class.define("qxl.datagrid.source.tree.TreeDataSource", {
       rowMeta.childrenChangeBinding = inspector.createChildrenChangeBinding(node, () => this.refreshNodeChildren(node));
       let parentRowIndex = this.__rowMetaDatas.indexOf(rowMeta);
       let childRowMetas = [];
+      let sourceIndex = 0;
       for (let childNode of children) {
         if (!childNode) {
           continue;
         }
         let childInspector = this.getNodeInspectorFactory()(childNode);
-        let childRowMeta = this.__createRowMetaData(childNode, rowMeta.level + 1);
+        let childRowMeta = this.__createRowMetaData(childNode, rowMeta.level + 1, sourceIndex++);
         childRowMeta.canHaveChildren = childInspector.canHaveChildren(childNode);
         childRowMetas.push(childRowMeta);
         childRowMeta.parentMeta = rowMeta;
         this.__rowMetaDataByNode[childNode.toHashCode()] = childRowMeta;
       }
+      childRowMetas = this.__sortRowMetas(childRowMetas);
       let before = this.__rowMetaDatas.slice(0, parentRowIndex + 1);
       let after = parentRowIndex == this.__rowMetaDatas.length - 1 ? [] : this.__rowMetaDatas.slice(parentRowIndex + 1);
       qx.lang.Array.append(before, childRowMetas);

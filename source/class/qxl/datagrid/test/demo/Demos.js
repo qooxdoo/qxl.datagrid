@@ -32,7 +32,55 @@ qx.Class.define("qxl.datagrid.test.demo.Demos", {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
         await this.__checkTreeKeys(grid);
+        await this.__checkTreeSorting(grid);
       });
+    },
+
+    /**
+     * Sorts the tree by name: siblings are sorted on each level, open nodes stay open, nodes opened
+     * later bring their children sorted, and without sorting the order of the node inspector returns
+     *
+     * @param {qxl.datagrid.DataGrid} grid a grid on a tree data source, with the name column first
+     */
+    async __checkTreeSorting(grid) {
+      let dataSource = grid.getDataSource();
+      let nameColumn = grid.getColumns().getColumn(0);
+      const rows = () => Array.from({ length: dataSource.getSize().getRow() }, (_, row) => dataSource.getModelForPosition(new qxl.datagrid.source.Position(row, 0)));
+      const stateOf = node => dataSource.getNodeStateFor(node).state;
+      const topLevel = () => rows().filter(node => dataSource.getNodeStateFor(node).level == 0);
+      const assertSorted = direction => {
+        let namesByParent = new Map();
+        for (let node of rows()) {
+          let parent = dataSource.getParentOf(node);
+          if (!namesByParent.has(parent)) {
+            namesByParent.set(parent, []);
+          }
+          namesByParent.get(parent).push(node.getName());
+        }
+        for (let names of namesByParent.values()) {
+          for (let i = 1; i < names.length; i++) {
+            this.assertTrue(qxl.datagrid.column.Columns.compareValues(names[i - 1], names[i], direction) <= 0, `${names[i - 1]} before ${names[i]}`);
+          }
+        }
+      };
+      let original = topLevel();
+      let opened = original.find(node => stateOf(node) == "closed");
+      await dataSource.expandNode(opened);
+
+      grid.getColumns().toggleSort(nameColumn);
+      await dataSource.flushQueue();
+      assertSorted(1);
+      this.assertEquals("open", stateOf(opened), "an open node stays open");
+      let later = rows().find(node => stateOf(node) == "closed");
+      await dataSource.expandNode(later);
+      assertSorted(1);
+
+      grid.getColumns().toggleSort(nameColumn);
+      await dataSource.flushQueue();
+      assertSorted(-1);
+      grid.getColumns().toggleSort(nameColumn);
+      await dataSource.flushQueue();
+      this.assertArrayEquals(original, topLevel(), "without sorting the order of the inspector returns");
     },
 
     /**
