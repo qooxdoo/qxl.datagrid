@@ -56,9 +56,9 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
      * @param {Integer?} column column index, null if no header cell has the focus
      */
     setFocusedColumn(column) {
-      this.__getCell(this.__focusedColumn)?.removeState("focused");
+      this.getCell(this.__focusedColumn)?.removeState("focused");
       this.__focusedColumn = column;
-      this.__getCell(column)?.addState("focused");
+      this.getCell(column)?.addState("focused");
     },
 
     /**
@@ -77,7 +77,7 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
      * @param {Integer?} column column index
      * @return {qx.ui.core.Widget?}
      */
-    __getCell(column) {
+    getCell(column) {
       if (column === null || column === undefined) {
         return null;
       }
@@ -123,15 +123,13 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
         return;
       }
       let numHeaderRows = styling.getNumHeaderRows();
-      let minColumnIndex = sizesData.columns[0]?.columnIndex ?? 0;
-      let maxColumnIndex = sizesData.columns[sizesData.columns.length - 1]?.columnIndex ?? 0;
 
       let children = {};
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         let id = cellData.row + ":" + cellData.column;
-        // prettier-ignore
-        if (cellData.row > numHeaderRows || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
+        // a hidden column may lie between the columns laid out
+        if (cellData.row > numHeaderRows || !sizesData.columnIndexes.has(cellData.column)) {
           this.__fullDiscardWidget(child, id);
         } else {
           children[id] = child;

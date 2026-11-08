@@ -123,7 +123,7 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
             return true;
           }
           // the grid has the focus while the editor is open (eg scrolled out of view): moving commits
-          if (qxl.datagrid.DataGrid.computeFocusMove(key, {}, { row: 0, column: 0 }, 1, 1, 1) === undefined) {
+          if (qxl.datagrid.DataGrid.computeFocusMove(key, {}, { row: 0, column: 0 }, 1, [0], 1) === undefined) {
             return true;
           }
           if (!this.commitEditing()) {
@@ -188,10 +188,10 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
       let dataSource = this.__grid.getDataSource();
       let columns = this.__grid.getColumns();
       let rowCount = dataSource.getSize().getRow();
-      let columnCount = columns.getLength();
+      let visibleIndexes = columns.getVisibleIndexes();
       let position = { row: editing.row, column: editing.columnIndex };
-      for (let i = 0; i < rowCount * columnCount; i++) {
-        position = qxl.datagrid.DataGrid.computeFocusMove("Tab", { shift: backwards }, position, rowCount, columnCount, 1);
+      for (let i = 0; i < rowCount * visibleIndexes.length; i++) {
+        position = qxl.datagrid.DataGrid.computeFocusMove("Tab", { shift: backwards }, position, rowCount, visibleIndexes, 1);
         if (!position) {
           return;
         }

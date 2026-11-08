@@ -227,7 +227,8 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         }
         let cellData = child.getUserData("qxl.datagrid.cellData");
         let id = cellData.row + ":" + cellData.column;
-        if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
+        // a hidden column may lie between the columns laid out
+        if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || !sizesData.columnIndexes.has(cellData.column)) {
           if (reuseWidgets) {
             this.__widgetFactory.unbindWidget(child);
             delete this.__children[id];

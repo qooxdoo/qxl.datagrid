@@ -316,6 +316,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
       this.__sizeCalculator.invalidate();
       if (data.type == "size") {
+        this.__moveFocusOffHiddenColumns();
         this.updateWidgets();
       }
       this.scheduleLayoutUpdate();
@@ -396,7 +397,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
       let element = this.getContentElement();
       element.setAttribute("aria-rowcount", dataSource.getSize().getRow() + this.getStyling().getNumHeaderRows());
-      element.setAttribute("aria-colcount", columns.getLength());
+      element.setAttribute("aria-colcount", columns.getVisibleIndexes().length);
       element.setAttribute("aria-multiselectable", ["multi", "additive"].includes(this.__selectionManager.getSelectionMode()));
     },
 
@@ -445,14 +446,14 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       let key = evt.getKeyIdentifier();
       let columns = this.getColumns();
       let column = this.__headerColumn;
-      let last = columns.getLength() - 1;
       let shift = evt.isShiftPressed();
       if ((key == "Left" || key == "Right") && shift) {
         let width = this.__sizeCalculator.getSizes()?.columns.find(columnData => columnData.columnIndex == column)?.width;
         columns.getColumn(column).resize((width ?? columns.getColumn(column).getWidth() ?? 0) + (key == "Right" ? 10 : -10));
       } else if (key == "Left" || key == "Right" || key == "Home" || key == "End") {
-        let target = { Left: column - 1, Right: column + 1, Home: 0, End: last }[key];
-        this.__setHeaderColumn(Math.max(0, Math.min(last, target)));
+        // the same moves as in the data, over hidden columns
+        let target = qxl.datagrid.DataGrid.computeFocusMove(key, {}, { row: 0, column }, 1, columns.getVisibleIndexes(), 1);
+        this.__setHeaderColumn(target.column);
       } else if (key == "Down") {
         this.__setHeaderColumn(null);
         this._moveFocusTo(0, column);
@@ -589,6 +590,28 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       menu.placeToWidget(cell, true);
       menu.show();
       return true;
+    },
+
+    /**
+     * Moves the keyboard focus off a column which has been hidden, to the next shown column; an open
+     * editor in it takes its value, or discards it if it is rejected
+     */
+    __moveFocusOffHiddenColumns() {
+      let visibleIndexes = this.getColumns().getVisibleIndexes();
+      const nextShown = column => visibleIndexes.find(index => index > column) ?? visibleIndexes[visibleIndexes.length - 1] ?? null;
+      if (this.__headerColumn !== null && !visibleIndexes.includes(this.__headerColumn)) {
+        this.__setHeaderColumn(nextShown(this.__headerColumn));
+      }
+      let position = this.getFocusedPosition();
+      if (position && !visibleIndexes.includes(position.getColumn())) {
+        if (!this.__editingController.commitEditing(false)) {
+          this.__editingController.cancelEditing();
+        }
+        let column = nextShown(position.getColumn());
+        if (column !== null) {
+          this.__selectionManager.setFocusedPosition(new qxl.datagrid.source.Position(position.getRow(), column));
+        }
+      }
     },
 
     /**
@@ -732,7 +755,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         modifiers,
         position ? { row: position.getRow(), column: position.getColumn() } : null,
         dataSource.getSize().getRow(),
-        columns.getLength(),
+        columns.getVisibleIndexes(),
         this._getPageRowCount()
       );
       if (target === undefined) {
@@ -1093,46 +1116,59 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @param {{shift: Boolean, ctrl: Boolean}} modifiers pressed modifier keys
      * @param {{row: Integer, column: Integer}?} position the focused cell, null if there is none
      * @param {Integer} rowCount number of rows in the data source
-     * @param {Integer} columnCount number of columns
+     * @param {Integer[]} columns indexes of the columns shown, in order (`Columns.getVisibleIndexes`);
+     *  hidden columns are skipped, a hidden focused column counts as the next shown one
      * @param {Integer} pageRows how many rows Page Up and Page Down move
      * @return {{row: Integer, column: Integer}|null|undefined} the cell to focus; null if the focus
      *  leaves the grid (Tab on the last or Shift+Tab on the first cell); undefined if the key does not
      *  move the focus
      */
-    computeFocusMove(key, modifiers, position, rowCount, columnCount, pageRows) {
+    computeFocusMove(key, modifiers, position, rowCount, columns, pageRows) {
       const clamp = (value, max) => Math.max(0, Math.min(max - 1, value));
+      let first = columns[0] ?? 0;
+      let last = columns[columns.length - 1] ?? 0;
       if (!position) {
-        return ["Up", "Down", "Left", "Right", "Home", "End", "PageUp", "PageDown"].includes(key) ? { row: 0, column: 0 } : undefined;
+        return ["Up", "Down", "Left", "Right", "Home", "End", "PageUp", "PageDown"].includes(key) ? { row: 0, column: first } : undefined;
       }
-      let { row, column } = position;
+      let row = position.row;
+      // the place among the shown columns
+      let index = columns.findIndex(column => column >= position.column);
+      if (index < 0) {
+        index = columns.length - 1;
+      }
+      let onHidden = columns[index] !== position.column;
+      let column = columns[index] ?? first;
+      const columnAt = i => columns[clamp(i, columns.length)];
       switch (key) {
         case "Up":
           return { row: clamp(row - 1, rowCount), column };
         case "Down":
           return { row: clamp(row + 1, rowCount), column };
         case "Left":
-          return { row, column: clamp(column - 1, columnCount) };
+          return { row, column: columnAt(index - 1) };
         case "Right":
-          return { row, column: clamp(column + 1, columnCount) };
+          return { row, column: onHidden ? column : columnAt(index + 1) };
         case "PageUp":
           return { row: clamp(row - pageRows, rowCount), column };
         case "PageDown":
           return { row: clamp(row + pageRows, rowCount), column };
         case "Home":
-          return modifiers.ctrl ? { row: 0, column: 0 } : { row, column: 0 };
+          return modifiers.ctrl ? { row: 0, column: first } : { row, column: first };
         case "End":
-          return modifiers.ctrl ? { row: rowCount - 1, column: columnCount - 1 } : { row, column: columnCount - 1 };
-        case "Tab":
+          return modifiers.ctrl ? { row: rowCount - 1, column: last } : { row, column: last };
+        case "Tab": {
           if (modifiers.shift) {
-            if (column > 0) {
-              return { row, column: column - 1 };
+            if (index > 0) {
+              return { row, column: columns[index - 1] };
             }
-            return row > 0 ? { row: row - 1, column: columnCount - 1 } : null;
+            return row > 0 ? { row: row - 1, column: last } : null;
           }
-          if (column < columnCount - 1) {
-            return { row, column: column + 1 };
+          let next = onHidden ? index : index + 1;
+          if (next < columns.length) {
+            return { row, column: columns[next] };
           }
-          return row < rowCount - 1 ? { row: row + 1, column: 0 } : null;
+          return row < rowCount - 1 ? { row: row + 1, column: first } : null;
+        }
         default:
           return undefined;
       }

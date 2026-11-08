@@ -169,13 +169,24 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * Defines the sort order for this column
      * This is changed when the user clicks on a column to sort it,
      * but can also be set programatically.
-     * Note: The code ensures that at most one column within an instance of qxl.datagrid.column.Columns has a sortOrder of "asc" or "desc"
+     * Note: Setting it in code unsorts the other columns; several sorted columns come from
+     * `qxl.datagrid.column.Columns.toggleSort` with `add` (Shift+click)
      */
     sortOrder: {
       init: null,
       nullable: true,
       check: ["asc", "desc"],
       event: "changeSortOrder"
+    },
+
+    /**
+     * Whether the column is shown; a hidden column keeps its index, its values and errors and may stay
+     * sorted, it is just not laid out.
+     */
+    visible: {
+      init: true,
+      check: "Boolean",
+      event: "changeVisible"
     }
   },
 

@@ -226,7 +226,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
       let rollDelta = e.getDelta();
 
       let sizeData = this.getSizeCalculator().getSizes();
-      let totalColumns = this.getColumns().getLength();
+      let totalColumns = this.getColumns().getVisibleIndexes().length;
       let totalRows = this.getDataSource().getSize().getRow() + this.getStyling().getNumHeaderRows();
 
       if (rollDelta.y !== 0 && sizeData.rows.length < totalRows) {
@@ -482,8 +482,10 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
 
       let scrollbarX = this.getChildControl("scrollbar-x");
       let showX = this.getScrollbarX();
-      let totalColumns = columns.getLength();
-      let startColumnIndex = this.getStartColumnIndex();
+      // hidden columns do not count, the start is the number of shown columns before it
+      let visibleIndexes = columns.getVisibleIndexes();
+      let totalColumns = visibleIndexes.length;
+      let startColumnIndex = visibleIndexes.filter(index => index < this.getStartColumnIndex()).length;
       calculateScrollbar(showX, scrollbarX, sizeData.columns.length, totalColumns, startColumnIndex, () => Math.floor((startColumnIndex / (totalColumns + 1)) * 100));
 
       let scrollbarY = this.getChildControl("scrollbar-y");
@@ -518,11 +520,12 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
               return;
             }
             let position = e.getData();
-            let size = this.getDataSource().getSize();
             if (position == 100) {
               this.setStartColumnIndex(-1);
             } else {
-              let start = Math.round(size.getColumn() * (position / 100));
+              // the position counts shown columns only
+              let visibleIndexes = this.getColumns().getVisibleIndexes();
+              let start = visibleIndexes[Math.round(visibleIndexes.length * (position / 100))] ?? visibleIndexes[visibleIndexes.length - 1] ?? 0;
               this.setStartColumnIndex(start);
             }
           });

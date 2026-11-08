@@ -208,6 +208,14 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       press("Tab");
       this.assertFalse(grid.isEditing());
       this.assertTrue(grid.getFocusedPosition().equals(199, 11));
+
+      // hidden columns are skipped
+      grid.setCellEditable(null);
+      grid.getColumns().getColumn(2).setVisible(false);
+      this.__openEditor(1, 1);
+      press("Tab");
+      this.assertTrue(grid.getFocusedPosition().equals(1, 3));
+      press("Escape");
     },
 
     testDeleteEmptiesCell() {

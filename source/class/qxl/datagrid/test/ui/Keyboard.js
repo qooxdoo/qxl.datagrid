@@ -273,6 +273,34 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       this.assertEquals("desc", columns.getColumn(2).getSortOrder());
     },
 
+    testHiddenColumns() {
+      const press = qxl.datagrid.test.util.InputHelper.press;
+      let grid = this.__grid;
+      let header = grid.getQxObject("header");
+      let pane = grid.getQxObject("widgetPane");
+      let columns = grid.getColumns();
+      const widgetsOf = (widget, column) => widget._getChildren().filter(child => child.getUserData("qxl.datagrid.cellData")?.column === column);
+
+      // a hidden column leaves no widget behind, its neighbours close up
+      let leftOfThird = pane.getChildAtPosition(0, 2).getBounds().left;
+      columns.getColumn(1).setVisible(false);
+      qx.ui.core.queue.Manager.flush();
+      this.assertEquals(0, widgetsOf(header, 1).length);
+      this.assertEquals(0, widgetsOf(pane, 1).length);
+      this.assertTrue(pane.getChildAtPosition(0, 2).getBounds().left < leftOfThird);
+      this.assertEquals("12", grid.getContentElement().getAttribute("aria-colcount"));
+
+      // the keyboard skips it; a focused column which is hidden passes the focus on
+      press("Right");
+      this.assertTrue(grid.getFocusedPosition().equals(0, 2));
+      columns.getColumn(2).setVisible(false);
+      this.assertTrue(grid.getFocusedPosition().equals(0, 3));
+
+      columns.getColumn(1).setVisible(true);
+      qx.ui.core.queue.Manager.flush();
+      this.assertEquals(1, widgetsOf(header, 1).length);
+    },
+
     testClickFocusesCell() {
       let pane = this.__grid.getQxObject("widgetPane");
       qxl.datagrid.test.util.InputHelper.tap(pane.getChildAtPosition(3, 2));

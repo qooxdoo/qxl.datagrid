@@ -273,6 +273,21 @@ qx.Class.define("qxl.datagrid.column.Columns", {
     },
 
     /**
+     * Returns the indexes of the columns which are shown (`Column.visible`), in their order
+     *
+     * @return {Integer[]}
+     */
+    getVisibleIndexes() {
+      let indexes = [];
+      this._columns.forEach((column, index) => {
+        if (column.getVisible()) {
+          indexes.push(index);
+        }
+      });
+      return indexes;
+    },
+
+    /**
      * Whether at least one column is sorted; cheaper than `getSortColumns`, eg for every cell
      *
      * @return {Boolean}
@@ -406,8 +421,8 @@ qx.Class.define("qxl.datagrid.column.Columns", {
   },
 
   statics: {
-    /** @type {String[]} events of a column which change its width */
-    SIZE_EVENTS: ["changeWidth", "changeMinWidth", "changeMaxWidth", "changeFlex"],
+    /** @type {String[]} events of a column which change the layout of the columns */
+    SIZE_EVENTS: ["changeWidth", "changeMinWidth", "changeMaxWidth", "changeFlex", "changeVisible"],
 
     /** @type {Intl.Collator?} compares texts, made for the locale on first use */
     __collator: null,

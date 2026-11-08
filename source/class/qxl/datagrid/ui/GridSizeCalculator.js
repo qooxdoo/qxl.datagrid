@@ -37,6 +37,7 @@
  *
  * @typedef SizesData
  * @property {ColumnData[]} columns
+ * @property {Set<Integer>} columnIndexes the indexes of the columns laid out (hidden columns are not)
  * @property {RowData[]} rows
  * @property {Integer} horizontalScrollPosition
  * @property {Integer} verticalScrollPosition
@@ -301,6 +302,10 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
        */
       const calculateColumnWidth = absoluteColumnIndex => {
         let column = this._columns.getColumn(absoluteColumnIndex);
+        // hidden columns keep their index, they are just not laid out
+        if (!column.getVisible()) {
+          return;
+        }
         visibleColumnIndexes.push(absoluteColumnIndex);
 
         let flex = column.getFlex() && column.getWidth() === null ? column.getFlex() : 0;
@@ -458,6 +463,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
       let sizesData = {
         columns: [],
+        // the indexes of the columns laid out, eg to remove the widgets of others
+        columnIndexes: new Set(visibleColumnIndexes),
         rows: [],
         horizontalScrollPosition: 0,
         verticalScrollPosition: 0
