@@ -86,6 +86,10 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
           stop();
           return true;
         }
+        if ((key == "Delete" || key == "Backspace") && evt.getModifiers() == 0 && this.clearFocusedCell()) {
+          stop();
+          return true;
+        }
         return false;
       }
       switch (key) {
@@ -104,11 +108,9 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
           return true;
 
         case "Tab":
-          if (!this.commitEditing()) {
-            stop();
-            return true;
-          }
-          return false;
+          stop();
+          this.__commitAndEditNext(evt.isShiftPressed());
+          return true;
 
         case "F2":
           this.startEditing();
@@ -166,8 +168,41 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
       } else if (key == "Tab") {
         evt.preventDefault();
         evt.stopPropagation();
-        if (this.commitEditing()) {
-          this.__grid._moveFocusByKey(evt);
+        this.__commitAndEditNext(evt.isShiftPressed());
+      }
+    },
+
+    /**
+     * Takes the value of the editor and opens the editor of the next cell which may be edited, in
+     * the order of Tab (Shift+Tab backwards) across the rows; locked cells are skipped, a column which
+     * switches its value directly (eg a boolean) only gets the focus. Without such a cell the focus
+     * stays, a rejected value keeps the editor open.
+     *
+     * @param {Boolean} backwards whether to go backwards (Shift+Tab)
+     */
+    __commitAndEditNext(backwards) {
+      let editing = this.__editing;
+      if (!this.commitEditing()) {
+        return;
+      }
+      let dataSource = this.__grid.getDataSource();
+      let columns = this.__grid.getColumns();
+      let rowCount = dataSource.getSize().getRow();
+      let columnCount = columns.getLength();
+      let position = { row: editing.row, column: editing.columnIndex };
+      for (let i = 0; i < rowCount * columnCount; i++) {
+        position = qxl.datagrid.DataGrid.computeFocusMove("Tab", { shift: backwards }, position, rowCount, columnCount, 1);
+        if (!position) {
+          return;
+        }
+        let column = columns.getColumn(position.column);
+        let model = dataSource.getModelForPosition(new qxl.datagrid.source.Position(position.row, position.column));
+        if (model && this.isCellEditable(model, column)) {
+          this.__grid._moveFocusTo(position.row, position.column);
+          if (column.getToggledValue(column.getModelValue(model)) === undefined) {
+            this.startEditing();
+          }
+          return;
         }
       }
     },
@@ -377,6 +412,17 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
         this.setCellError(cell.model, cell.column, error);
       }
       return true;
+    },
+
+    /**
+     * Empties the focused cell (Delete, Backspace): writes what the column makes of an empty text
+     * (`parseFromClipboard("")`), eg "" for text and null for numbers; columns which switch their value
+     * directly (eg booleans) are left alone. A rejected value becomes the error of the cell.
+     *
+     * @return {Boolean} true if the cell could be emptied, even if the value was rejected
+     */
+    clearFocusedCell() {
+      return this.pasteIntoFocusedCell("", true);
     },
 
     /**

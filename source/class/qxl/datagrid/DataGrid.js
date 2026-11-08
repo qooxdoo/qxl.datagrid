@@ -462,7 +462,27 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         }
         return;
       }
+      if (key == "Escape" && evt.getModifiers() == 0 && this.__clearSelectionByKey()) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        return;
+      }
       this._moveFocusByKey(evt);
+    },
+
+    /**
+     * Escape clears the selection in the modes "multi" and "additive", like qooxdoo lists; otherwise
+     * the key goes on, eg to close a dialog
+     *
+     * @return {Boolean} true if a selection has been cleared
+     */
+    __clearSelectionByKey() {
+      let manager = this.__selectionManager;
+      if (!["multi", "additive"].includes(manager.getSelectionMode()) || manager.isSelectionEmpty()) {
+        return false;
+      }
+      manager.resetSelection();
+      return true;
     },
 
     /** @type {Function} `__handleClipboard` bound to the grid, the native listener for `copy` and `paste` */
@@ -489,6 +509,15 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       } else if (this.__editingController.pasteIntoFocusedCell(evt.clipboardData.getData("text/plain"))) {
         evt.preventDefault();
       }
+    },
+
+    /**
+     * Empties the focused cell like Delete does, if it may be edited
+     *
+     * @return {Boolean} true if the cell could be emptied
+     */
+    clearFocusedCell() {
+      return this.__editingController.clearFocusedCell();
     },
 
     /**

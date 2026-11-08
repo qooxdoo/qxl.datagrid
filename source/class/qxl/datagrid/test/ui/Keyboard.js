@@ -147,6 +147,36 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       this.assertEquals(4, fired, "one change per key, like with the pointer");
     },
 
+    testEscapeClearsSelection() {
+      const press = qxl.datagrid.test.util.InputHelper.press;
+      let grid = this.__grid;
+      let root = qx.core.Init.getApplication().getRoot();
+      let escapesOutside = 0;
+      const onRootKey = evt => {
+        if (evt.getKeyIdentifier() == "Escape") {
+          escapesOutside++;
+        }
+      };
+      root.addListener("keypress", onRootKey);
+      try {
+        // "single" keeps its selection, Escape goes on (eg to close a dialog)
+        press("Down");
+        press("Escape");
+        this.assertEquals(1, grid.getSelection().getLength());
+        this.assertEquals(1, escapesOutside);
+        // "multi" clears it and keeps the key; without a selection the key goes on again
+        grid.getSelectionManager().setSelectionMode("multi");
+        press("Down", { shift: true });
+        press("Escape");
+        this.assertEquals(0, grid.getSelection().getLength());
+        this.assertEquals(1, escapesOutside);
+        press("Escape");
+        this.assertEquals(2, escapesOutside);
+      } finally {
+        root.removeListener("keypress", onRootKey);
+      }
+    },
+
     testClickFocusesCell() {
       let pane = this.__grid.getQxObject("widgetPane");
       qxl.datagrid.test.util.InputHelper.tap(pane.getChildAtPosition(3, 2));

@@ -174,13 +174,71 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertEquals("Vehicle type 1", first.getName());
     },
 
-    testTabTakesValueAndMovesOn() {
+    testTabGoesOnToNextEditableCell() {
+      const press = qxl.datagrid.test.util.InputHelper.press;
+      let grid = this.__grid;
+      let first = this.__model.getItem(0);
       let editor = this.__openEditor(0, 1);
       editor.setValue("A");
-      qxl.datagrid.test.util.InputHelper.press("Tab");
-      this.assertFalse(this.__grid.isEditing());
-      this.assertEquals("A", this.__model.getItem(0).getName());
-      this.assertTrue(this.__grid.getFocusedPosition().equals(0, 2));
+      press("Tab");
+      this.assertEquals("A", first.getName());
+      this.assertTrue(grid.getFocusedPosition().equals(0, 2));
+      this.assertEquals(first.getWebColor(), this.__getEditor().getValue(), "the next editor is open");
+
+      // locked cells are skipped, in both directions
+      grid.setCellEditable((model, column) => column.getPath() != "icon");
+      press("Tab");
+      this.assertTrue(grid.getFocusedPosition().equals(0, 4));
+      this.assertTrue(grid.isEditing());
+      press("Tab", { shift: true });
+      this.assertTrue(grid.getFocusedPosition().equals(0, 2));
+      press("Escape");
+
+      // a boolean only gets the focus, it is not switched
+      let inTraffic = first.getInTraffic();
+      this.__openEditor(0, 6);
+      press("Tab");
+      this.assertTrue(grid.getFocusedPosition().equals(0, 7));
+      this.assertFalse(grid.isEditing());
+      this.assertEquals(inTraffic, first.getInTraffic());
+
+      // after the last cell which may be edited, the focus stays
+      grid.setCellEditable((model, column) => column.getPath() != "counted");
+      this.__openEditor(199, 11);
+      press("Tab");
+      this.assertFalse(grid.isEditing());
+      this.assertTrue(grid.getFocusedPosition().equals(199, 11));
+    },
+
+    testDeleteEmptiesCell() {
+      const press = qxl.datagrid.test.util.InputHelper.press;
+      let grid = this.__grid;
+      let first = this.__model.getItem(0);
+      grid.setFocusedPosition(0, 11);
+      press("Delete");
+      this.assertEquals("", first.getRemark());
+      this.assertEquals(1, this.__changes.length);
+
+      // an empty value rejected by the dialog: the cell gets an error, nothing is written
+      grid.setCellValidator((model, column, value) => (column.getPath() == "maxSpeed" && value === null ? "required" : null));
+      grid.setFocusedPosition(0, 5);
+      press("Backspace");
+      this.assertEquals(30, first.getMaxSpeed());
+      this.assertNotNull(grid.getCellError(first, grid.getColumns().getColumn(5)));
+
+      // a boolean, a locked cell and a grid without editing keep their values
+      let inTraffic = first.getInTraffic();
+      grid.setFocusedPosition(0, 7);
+      press("Delete");
+      this.assertEquals(inTraffic, first.getInTraffic());
+      grid.setCellEditable((model, column) => column.getPath() != "name");
+      grid.setFocusedPosition(0, 1);
+      press("Delete");
+      this.assertEquals("Vehicle type 1", first.getName());
+      grid.setCellEditable(null);
+      grid.setEditable(false);
+      press("Delete");
+      this.assertEquals("Vehicle type 1", first.getName());
     },
 
     testCopyAndPaste() {
