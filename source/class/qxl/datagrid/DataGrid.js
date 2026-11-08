@@ -56,7 +56,13 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     // `editable` starts as false, its apply is not called for the init value
     this.getContentElement().setAttribute("aria-readonly", "true");
     this.getQxObject("oddEvenRows").setCellIdFunction((row, column) => this.getQxObject("widgetPane").getCellId(row, column));
-    this.__selectionManager.addListener("changeFocusedPosition", () => this.__updateActiveDescendant());
+    this.__selectionManager.addListener("changeFocusedPosition", () => {
+      // a click into the data or setFocusedPosition leaves the header
+      if (this.getFocusedPosition() && this.__headerColumn !== null) {
+        this.__setHeaderColumn(null);
+      }
+      this.__updateActiveDescendant();
+    });
     this.addListener("keypress", this._onKeyPress, this);
     // browsers fire no keypress for Ctrl with a letter
     this.addListener("keydown", this.__onKeyDown, this);
@@ -398,10 +404,65 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * Points `aria-activedescendant` to the focused cell, if it is on display
      */
     __updateActiveDescendant() {
+      if (this.__headerColumn !== null) {
+        this.getContentElement().setAttribute("aria-activedescendant", this.getQxObject("header").getCellId(this.__headerColumn));
+        return;
+      }
       let position = this.__selectionManager.getFocusedPosition();
       let pane = this.getQxObject("widgetPane");
       let cellOnDisplay = position && pane.getChildAtPosition(position.getRow(), position.getColumn());
       this.getContentElement().setAttribute("aria-activedescendant", cellOnDisplay ? pane.getCellId(position.getRow(), position.getColumn()) : null);
+    },
+
+    /** @type {Integer?} the column whose header cell has the keyboard focus, null in the data */
+    __headerColumn: null,
+
+    /**
+     * Moves the keyboard focus into the header (a column) or out of it (null); while in the header
+     * no data cell is focused
+     *
+     * @param {Integer?} column column index
+     */
+    __setHeaderColumn(column) {
+      this.__headerColumn = column;
+      this.getQxObject("header").setFocusedColumn(column);
+      if (column !== null) {
+        this.__selectionManager.setFocusedPosition(null);
+        let firstRow = this.__sizeCalculator.getSizes()?.rows.find(rowData => rowData.rowIndex >= 0)?.rowIndex ?? 0;
+        this.scrollToPosition(firstRow, column);
+      }
+      this.__updateActiveDescendant();
+    },
+
+    /**
+     * Keys while a header cell has the focus: Left/Right/Home/End move along the header, Down goes
+     * back to the first row, Enter/Space sort (with Shift as additional criterion), Shift+Left/Right
+     * change the width by 10 pixels; Tab leaves the grid
+     *
+     * @param {qx.event.type.KeySequence} evt
+     */
+    __onHeaderKey(evt) {
+      let key = evt.getKeyIdentifier();
+      let columns = this.getColumns();
+      let column = this.__headerColumn;
+      let last = columns.getLength() - 1;
+      let shift = evt.isShiftPressed();
+      if ((key == "Left" || key == "Right") && shift) {
+        let width = this.__sizeCalculator.getSizes()?.columns.find(columnData => columnData.columnIndex == column)?.width;
+        columns.getColumn(column).resize((width ?? columns.getColumn(column).getWidth() ?? 0) + (key == "Right" ? 10 : -10));
+      } else if (key == "Left" || key == "Right" || key == "Home" || key == "End") {
+        let target = { Left: column - 1, Right: column + 1, Home: 0, End: last }[key];
+        this.__setHeaderColumn(Math.max(0, Math.min(last, target)));
+      } else if (key == "Down") {
+        this.__setHeaderColumn(null);
+        this._moveFocusTo(0, column);
+      } else if (key == "Enter" || key == "Space") {
+        this.toggleSort(columns.getColumn(column), shift);
+      } else {
+        return;
+      }
+      evt.preventDefault();
+      evt.stopPropagation();
     },
 
     /**
@@ -438,7 +499,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     __onFocus() {
       let sizes = this.__sizeCalculator.getSizes();
       let dataSource = this.getDataSource();
-      if (this.getFocusedPosition() || !sizes || !dataSource || dataSource.getSize().getRow() == 0) {
+      if (this.getFocusedPosition() || this.__headerColumn !== null || !sizes || !dataSource || dataSource.getSize().getRow() == 0) {
         return;
       }
       let row = sizes.rows.find(rowData => rowData.rowIndex >= 0)?.rowIndex ?? 0;
@@ -456,6 +517,10 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       let dataSource = this.getDataSource();
       let columns = this.getColumns();
       if (!dataSource || !columns || dataSource.getSize().getRow() == 0) {
+        return;
+      }
+      if (this.__headerColumn !== null) {
+        this.__onHeaderKey(evt);
         return;
       }
       let wasEditing = this.isEditing();
@@ -655,6 +720,13 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       let position = this.getFocusedPosition();
       let key = evt.getKeyIdentifier();
       let modifiers = { shift: evt.isShiftPressed(), ctrl: evt.isCtrlOrCommandPressed() };
+      // Up in the first row goes into the header, like in a WAI-ARIA grid
+      if (key == "Up" && position?.getRow() == 0 && evt.getModifiers() == 0 && this.getStyling().getNumHeaderRows() > 0) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        this.__setHeaderColumn(position.getColumn());
+        return;
+      }
       let target = qxl.datagrid.DataGrid.computeFocusMove(
         key,
         modifiers,

@@ -29,7 +29,15 @@ qx.Theme.define("qxl.datagrid.theme.indigo.MAppearance", {
     "qxl-datagrid/scrollbar-y": "scrollbar",
 
     "qxl-datagrid-header": "table-scroller/header",
-    "qxl-datagrid-header-cell": "widget",
+    "qxl-datagrid-header-cell": {
+      include: "widget",
+      style(states) {
+        // the keyboard focus in the header, like a focused cell
+        return {
+          decorator: states.focused ? "qxl-datagrid-cell-focused" : undefined
+        };
+      }
+    },
 
     "qxl-datagrid-widgetpane": {
       style(states) {

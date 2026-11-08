@@ -196,6 +196,54 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       }
     },
 
+    testHeaderByKeyboard() {
+      const press = qxl.datagrid.test.util.InputHelper.press;
+      let grid = this.__grid;
+      let header = grid.getQxObject("header");
+      let columns = grid.getColumns();
+      columns.toArray().forEach(column => column.setSortable(true));
+      let model = grid.getDataSource().getModel();
+      const headerCell = column => header._getChildren().find(child => child.getUserData("qxl.datagrid.cellData")?.column === column);
+
+      // the selection follows into the first row; Up there goes into the header
+      press("Down");
+      press("Up");
+      let selected = model.getItem(0);
+      press("Up");
+      this.assertNull(grid.getFocusedPosition());
+      this.assertTrue(headerCell(0).hasState("focused"));
+      this.assertEquals(header.getCellId(0), grid.getContentElement().getAttribute("aria-activedescendant"));
+
+      // Enter sorts; a dialog may cancel with beforeSort
+      press("Right");
+      this.assertTrue(headerCell(1).hasState("focused"));
+      grid.addListenerOnce("beforeSort", evt => evt.preventDefault());
+      press("Enter");
+      this.assertNull(columns.getColumn(1).getSortOrder());
+      press("Enter");
+      press("Enter");
+      this.assertEquals("desc", columns.getColumn(1).getSortOrder());
+      this.assertIdentical(model.getItem(199), grid.getDataSource().getModelForPosition(new qxl.datagrid.source.Position(0, 0)));
+      this.assertTrue(grid.getSelection().contains(selected), "the selection stays with the model");
+
+      // Shift+Enter adds a criterion, both header cells show their rank
+      press("Right");
+      press("Enter", { shift: true });
+      this.assertArrayEquals([columns.getColumn(1), columns.getColumn(2)], columns.getSortColumns());
+      this.assertEquals(1, headerCell(1).getSortRank());
+      this.assertEquals(2, headerCell(2).getSortRank());
+
+      // Shift+Right widens the column
+      let width = headerCell(2).getBounds().width;
+      press("Right", { shift: true });
+      this.assertEquals(width + 10, columns.getColumn(2).getWidth());
+
+      // Down goes back to the first row
+      press("Down");
+      this.assertTrue(grid.getFocusedPosition().equals(0, 2));
+      this.assertFalse(headerCell(2).hasState("focused"));
+    },
+
     async testHeaderByPointer() {
       const helper = qxl.datagrid.test.util.InputHelper;
       let grid = this.__grid;

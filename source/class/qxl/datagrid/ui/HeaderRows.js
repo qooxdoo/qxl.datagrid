@@ -47,6 +47,46 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
     /** @type{qxl.datagrid.ui.factory.IWidgetFactory} */
     __widgetFactory: null,
 
+    /** @type {Integer?} the column whose header cell has the keyboard focus */
+    __focusedColumn: null,
+
+    /**
+     * Gives the header cell of a column the state `focused`, for the keyboard in the header
+     *
+     * @param {Integer?} column column index, null if no header cell has the focus
+     */
+    setFocusedColumn(column) {
+      this.__getCell(this.__focusedColumn)?.removeState("focused");
+      this.__focusedColumn = column;
+      this.__getCell(column)?.addState("focused");
+    },
+
+    /**
+     * Returns the DOM id of the header cell of a column, for `aria-activedescendant`
+     *
+     * @param {Integer} column column index
+     * @return {String}
+     */
+    getCellId(column) {
+      return "qxl-datagrid-" + this.toHashCode() + "-header-" + column;
+    },
+
+    /**
+     * Returns the header cell of a column in the last header row, if it is on display
+     *
+     * @param {Integer?} column column index
+     * @return {qx.ui.core.Widget?}
+     */
+    __getCell(column) {
+      if (column === null || column === undefined) {
+        return null;
+      }
+      return this._getChildren().find(child => {
+        let cellData = child.getUserData("qxl.datagrid.cellData");
+        return cellData?.row == -1 && cellData.column == column;
+      }) ?? null;
+    },
+
     /**
      * @Override
      */
@@ -138,6 +178,14 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
             this.__widgetFactory.bindWidget(child);
             child.getContentElement().setAttribute("role", "columnheader");
             child.getContentElement().setAttribute("aria-colindex", columnSizeData.columnIndex + 1);
+            if (rowIndex == -1) {
+              child.getContentElement().setAttribute("id", this.getCellId(columnSizeData.columnIndex));
+            }
+          }
+          if (rowIndex == -1 && columnSizeData.columnIndex === this.__focusedColumn) {
+            child.addState("focused");
+          } else {
+            child.removeState("focused");
           }
 
           let callbackArguments = [null, child, currentRelativePosition, currentAbsolutePosition];
