@@ -28,7 +28,8 @@
       "performance": "readonly",
       "URLSearchParams": "readonly",
       "KeyboardEvent": "readonly",
-      "PointerEvent": "readonly"
+      "PointerEvent": "readonly",
+      "Intl": "readonly"
     }
   },
   "applications": [

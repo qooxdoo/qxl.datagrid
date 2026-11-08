@@ -29,7 +29,7 @@ qx.Class.define("qxl.datagrid.column.NumberColumn", {
   construct(path) {
     super(path);
     this.setBindingOptions((widget, model) => ({
-      converter: value => this._formatForEdit(value)
+      converter: value => this._formatForDisplay(value)
     }));
   },
 
@@ -62,6 +62,35 @@ qx.Class.define("qxl.datagrid.column.NumberColumn", {
       }
       return format;
     },
+
+    /**
+     * Formats a value for the cell. Without `numberFormat` this uses a cached `Intl.NumberFormat`,
+     * because `qx.util.format.NumberFormat.format` looks up the locale on every call, which is
+     * noticeable when hundreds of cells are bound while scrolling.
+     *
+     * @param {Number?} value
+     * @return {String}
+     */
+    _formatForDisplay(value) {
+      if (value === null || value === undefined || value === "") {
+        return "";
+      }
+      if (this.getNumberFormat()) {
+        return this.getNumberFormat().format(value);
+      }
+      let locale = qx.locale.Manager.getInstance().getLocale().replace("_", "-");
+      if (this.__displayLocale !== locale) {
+        this.__displayLocale = locale;
+        this.__displayFormat = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      return this.__displayFormat.format(value);
+    },
+
+    /** @type {String?} locale of `__displayFormat` */
+    __displayLocale: null,
+
+    /** @type {Intl.NumberFormat?} cached format for the cells */
+    __displayFormat: null,
 
     /**
      * @override

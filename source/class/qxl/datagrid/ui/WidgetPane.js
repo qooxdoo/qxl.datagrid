@@ -246,7 +246,6 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let focusedPosition = this.__selectionManager.getFocusedPosition();
       let focusedRow = focusedPosition?.getRow() ?? -1;
       let focusedColumn = focusedPosition?.getColumn() ?? -1;
-      let headerRowCount = styling.getNumHeaderRows();
       let cellErrors = this.__cellErrors;
 
       let currentRelativePosition = new qxl.datagrid.source.Position();
@@ -288,6 +287,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
               if (!child.getContextMenu()) {
                 child.setContextMenu(this.getWidgetsContextMenu());
               }
+              // a widget stays in its column, so role and column index are written once
+              child.getContentElement().setAttribute("role", "gridcell");
+              child.getContentElement().setAttribute("aria-colindex", columnSizeData.columnIndex + 1);
             }
             this.__children[id] = child;
             child.setUserData("qxl.datagrid.cellData", {
@@ -296,7 +298,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
               colSpan: 1
             });
             this.__widgetFactory.bindWidget(child, model);
-            this.__setCellAria(child, rowSizeData.rowIndex, columnSizeData.columnIndex, headerRowCount);
+            this.__setCellId(child, rowSizeData.rowIndex, columnSizeData.columnIndex);
           } else {
             model = this.__widgetFactory.getModelForWidget(child);
             this.__widgetFactory.updateState(child, model);
@@ -725,19 +727,16 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     },
 
     /**
-     * Sets the ARIA role, id and indexes of a cell widget which has been created or reused for a cell
+     * Sets the id of a cell widget which has been created or reused for a cell, for `aria-owns` of
+     * its row and `aria-activedescendant`; role and column index are set when the widget is created,
+     * the row index is on the row
      *
      * @param {qx.ui.core.Widget} widget
      * @param {Integer} row row in the data source
      * @param {Integer} column column in the data source
-     * @param {Integer} headerRowCount number of header rows, which come first in `aria-rowindex`
      */
-    __setCellAria(widget, row, column, headerRowCount) {
-      let element = widget.getContentElement();
-      element.setAttribute("role", "gridcell");
-      element.setAttribute("id", this.getCellId(row, column));
-      element.setAttribute("aria-rowindex", row + headerRowCount + 1);
-      element.setAttribute("aria-colindex", column + 1);
+    __setCellId(widget, row, column) {
+      widget.getContentElement().setAttribute("id", this.getCellId(row, column));
     }
   },
 
