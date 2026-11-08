@@ -5,7 +5,8 @@
  * URL parameters:
  * - `perf`  : "virtual" (default), "clipped" or "table" (qx.ui.table as baseline)
  * - `rows`  : number of rows (default 1000)
- * - `cells` : "label" (default: labels in the cells, typed columns, an editor opens on demand) or
+ * - `cells` : "label" (default: labels in the cells, typed columns, an editor opens on demand),
+ *             "plain" (labels with the simple columns of the first measurements) or
  *             "editors" (an editor widget in every cell)
  * - `dyn`   : "1" for `dynamicSizing: "rows"`
  *
@@ -32,19 +33,19 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
   statics: {
     /** Columns like the vehicle type dialog: [path, kind] */
     COLUMNS: [
-      ["nr", "number"],
-      ["strart", "text"],
-      ["webfarbe", "text"],
+      ["number", "number"],
+      ["name", "text"],
+      ["webColor", "text"],
       ["icon", "select"],
-      ["wichtung", "number"],
-      ["maxspeed", "number"],
-      ["datacollectlaenge", "number"],
-      ["inverkehrselemente", "bool"],
-      ["inkfz", "bool"],
-      ["inlkw", "bool"],
-      ["inrad", "bool"],
-      ["bemerkung", "text"],
-      ["gezaehlt", "bool"]
+      ["weight", "number"],
+      ["maxSpeed", "number"],
+      ["collectLength", "number"],
+      ["inTraffic", "bool"],
+      ["inMotorVehicles", "bool"],
+      ["inTrucks", "bool"],
+      ["inBicycles", "bool"],
+      ["remark", "text"],
+      ["counted", "bool"]
     ]
   },
 
@@ -81,8 +82,13 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       } else {
         const columns = new qxl.datagrid.column.Columns();
         for (const [path, kind] of this.constructor.COLUMNS) {
-          // "editors" puts an editor into every cell, otherwise the grid opens one on demand
-          columns.add(cfg.cells === "editors" ? new qxl.datagrid.demo.perf.PerfColumn(path, kind, true) : this.__createColumn(path, kind));
+          // "editors" puts an editor into every cell, otherwise the grid opens one on demand;
+          // "plain" keeps the simple columns of the first measurements, for comparisons
+          if (cfg.cells === "label") {
+            columns.add(this.__createColumn(path, kind));
+          } else {
+            columns.add(new qxl.datagrid.demo.perf.PerfColumn(path, kind, cfg.cells === "editors"));
+          }
         }
         const dataSource = new qxl.datagrid.source.ArrayDataSource();
         dataSource.setColumns(columns);
@@ -178,9 +184,9 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       await this.__settle();
       let t = performance.now();
       const first = this.__model.getItem(0);
-      first.setStrart(first.getStrart() + " geändert");
+      first.setName(first.getName() + " changed");
       if (this.__config.grid === "table") {
-        this.__grid.getTableModel().setValueById("strart", 0, first.getStrart());
+        this.__grid.getTableModel().setValueById("name", 0, first.getName());
       }
       qx.ui.core.queue.Manager.flush();
       const changeOneMs = performance.now() - t;

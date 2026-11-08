@@ -97,26 +97,26 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       let grid = this.__grid;
       let editor = this.__openEditor(0, 1);
       this.assertInstance(editor, qx.ui.form.TextField);
-      this.assertEquals("Fahrzeugart 1", editor.getValue());
+      this.assertEquals("Vehicle type 1", editor.getValue());
       let cell = grid.getQxObject("widgetPane").getChildAtPosition(0, 1);
       this.assertJsonEquals(cell.getBounds(), editor.getBounds(), "editor covers the cell");
       this.assertTrue(qx.ui.core.FocusHandler.getInstance().isFocused(editor));
 
-      editor.setValue("Neu");
+      editor.setValue("New");
       press("Enter");
       this.assertFalse(grid.isEditing());
-      this.assertEquals("Neu", this.__model.getItem(0).getStrart());
-      this.assertEquals("Neu", cell.getValue());
+      this.assertEquals("New", this.__model.getItem(0).getName());
+      this.assertEquals("New", cell.getValue());
       this.assertEquals(1, this.__changes.length);
-      this.assertEquals("Fahrzeugart 1", this.__changes[0].oldValue);
+      this.assertEquals("Vehicle type 1", this.__changes[0].oldValue);
       this.assertEquals(1, this.__changes[0].columnIndex);
       this.assertTrue(qx.ui.core.FocusHandler.getInstance().isFocused(grid), "the grid takes the focus back");
 
       editor = this.__openEditor(0, 1);
-      editor.setValue("Verworfen");
+      editor.setValue("Discarded");
       press("Escape");
       this.assertFalse(grid.isEditing());
-      this.assertEquals("Neu", this.__model.getItem(0).getStrart());
+      this.assertEquals("New", this.__model.getItem(0).getName());
       this.assertEquals(1, this.__changes.length);
     },
 
@@ -140,17 +140,17 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       editor.setValue("abc");
       press("Enter");
       this.assertTrue(grid.isEditing());
-      this.assertEquals(30, first.getMaxspeed());
+      this.assertEquals(30, first.getMaxSpeed());
       this.assertNotNull(grid.getCellError(first, speedColumn));
       this.assertFalse(editor.getValid());
       editor.setValue("120");
       press("Enter");
       this.assertFalse(grid.isEditing());
-      this.assertEquals(120, first.getMaxspeed());
+      this.assertEquals(120, first.getMaxSpeed());
       this.assertNull(grid.getCellError(first, speedColumn));
 
       // the validator of the dialog rejects an empty name
-      grid.setCellValidator((model, column, value) => (column.getPath() == "strart" && !value ? "required" : null));
+      grid.setCellValidator((model, column, value) => (column.getPath() == "name" && !value ? "required" : null));
       editor = this.__openEditor(0, 1);
       editor.setValue("");
       press("Enter");
@@ -159,7 +159,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       press("Escape");
       this.assertFalse(grid.isEditing());
       this.assertNull(grid.getCellError(first, grid.getColumns().getColumn(1)));
-      this.assertEquals("Fahrzeugart 1", first.getStrart());
+      this.assertEquals("Vehicle type 1", first.getName());
     },
 
     testTabTakesValueAndMovesOn() {
@@ -167,7 +167,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       editor.setValue("A");
       qxl.datagrid.test.util.InputHelper.press("Tab");
       this.assertFalse(this.__grid.isEditing());
-      this.assertEquals("A", this.__model.getItem(0).getStrart());
+      this.assertEquals("A", this.__model.getItem(0).getName());
       this.assertTrue(this.__grid.getFocusedPosition().equals(0, 2));
     },
 
@@ -175,21 +175,21 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       const press = qxl.datagrid.test.util.InputHelper.press;
       let grid = this.__grid;
       let first = this.__model.getItem(0);
-      let kfzColumn = grid.getColumns().getColumn(8);
-      this.assertFalse(first.getInkfz());
+      let motorVehiclesColumn = grid.getColumns().getColumn(8);
+      this.assertFalse(first.getInMotorVehicles());
 
       grid.setFocusedPosition(0, 8);
       press("Space");
-      this.assertTrue(first.getInkfz());
+      this.assertTrue(first.getInMotorVehicles());
       this.assertNull(this.__getEditor(), "a boolean has no editor");
       // a typed character does not switch it
       qxl.datagrid.test.util.InputHelper.type("x");
-      this.assertTrue(first.getInkfz());
+      this.assertTrue(first.getInMotorVehicles());
 
-      kfzColumn.setReadOnly(true);
+      motorVehiclesColumn.setReadOnly(true);
       press("Space");
-      this.assertTrue(first.getInkfz());
-      kfzColumn.setReadOnly(false);
+      this.assertTrue(first.getInMotorVehicles());
+      motorVehiclesColumn.setReadOnly(false);
 
       grid.getColumns().getColumn(1).setReadOnly(true);
       this.assertNull(this.__openEditor(0, 1));
@@ -199,7 +199,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertNull(this.__openEditor(0, 1));
       grid.setFocusedPosition(0, 8);
       press("Space");
-      this.assertTrue(first.getInkfz());
+      this.assertTrue(first.getInMotorVehicles());
     },
 
     async testEditorFollowsScrolling() {
@@ -207,7 +207,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       let grid = this.__grid;
       let pane = grid.getQxObject("widgetPane");
       let editor = this.__openEditor(2, 1);
-      editor.setValue("gescrollt");
+      editor.setValue("scrolled");
 
       // far away the cell widgets are reused for other rows, the editor waits hidden
       grid.setStartRowIndex(100);
@@ -215,7 +215,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       await new Promise(resolve => setTimeout(resolve, 20));
       this.assertTrue(grid.isEditing());
       this.assertFalse(pane.isEditorOnDisplay());
-      this.assertEquals("Fahrzeugart 3", this.__model.getItem(2).getStrart(), "hiding the editor takes nothing");
+      this.assertEquals("Vehicle type 3", this.__model.getItem(2).getName(), "hiding the editor takes nothing");
       this.assertTrue(qx.ui.core.FocusHandler.getInstance().isFocused(grid));
 
       grid.setStartRowIndex(0);
@@ -225,22 +225,22 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       press("F2");
       this.assertTrue(qx.ui.core.FocusHandler.getInstance().isFocused(editor));
       press("Enter");
-      this.assertEquals("gescrollt", this.__model.getItem(2).getStrart());
-      this.assertEquals("Fahrzeugart 2", this.__model.getItem(1).getStrart());
-      this.assertEquals("Fahrzeugart 4", this.__model.getItem(3).getStrart());
-      this.assertEquals("Fahrzeugart 103", this.__model.getItem(102).getStrart());
+      this.assertEquals("scrolled", this.__model.getItem(2).getName());
+      this.assertEquals("Vehicle type 2", this.__model.getItem(1).getName());
+      this.assertEquals("Vehicle type 4", this.__model.getItem(3).getName());
+      this.assertEquals("Vehicle type 103", this.__model.getItem(102).getName());
     },
 
     async testFocusOutsideTakesValue() {
       let outside = new qx.ui.form.TextField();
       qx.core.Init.getApplication().getRoot().add(outside, { left: 0, top: 320 });
       let editor = this.__openEditor(0, 1);
-      editor.setValue("draußen");
+      editor.setValue("outside");
       outside.focus();
       qx.ui.core.queue.Manager.flush();
       await new Promise(resolve => setTimeout(resolve, 20));
       this.assertFalse(this.__grid.isEditing());
-      this.assertEquals("draußen", this.__model.getItem(0).getStrart());
+      this.assertEquals("outside", this.__model.getItem(0).getName());
       outside.destroy();
     },
 
@@ -257,18 +257,18 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       press("Down");
       press("Enter");
       this.assertTrue(this.__grid.isEditing());
-      this.assertEquals("pkw", first.getIcon());
+      this.assertEquals("car", first.getIcon());
       // with the list closed, Enter takes the value
       press("Enter");
       this.assertFalse(this.__grid.isEditing());
-      this.assertEquals("lkw", first.getIcon());
+      this.assertEquals("truck", first.getIcon());
     },
 
     testCellErrorFollowsModel() {
       let grid = this.__grid;
       let pane = grid.getQxObject("widgetPane");
       let model = this.__model.getItem(2);
-      grid.setCellError(model, grid.getColumns().getColumn(1), "vom Server");
+      grid.setCellError(model, grid.getColumns().getColumn(1), "from the server");
       this.assertTrue(pane.getChildAtPosition(2, 1).hasState("invalid"));
       this.assertFalse(pane.getChildAtPosition(2, 2).hasState("invalid"));
 
@@ -279,7 +279,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       grid.setStartRowIndex(0);
       qx.ui.core.queue.Manager.flush();
       this.assertTrue(pane.getChildAtPosition(2, 1).hasState("invalid"));
-      this.assertEquals("vom Server", pane.getChildAtPosition(2, 1).getToolTipText());
+      this.assertEquals("from the server", pane.getChildAtPosition(2, 1).getToolTipText());
 
       grid.resetCellErrors();
       this.assertFalse(pane.getChildAtPosition(2, 1).hasState("invalid"));

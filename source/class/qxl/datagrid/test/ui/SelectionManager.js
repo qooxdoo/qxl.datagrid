@@ -22,7 +22,7 @@ qx.Class.define("qxl.datagrid.test.ui.SelectionManager", {
       let model = new qx.data.Array([new Model(0), new Model(1), new Model(2)]);
       let dataSource = new qxl.datagrid.source.ArrayDataSource();
       let columns = new qxl.datagrid.column.Columns();
-      columns.add(new qxl.datagrid.column.TextColumn("strart"));
+      columns.add(new qxl.datagrid.column.TextColumn("name"));
       dataSource.setColumns(columns);
       dataSource.setModel(model);
       let manager = new qxl.datagrid.ui.SelectionManager();
