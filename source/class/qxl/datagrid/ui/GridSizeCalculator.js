@@ -314,10 +314,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
         flexAvailable -= width;
         flexAvailable -= horizontalSpacing;
         columnWidths[absoluteColumnIndex] = width;
-        if (visibleColumnIndexes.length > 0) {
-          totalColumnWidth += horizontalSpacing;
-        }
-        totalColumnWidth += width;
+        totalColumnWidth += horizontalSpacing + width;
       };
 
       // process the fixed columns. Regardless of the Visible Index, these are always the first N Absolute Indexes
@@ -411,10 +408,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
           }
         }
         rowHeights[absoluteRowIndex] = largestRowHeight;
-        if (Object.keys(rowHeights).length > 0) {
-          totalRowHeight += verticalSpacing;
-        }
-        totalRowHeight += largestRowHeight;
+        totalRowHeight += verticalSpacing + largestRowHeight;
       };
 
       // process the header rows. Regardless of the Visible Index, these are always the *last* N Absolute Indexes
