@@ -67,10 +67,8 @@ qx.Class.define("qxl.datagrid.column.tree.ExpansionColumn", {
       widget.setState(state.state);
       let iconPathProvider = this.getIconPathProvider();
       if (iconPathProvider) {
-        let iconPath = iconPathProvider(model);
-        if (iconPath) {
-          widget.setIcon(iconPath);
-        }
+        // reset a missing icon too, the widget may have shown another node before
+        widget.setIcon(iconPathProvider(model) || null);
       }
       let listenerId = widget.addListener("changeState", async evt => {
         let state = evt.getData();

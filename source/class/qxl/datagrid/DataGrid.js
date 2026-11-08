@@ -272,23 +272,23 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       let minWidth = styling.getMinColumnWidth();
       let maxWidth = styling.getMaxColumnWidth();
 
-      let width = null;
-      let height = null;
-
-      let widget = this.getQxObject("widgetPane").getChildAtPosition(rowIndex, columnIndex);
+      let size = { minWidth, width: null, maxWidth, minHeight, height: null, maxHeight };
       if (rowIndex < 0) {
-        height = styling.getHeaderRowHeight();
-      } else {
-        let dynamicSizing = this.getDynamicSizing();
-        if (dynamicSizing === "rows" || dynamicSizing === "both") {
-          height = widget?.getSizeHint(true).height;
-        }
-        if (dynamicSizing === "columns" || dynamicSizing === "both") {
-          width = widget?.getSizeHint(true).width;
-        }
+        size.height = styling.getHeaderRowHeight();
+        return size;
       }
-
-      let size = { minWidth, width, maxWidth, minHeight, height, maxHeight };
+      let dynamicSizing = this.getDynamicSizing();
+      if (dynamicSizing === "none") {
+        return size;
+      }
+      // the last size is only needed by `renderLayout` to detect changes for dynamic sizing
+      let widget = this.getQxObject("widgetPane").getChildAtPosition(rowIndex, columnIndex);
+      if (dynamicSizing === "rows" || dynamicSizing === "both") {
+        size.height = widget?.getSizeHint(true).height;
+      }
+      if (dynamicSizing === "columns" || dynamicSizing === "both") {
+        size.width = widget?.getSizeHint(true).width;
+      }
       widget?.setUserData("qxl.datagrid.lastSize", size);
       return size;
     },

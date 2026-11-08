@@ -140,10 +140,12 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
 
           let callbackArguments = [null, child, currentRelativePosition, currentAbsolutePosition];
 
-          currentRelativePosition.set({ row: rowIndex, column: relativeColumnIndex });
-          currentAbsolutePosition.set({ row: rowIndex, column: columnSizeData.columnIndex });
-
           let columnColSpanFn = columns.getColumn(columnSizeData.columnIndex).getColSpan();
+          // setting a Position fires events, so only when there is a callback to receive it
+          if (columnColSpanFn || gridStyleColSpanFn) {
+            currentRelativePosition.set({ row: rowIndex, column: relativeColumnIndex });
+            currentAbsolutePosition.set({ row: rowIndex, column: columnSizeData.columnIndex });
+          }
           let colSpan = 1;
           if (columnColSpanFn) {
             colSpan = columnColSpanFn(() => gridStyleColSpanFn?.(...callbackArguments), ...callbackArguments);
@@ -151,22 +153,25 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
             colSpan = gridStyleColSpanFn(...callbackArguments);
           }
           colSpan = Math.floor(colSpan ?? 1);
-          child.setUserData("qxl.datagrid.cellData", {
-            ...child.getUserData("qxl.datagrid.cellData"),
-            colSpan
-          });
+          let cellData = child.getUserData("qxl.datagrid.cellData");
+          if (cellData.colSpan !== colSpan) {
+            child.setUserData("qxl.datagrid.cellData", { ...cellData, colSpan });
+          }
           lastColSpanEndIndex = relativeColumnIndex + colSpan;
           for (let i = relativeColumnIndex + 1; i < lastColSpanEndIndex; i++) {
             filledWidth += sizesData.columns[i].width + horizontalSpacing;
           }
 
-          child.setLayoutProperties({
-            left: left,
-            width: filledWidth,
-            top: top,
-            height: rowSizeData.height
-          });
-          child.getSizeHint(true);
+          // every change of layout properties invalidates the layout, so only for real changes
+          let props = child.getLayoutProperties();
+          if (props.left !== left || props.top !== top || props.width !== filledWidth || props.height !== rowSizeData.height) {
+            child.setLayoutProperties({
+              left: left,
+              width: filledWidth,
+              top: top,
+              height: rowSizeData.height
+            });
+          }
           left += filledWidth + horizontalSpacing;
         }
         top += rowSizeData.height + verticalSpacing;

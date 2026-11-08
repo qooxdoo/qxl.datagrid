@@ -46,6 +46,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       this.setDataSource(dataSource);
     }
     this._setLayout(new qxl.datagrid.ui.layout.Fixed());
+    // scrolling shifts the content with a transform, so the rows may lie outside of the pane's own box;
+    // the parent clips them
+    this.getContentElement().setStyles({ overflowX: "visible", overflowY: "visible" });
     this.addListener("tap", this.__onTap, this);
     this.addListener("dbltap", this.__onDoubleTap, this);
   },
@@ -105,6 +108,12 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     /**@type {Record<string, qx.ui.core.Widget>}*/
     __children: null,
 
+    /** @type {Record<Integer, Integer>?} top of each data row on display, in the coordinates of the pane */
+    __rowTops: null,
+
+    /** @type {Integer} top of the first data row on display, ie how far the content is shifted up */
+    __firstTop: 0,
+
     _applyWidgetsContextMenu(value, old) {
       for (let child of Object.values(this.__children)) {
         let ctxMenu = child.getContextMenu();
@@ -123,6 +132,13 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     /**
      * Called to update the widgets and synchronise the sizes, creating widgets via the factory
+     *
+     * Scrolling only binds, unbinds and positions the cells entering and leaving the display: rows
+     * staying on display keep their top and the content is shifted instead, and widgets of leaving
+     * cells are reused for entering cells of the same column (if `shouldDiscardWidgets`).
+     *
+     * Widgets staying on display keep their bound model, so a data source which replaces the model at
+     * a position must fire `changeSize`; the grid then rebinds all widgets via `invalidateAll`.
      *
      * @return {Promise?}
      */
@@ -168,27 +184,55 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let invalidateAll = this.__invalidateAll;
       this.__invalidateAll = false;
 
+      // Widgets of cells leaving the display are handed over to cells entering it, per column
+      let reuseWidgets = this.getShouldDiscardWidgets();
+      /** @type {Record<Integer, qx.ui.core.Widget[]>} unbound widgets by column index */
+      let spareWidgets = {};
+
       for (let child of qx.lang.Array.clone(this._getChildren())) {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         let id = cellData.row + ":" + cellData.column;
         if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
-          this.__fullDiscardWidget(child, id);
+          if (reuseWidgets) {
+            this.__widgetFactory.unbindWidget(child);
+            delete this.__children[id];
+            if (!spareWidgets[cellData.column]) {
+              spareWidgets[cellData.column] = [];
+            }
+            spareWidgets[cellData.column].push(child);
+          } else {
+            this.__fullDiscardWidget(child, id);
+          }
         } else {
           this.__children[id] = child;
         }
       }
 
-      for (let child of Object.values(this.__children)) {
-        if (!child.getContextMenu()) {
-          child.setContextMenu(this.getWidgetsContextMenu());
-        }
+      // Entering cells take the spare widgets in row order, so that after a jump each widget keeps its slot
+      for (let widgets of Object.values(spareWidgets)) {
+        widgets.sort((a, b) => b.getUserData("qxl.datagrid.cellData").row - a.getUserData("qxl.datagrid.cellData").row);
       }
 
       let horizontalSpacing = styling.getHorizontalSpacing();
       let verticalSpacing = styling.getVerticalSpacing();
-      let top = 0;
+
+      // Rows staying on display keep their top and the content is shifted instead (see `__applyFirstTop`);
+      // without any such row the shift stays as it is, so that reused widgets keep their position
+      let firstTop = invalidateAll ? null : this.__findFirstTop(sizesData.rows, verticalSpacing);
+      if (firstTop === null) {
+        firstTop = this.__firstTop;
+      }
+      if (Math.abs(firstTop) > qxl.datagrid.ui.WidgetPane.MAX_FIRST_TOP) {
+        firstTop = 0;
+      }
+      let rowTops = {};
+      this.__rowTops = rowTops;
+      let top = firstTop;
 
       let gridStyleColSpanFn = styling.getColSpan();
+      let selectionStyle = this.__selectionManager.getSelectionStyle();
+      let cellSelection = selectionStyle == "cell" || selectionStyle == "area";
+      let focusedModel = this.__selectionManager.getFocused();
 
       let currentRelativePosition = new qxl.datagrid.source.Position();
       let currentAbsolutePosition = new qxl.datagrid.source.Position();
@@ -199,6 +243,8 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         if (rowSizeData.rowIndex < 0) {
           continue;
         }
+        rowTops[rowSizeData.rowIndex] = top;
+        let rowModel = undefined;
 
         let fillFromColumnIndex = null;
         // exclusive endIndex
@@ -216,29 +262,42 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             continue;
           }
 
-          let model = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, columnSizeData.columnIndex));
+          let model;
           if (!child || invalidateAll) {
-            child = this.__widgetFactory.getWidgetFor(rowSizeData.rowIndex, columnSizeData.columnIndex);
+            model = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, columnSizeData.columnIndex));
+            child = this.__takeSpareWidget(spareWidgets, rowSizeData.rowIndex, columnSizeData.columnIndex);
+            if (!child) {
+              child = this.__widgetFactory.getWidgetFor(rowSizeData.rowIndex, columnSizeData.columnIndex);
+              this._add(child);
+              qx.ui.core.queue.Layout.add(child);
+              if (!child.getContextMenu()) {
+                child.setContextMenu(this.getWidgetsContextMenu());
+              }
+            }
             this.__children[id] = child;
             child.setUserData("qxl.datagrid.cellData", {
               row: rowSizeData.rowIndex,
               column: columnSizeData.columnIndex,
               colSpan: 1
             });
-            this._add(child);
-            qx.ui.core.queue.Layout.add(child);
             this.__widgetFactory.bindWidget(child, model);
           } else {
+            model = this.__widgetFactory.getModelForWidget(child);
             this.__widgetFactory.updateState(child, model);
           }
 
           let callbackArguments = [model, child, currentRelativePosition, currentAbsolutePosition];
           // if no idx found...
           if (fillFromColumnIndex === null) {
-            currentRelativePosition.set({ row: relativeRowIndex, column: relativeColumnIndex });
-            currentAbsolutePosition.set({ row: rowSizeData.rowIndex, column: columnSizeData.columnIndex });
+            let column = columns.getColumn(columnSizeData.columnIndex);
+            let shouldFillFn = column.getShouldFillWidth();
+            let columnColSpanFn = column.getColSpan();
+            // setting a Position fires events, so only when there is a callback to receive it
+            if (shouldFillFn || columnColSpanFn || gridStyleColSpanFn) {
+              currentRelativePosition.set({ row: relativeRowIndex, column: relativeColumnIndex });
+              currentAbsolutePosition.set({ row: rowSizeData.rowIndex, column: columnSizeData.columnIndex });
+            }
             //  check if this col should fill
-            let shouldFillFn = columns.getColumn(columnSizeData.columnIndex).getShouldFillWidth();
             let shouldFill = shouldFillFn ? shouldFillFn(...callbackArguments) : false;
             if (shouldFill) {
               // assign and fill width
@@ -247,7 +306,6 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
                 filledWidth += sizesData.columns[i].width + horizontalSpacing;
               }
             } else {
-              let columnColSpanFn = columns.getColumn(columnSizeData.columnIndex).getColSpan();
               let colSpan = 1;
               if (columnColSpanFn) {
                 colSpan = columnColSpanFn(() => gridStyleColSpanFn?.(...callbackArguments), ...callbackArguments);
@@ -255,10 +313,10 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
                 colSpan = gridStyleColSpanFn(...callbackArguments);
               }
               colSpan = Math.max(1, Math.floor(colSpan ?? 1));
-              child.setUserData("qxl.datagrid.cellData", {
-                ...child.getUserData("qxl.datagrid.cellData"),
-                colSpan
-              });
+              let cellData = child.getUserData("qxl.datagrid.cellData");
+              if (cellData.colSpan !== colSpan) {
+                child.setUserData("qxl.datagrid.cellData", { ...cellData, colSpan });
+              }
               lastColSpanEndIndex = relativeColumnIndex + colSpan;
               for (let i = relativeColumnIndex + 1; i < lastColSpanEndIndex; i++) {
                 filledWidth += sizesData.columns[i].width + horizontalSpacing;
@@ -268,11 +326,13 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
           let isSelected = false;
           let isFocused = false;
-          if (this.__selectionManager.getSelectionStyle() == "cell" || this.__selectionManager.getSelectionStyle() == "area") {
+          if (cellSelection) {
             isSelected = this.__selectionManager.isSelected(model);
-            isFocused = this.__selectionManager.getFocused() === model;
+            isFocused = focusedModel === model;
           } else {
-            let rowModel = this.getDataSource().getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
+            if (rowModel === undefined) {
+              rowModel = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
+            }
             isSelected = this.__selectionManager.isSelected(rowModel);
           }
           if (isSelected) {
@@ -286,18 +346,97 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             child.removeState("focused");
           }
 
-          child.setLayoutProperties({
-            left: left,
-            width: filledWidth,
-            top: top,
-            height: rowSizeData.height
-          });
-          child.getSizeHint(true);
+          // every change of layout properties invalidates the layout of the pane, so only for real changes
+          let props = child.getLayoutProperties();
+          if (props.left !== left || props.top !== top || props.width !== filledWidth || props.height !== rowSizeData.height) {
+            child.setLayoutProperties({
+              left: left,
+              width: filledWidth,
+              top: top,
+              height: rowSizeData.height
+            });
+          }
           left += filledWidth + horizontalSpacing;
         }
         top += rowSizeData.height + verticalSpacing;
       }
-      qx.ui.core.queue.Layout.add(this);
+
+      for (let widgets of Object.values(spareWidgets)) {
+        widgets.forEach(widget => this.__discardSpareWidget(widget));
+      }
+      this.__applyFirstTop(firstTop);
+    },
+
+    /**
+     * Finds the top of the first data row from the previous update: it is calculated back from the
+     * first row which was already on display, so that this row and all rows after it keep their top
+     *
+     * @param {Object[]} rows the rows on display now (`RowData` of `qxl.datagrid.ui.GridSizeCalculator`)
+     * @param {Integer} verticalSpacing
+     * @return {Integer?} the top of the first data row, null if no row was on display before
+     */
+    __findFirstTop(rows, verticalSpacing) {
+      let rowTops = this.__rowTops;
+      if (!rowTops) {
+        return null;
+      }
+      let offset = 0;
+      for (let row of rows) {
+        if (row.rowIndex < 0) {
+          continue;
+        }
+        let top = rowTops[row.rowIndex];
+        if (top !== undefined) {
+          return top - offset;
+        }
+        offset += row.height + verticalSpacing;
+      }
+      return null;
+    },
+
+    /**
+     * Shifts the content so that the first data row is at the top of the pane; this is a single
+     * style change instead of moving every widget. Because the box of the pane moves with it, the
+     * pane must not have a background or decorator of its own.
+     *
+     * @param {Integer} firstTop top of the first data row, in the coordinates of the pane
+     */
+    __applyFirstTop(firstTop) {
+      if (this.__firstTop !== firstTop) {
+        this.__firstTop = firstTop;
+        this.getContentElement().setStyle("transform", firstTop ? "translateY(" + -firstTop + "px)" : null);
+      }
+    },
+
+    /**
+     * Takes an unbound widget of the same column for a cell entering the display
+     *
+     * @param {Record<Integer, qx.ui.core.Widget[]>} spareWidgets unbound widgets by column index
+     * @param {Integer} rowIndex
+     * @param {Integer} columnIndex
+     * @return {qx.ui.core.Widget?} the widget, already a child of this pane, or null
+     */
+    __takeSpareWidget(spareWidgets, rowIndex, columnIndex) {
+      let widgets = spareWidgets[columnIndex];
+      while (widgets?.length) {
+        let widget = widgets.pop();
+        if (this.__widgetFactory.reuseWidget(widget, rowIndex, columnIndex)) {
+          return widget;
+        }
+        this.__discardSpareWidget(widget);
+      }
+      return null;
+    },
+
+    /**
+     * Removes and disposes an unbound widget which was not reused
+     *
+     * @param {qx.ui.core.Widget} widget
+     */
+    __discardSpareWidget(widget) {
+      widget.setUserData("qxl.datagrid.cellData", null);
+      this._remove(widget);
+      this.__widgetFactory.disposeWidget(widget);
     },
 
     __fullDiscardWidget(child, id) {
@@ -412,5 +551,10 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       }
       this.fireDataEvent("modelDoubleTap", model);
     }
+  },
+
+  statics: {
+    /** @type {Integer} beyond this shift of the content in pixels, all rows are positioned from 0 again */
+    MAX_FIRST_TOP: 1000000
   }
 });

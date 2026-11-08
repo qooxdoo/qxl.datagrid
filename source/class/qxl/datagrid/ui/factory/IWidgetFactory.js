@@ -34,14 +34,26 @@ qx.Interface.define("qxl.datagrid.ui.factory.IWidgetFactory", {
 
   members: {
     /**
-     * Provides a widget for a given row and column in the datasource; the widget will not
-     * be reused (it will be disposed when no longer needed)
+     * Provides a widget for a given row and column in the datasource; the widget is disposed
+     * when no longer needed, unless it is handed over to another cell with `reuseWidget`
      *
      * @param {Integer} rowIndex row in the data source not on the display
      * @param {Integer} columnIndex column in the data source not on the display
      * @return {qx.ui.core.Widget} the new widget
      */
     getWidgetFor(rowIndex, columnIndex) {},
+
+    /**
+     * Hands an unbound widget over to another cell of the same column, instead of disposing it
+     * and creating a new one; the caller binds it to the new model afterwards
+     *
+     * @param {qx.ui.core.Widget} widget as previously returned by `getWidgetFor`, currently unbound
+     * @param {Integer} rowIndex new row in the data source
+     * @param {Integer} columnIndex new column in the data source
+     * @return {Boolean} false if the column object at `columnIndex` is not the one the widget was
+     *  created for; the widget is then left as it is and must be disposed by the caller
+     */
+    reuseWidget(widget, rowIndex, columnIndex) {},
 
     /**
      * Called to bind thej previously given widget to the model

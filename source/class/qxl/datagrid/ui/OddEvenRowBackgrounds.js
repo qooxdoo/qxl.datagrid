@@ -90,19 +90,18 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
       });
 
       let children = {};
-      qx.lang.Array.clone(this._getChildren()).forEach(child => {
+      // widgets of rows leaving the display are reused for rows entering it
+      let spareWidgets = [];
+      this._getChildren().forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
-        // prettier-ignore
-        if (cellData.row < minDataRowIndex ||
-        cellData.row > maxRowIndex) {
-          child.setUserData("qxl.datagrid.cellData", null);
-          this._remove(child);
-          child.dispose();
+        if (cellData.row < minDataRowIndex || cellData.row > maxRowIndex) {
+          spareWidgets.push(child);
         } else {
-          let id = cellData.row;
-          children[id] = child;
+          children[cellData.row] = child;
         }
       });
+      // taken in row order, so that after a jump each widget keeps its position
+      spareWidgets.sort((a, b) => b.getUserData("qxl.datagrid.cellData").row - a.getUserData("qxl.datagrid.cellData").row);
 
       let rowWidth = 0;
       sizesData.columns.forEach(cd => (rowWidth += cd.width));
@@ -123,12 +122,15 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
 
         let child = children[id];
         if (!child) {
-          child = this._createRowWidget();
+          child = spareWidgets.pop();
+          if (!child) {
+            child = this._createRowWidget();
+            this._add(child);
+          }
           children[id] = child;
           child.setUserData("qxl.datagrid.cellData", {
             row: rowSizeData.rowIndex
           });
-          this._add(child);
         }
 
         let isSelected = false;
@@ -157,15 +159,24 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
           child.removeState("even");
         }
 
-        child.setLayoutProperties({
+        let layoutProperties = {
           left: this.__sizeCalculator.getInitialOffsets().left,
           width: rowWidth,
           top: top - spaceAbove,
           height: rowSizeData.height + spaceAbove + spaceBelow
-        });
-        child.getSizeHint(true);
+        };
+        // every change of layout properties invalidates the layout, so only for real changes
+        let props = child.getLayoutProperties();
+        if (props.left !== layoutProperties.left || props.top !== layoutProperties.top || props.width !== layoutProperties.width || props.height !== layoutProperties.height) {
+          child.setLayoutProperties(layoutProperties);
+        }
         top += rowSizeData.height + verticalSpacing;
       }
+
+      spareWidgets.forEach(child => {
+        this._remove(child);
+        child.dispose();
+      });
     },
 
     /**

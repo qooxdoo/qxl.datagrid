@@ -108,6 +108,21 @@ qx.Class.define("qxl.datagrid.ui.factory.AbstractWidgetFactory", {
     /**
      * @override
      */
+    reuseWidget(widget, rowIndex, columnIndex) {
+      let bindingData = widget.getUserData("qxl.datagrid.factory.AbstractWidgetFactory.bindingData");
+      if (bindingData.column !== this.getColumns().getColumn(columnIndex)) {
+        return false;
+      }
+      delete this.__widgets[bindingData.rowIndex + ":" + bindingData.columnIndex];
+      bindingData.rowIndex = rowIndex;
+      bindingData.columnIndex = columnIndex;
+      this.__widgets[rowIndex + ":" + columnIndex] = widget;
+      return true;
+    },
+
+    /**
+     * @override
+     */
     getModelForWidget(widget) {
       let bindingData = widget.getUserData("qxl.datagrid.factory.AbstractWidgetFactory.bindingData");
       return bindingData?.model || null;

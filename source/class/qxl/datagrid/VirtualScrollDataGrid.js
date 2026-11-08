@@ -141,6 +141,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
      */
     _applyStartRowIndex(value, oldValue) {
       this.__inApplyStartRowIndex = true;
+      this.__syncAvailableSize();
       this.updateWidgets();
       this.__inApplyStartRowIndex = false;
     },
@@ -150,8 +151,20 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
      */
     _applyStartColumnIndex(value, oldValue) {
       this.__inApplyStartColumnIndex = true;
+      this.__syncAvailableSize();
       this.updateWidgets();
       this.__inApplyStartColumnIndex = false;
+    },
+
+    /**
+     * Passes the new start indexes to the size calculator before the widgets are updated, otherwise
+     * the update would work on the old range and `renderLayout` would have to update a second time
+     */
+    __syncAvailableSize() {
+      let bounds = this.getBounds();
+      if (bounds) {
+        this._setAvailableSize(bounds.width, bounds.height);
+      }
     },
 
     /**
