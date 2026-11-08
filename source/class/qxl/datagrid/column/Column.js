@@ -26,6 +26,10 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
   construct(path) {
     super();
+    this.__widgetStateUpdaters = new Set();
+    // one listener per column instead of two per bound widget, the grid binds widgets while scrolling
+    this.addListener("changeEffectivelyReadOnly", this.__updateWidgetStates, this);
+    this.addListener("changeEffectivelyEnabled", this.__updateWidgetStates, this);
     if (path) {
       this.setPath(path);
     }
@@ -192,6 +196,16 @@ qx.Class.define("qxl.datagrid.column.Column", {
   members: {
     __datagrid: null,
 
+    /** @type {Set<Function>} updates readOnly/enabled of each bound widget */
+    __widgetStateUpdaters: null,
+
+    /**
+     * Event handler for `changeEffectivelyReadOnly` and `changeEffectivelyEnabled`
+     */
+    __updateWidgetStates() {
+      this.__widgetStateUpdaters.forEach(update => update());
+    },
+
     /**
      * Called by the DataGrid when the column is added.  Do NOT call this manually.
      *
@@ -201,21 +215,20 @@ qx.Class.define("qxl.datagrid.column.Column", {
       if (this.__datagrid === datagrid) {
         return;
       }
-      if (qx.core.Environment.get("qx.debug")) {
+      if (qx.core.Environment.get("qx.debug") && datagrid) {
         this.assertInstance(datagrid, qxl.datagrid.DataGrid);
         this.assertTrue(!this.__datagrid, "DataGrid already set");
       }
       if (this.__datagrid) {
-        this.__datagrid.removeListener("changeEnabled", this.__onDataGridChangeEnabled, this);
-        this.__datagrid.removeListener("changeReadOnly", this.__onDataGridChangeReadOnly, this);
+        this.__datagrid.removeListener("changeEnabled", this.__fireEffectiveChanges, this);
+        this.__datagrid.removeListener("changeReadOnly", this.__fireEffectiveChanges, this);
       }
       this.__datagrid = datagrid;
       if (datagrid) {
-        datagrid.addListener("changeEnabled", this.__onDataGridChangeEnabled, this);
-        datagrid.addListener("changeReadOnly", this.__onDataGridChangeReadOnly, this);
+        datagrid.addListener("changeEnabled", this.__fireEffectiveChanges, this);
+        datagrid.addListener("changeReadOnly", this.__fireEffectiveChanges, this);
       }
-      this.fireDataEvent("changeEffectivelyEnabled", this.isEffectivelyEnabled());
-      this.fireDataEvent("changeEffectivelyReadOnly", this.isEffectivelyEnabled());
+      this.__fireEffectiveChanges();
     },
 
     /**
@@ -228,26 +241,22 @@ qx.Class.define("qxl.datagrid.column.Column", {
     },
 
     /**
-     * Event handler for when the datagrid changes `enabled`
+     * Fires `changeEffectivelyEnabled` and `changeEffectivelyReadOnly` with the current values; called
+     * whenever `enabled` or `readOnly` of the column or the datagrid changes, since `enabled` affects both
      */
-    __onDataGridChangeEnabled(evt) {
+    __fireEffectiveChanges() {
       this.fireDataEvent("changeEffectivelyEnabled", this.isEffectivelyEnabled());
+      this.fireDataEvent("changeEffectivelyReadOnly", this.isEffectivelyReadOnly());
     },
 
     /**
-     * Event handler for when the datagrid changes `readOnly`
-     */
-    __onDataGridChangeReadOnly(evt) {
-      this.fireDataEvent("changeEffectivelyReadOnly", this.isEffectivelyEnabled());
-    },
-
-    /**
-     * Detects whether the column is read only, taking into account the datagrid
+     * Detects whether the column is read only, taking into account the datagrid; a disabled column or
+     * datagrid is read only too
      *
      * @returns {Boolean}
      */
     isEffectivelyReadOnly() {
-      return this.getReadOnly() || !this.getEnabled() || !!this.__datagrid?.isReadOnly() || !this.__datagrid?.isEnabled();
+      return this.getReadOnly() || !this.isEffectivelyEnabled() || !!this.__datagrid?.isReadOnly();
     },
 
     /**
@@ -256,7 +265,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * @returns {Boolean}
      */
     isEffectivelyEnabled() {
-      return !this.getEnabled() || !!this.__datagrid?.isEnabled();
+      return this.getEnabled() && (this.__datagrid?.isEnabled() ?? true);
     },
 
     /**
@@ -275,45 +284,79 @@ qx.Class.define("qxl.datagrid.column.Column", {
           widget.setValue(model);
           bindings.add(model, () => widget.setValue(null));
         } else if (model) {
-          let bindingId = model.bind(path, widget, "value", this.getBindingOptions()(widget, model));
-          bindings.add(model, bindingId);
+          let options = this.getBindingOptions()(widget, model);
+          let listenerId = this.__bindValueDirectly(model, path, widget, options);
+          if (listenerId) {
+            bindings.add(model, listenerId, "listener");
+          } else {
+            bindings.add(model, model.bind(path, widget, "value", options));
+          }
         }
       }
+      let update;
       if (typeof widget.setReadOnly == "function") {
-        const update = () => {
+        update = () => {
           widget.setReadOnly(this.isEffectivelyReadOnly());
           widget.setEnabled(this.isEffectivelyEnabled());
         };
-
-        bindings.add(
-          this,
-          this.addListener("changeEffectivelyReadOnly", () => update()),
-          "listener"
-        );
-        bindings.add(
-          this,
-          this.addListener("changeEffectivelyEnabled", () => update()),
-          "listener"
-        );
-        update();
       } else {
-        const update = () => {
+        update = () => {
           widget.setEnabled(this.isEffectivelyEnabled() && !this.isEffectivelyReadOnly());
         };
-
-        bindings.add(
-          this,
-          this.addListener("changeEffectivelyReadOnly", () => update()),
-          "listener"
-        );
-        bindings.add(
-          this,
-          this.addListener("changeEffectivelyEnabled", () => update()),
-          "listener"
-        );
-        update();
       }
+      this.__widgetStateUpdaters.add(update);
+      bindings.add(this, () => this.__widgetStateUpdaters.delete(update), "callback");
+      update();
       return bindings;
+    },
+
+    /**
+     * Binds `value` of the widget to a plain property of the model with a change listener, which
+     * is much cheaper than `model.bind` (a `qx.data.SingleValueBinding` with its segment objects);
+     * the grid binds every cell entering the display, so this is done on every scroll step.
+     *
+     * Behaves like `model.bind(path, widget, "value", options)`: the converter is called with the
+     * widget's model, `ignoreConverter`, `onUpdate` and `onSetFail` are respected, and `undefined`
+     * resets the value. Anything else (a chain, an async property or binding, a property without
+     * change event) is left to `model.bind`.
+     *
+     * @param {qx.core.Object} model
+     * @param {String} path the column's path
+     * @param {qx.ui.core.Widget} widget
+     * @param {Object?} options binding options, see `qx.data.SingleValueBinding`
+     * @return {String?} the listener id on the model, null if `model.bind` is needed
+     */
+    __bindValueDirectly(model, path, widget, options) {
+      if (!/^[A-Za-z_$][\w$]*$/.test(path) || options?.async) {
+        return null;
+      }
+      let property = qx.Class.getByProperty(model.constructor, qx.lang.String.firstLow(path));
+      let eventName = property?.getEventName();
+      if (!eventName || (property.supportsGetAsync() && !property.hasLocalValue(model))) {
+        return null;
+      }
+
+      let converter = options?.converter;
+      let ignoreConverter = !!options?.ignoreConverter && new RegExp("^" + options.ignoreConverter).test(path);
+      const setValue = value => {
+        // same condition as in SingleValueBinding
+        if (converter && (value !== undefined || !ignoreConverter)) {
+          value = converter(value, typeof widget.getModel == "function" ? widget.getModel() : null, model, widget);
+        }
+        try {
+          if (value === undefined) {
+            widget.resetValue();
+          } else {
+            widget.setValue(value);
+          }
+        } catch (ex) {
+          options?.onSetFail?.();
+          return;
+        }
+        options?.onUpdate?.(model, widget, value);
+      };
+      setValue(property.get(model));
+      return model.addListener(eventName, evt => setValue(evt.getData()));
     },
 
     /**
@@ -362,11 +405,15 @@ qx.Class.define("qxl.datagrid.column.Column", {
     /**
      * Apply for `readOnly` property
      */
-    _applyReadOnly(value) {},
+    _applyReadOnly(value) {
+      this.__fireEffectiveChanges();
+    },
 
     /**
      * Apply for `enabled` property
      */
-    _applyEnabled(value) {}
+    _applyEnabled(value) {
+      this.__fireEffectiveChanges();
+    }
   }
 });
