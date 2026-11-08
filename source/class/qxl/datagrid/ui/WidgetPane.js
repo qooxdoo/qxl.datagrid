@@ -125,6 +125,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     /** @type {Function?} `(model, column, columnEditable) => Boolean`, for `aria-readonly` of the cells */
     __cellEditableFn: null,
 
+    /** @type {Function?} `(model, column) => String[]?`, the grid's `cellStates` */
+    __statesFn: null,
+
     /**
      * Sets the function which tells whether a cell may be edited, for `aria-readonly`
      *
@@ -132,6 +135,15 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
      */
     setCellEditableFunction(fn) {
       this.__cellEditableFn = fn;
+    },
+
+    /**
+     * Sets the function which returns the states of a cell widget from its model (`cellStates`)
+     *
+     * @param {Function?} fn `(model, column) => String[]?`
+     */
+    setStatesFunction(fn) {
+      this.__statesFn = fn;
     },
 
     _applyWidgetsContextMenu(value, old) {
@@ -260,6 +272,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let focusedColumn = focusedPosition?.getColumn() ?? -1;
       let cellErrors = this.__cellErrors;
       let cellEditableFn = this.__cellEditableFn;
+      let statesFn = this.__statesFn;
       // `column.isEditable()` once per column, not per cell
       let editableColumns = [];
 
@@ -379,12 +392,19 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           } else {
             child.removeState("focused");
           }
-          if (cellEditableFn) {
+          // states also without a function, to remove the states of a function set before
+          let hasStates = statesFn || child.getUserData("qxl.datagrid.states");
+          if (cellEditableFn || hasStates) {
             let columnIndex = columnSizeData.columnIndex;
             let column = columns.getColumn(columnIndex);
-            editableColumns[columnIndex] ??= column.isEditable();
-            let editable = cellEditableFn(model, column, editableColumns[columnIndex]);
-            child.getContentElement().setAttribute("aria-readonly", editable ? null : "true");
+            if (cellEditableFn) {
+              editableColumns[columnIndex] ??= column.isEditable();
+              let editable = cellEditableFn(model, column, editableColumns[columnIndex]);
+              child.getContentElement().setAttribute("aria-readonly", editable ? null : "true");
+            }
+            if (hasStates) {
+              qxl.datagrid.ui.WidgetPane.applyStates(child, statesFn && model ? statesFn(model, column) : null, qxl.datagrid.ui.WidgetPane.RESERVED_CELL_STATES);
+            }
           }
           if (cellErrors?.size || child.hasState("invalid")) {
             this.__applyCellError(child, model, columnSizeData.columnIndex);
@@ -793,6 +813,42 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
   statics: {
     /** @type {Integer} beyond this shift of the content in pixels, all rows are positioned from 0 again */
     MAX_FIRST_TOP: 1000000,
+
+    /** @type {String[]} states the grid sets on cell widgets itself, not available to `cellStates` */
+    RESERVED_CELL_STATES: ["selected", "focused", "invalid"],
+
+    /** @type {String[]} states the grid sets on row widgets itself, not available to `rowStates` */
+    RESERVED_ROW_STATES: ["selected", "focused", "even", "odd"],
+
+    /**
+     * Gives a widget the states an application function returned for its model and removes the ones
+     * it returned last time but not now; reused widgets thus lose the states of their former row
+     *
+     * @param {qx.ui.core.Widget} widget a cell or row widget
+     * @param {String[]?} states the states to set
+     * @param {String[]} reserved states the grid sets itself, which are ignored
+     */
+    applyStates(widget, states, reserved) {
+      let previous = widget.getUserData("qxl.datagrid.states");
+      if (!previous && !states?.length) {
+        return;
+      }
+      if (qx.core.Environment.get("qx.debug")) {
+        states?.forEach(state => {
+          if (reserved.includes(state)) {
+            qx.log.Logger.warn(qxl.datagrid.ui.WidgetPane, `State "${state}" is set by the grid itself and ignored`);
+          }
+        });
+      }
+      let next = (states ?? []).filter(state => !reserved.includes(state));
+      previous?.forEach(state => {
+        if (!next.includes(state)) {
+          widget.removeState(state);
+        }
+      });
+      next.forEach(state => widget.addState(state));
+      widget.setUserData("qxl.datagrid.states", next.length ? next : null);
+    },
 
     /**
      * Returns the key of a cell in the map of error messages; a cell is identified by model and

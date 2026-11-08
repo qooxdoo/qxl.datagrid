@@ -387,6 +387,38 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertEquals(0, this.__changes.length);
       this.assertTrue(grid.getFocusedPosition().equals(4, 1));
       press("Escape");
+    },
+
+    testRowAndCellStates() {
+      let grid = this.__grid;
+      let pane = grid.getQxObject("widgetPane");
+      const rowWidget = row => grid.getQxObject("oddEvenRows")._getChildren().find(child => child.getUserData("qxl.datagrid.cellData")?.row === row);
+      let changed = new Set([this.__model.getItem(2)]);
+      grid.setRowStates(model => (changed.has(model) ? ["changed"] : null));
+      grid.setCellStates((model, column) => (changed.has(model) && column.getPath() == "name" ? ["changed"] : null));
+      grid.updateWidgets();
+      qx.ui.core.queue.Manager.flush();
+      this.assertTrue(rowWidget(2).hasState("changed"));
+      this.assertFalse(rowWidget(3).hasState("changed"));
+      this.assertTrue(pane.getChildAtPosition(2, 1).hasState("changed"));
+      this.assertFalse(pane.getChildAtPosition(2, 2).hasState("changed"));
+
+      // the widgets are reused for other rows while scrolling, the states stay with the model
+      grid.setStartRowIndex(100);
+      qx.ui.core.queue.Manager.flush();
+      this.assertFalse(pane._getChildren().some(child => child.hasState("changed")));
+      this.assertFalse(grid.getQxObject("oddEvenRows")._getChildren().some(child => child.hasState("changed")));
+      grid.setStartRowIndex(0);
+      qx.ui.core.queue.Manager.flush();
+      this.assertTrue(rowWidget(2).hasState("changed"));
+      this.assertTrue(pane.getChildAtPosition(2, 1).hasState("changed"));
+
+      // states the function no longer returns are removed
+      changed.clear();
+      grid.updateWidgets();
+      qx.ui.core.queue.Manager.flush();
+      this.assertFalse(rowWidget(2).hasState("changed"));
+      this.assertFalse(pane.getChildAtPosition(2, 1).hasState("changed"));
     }
   }
 });

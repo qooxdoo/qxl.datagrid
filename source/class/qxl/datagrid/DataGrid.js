@@ -149,6 +149,34 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       apply: "_applyCellEditable"
     },
 
+    /**
+     * States for the row widgets, eg "changed" or "deleted", for the theme: `(model) => String[]?`
+     * with the model of the row. States the function no longer returns are removed, also from row
+     * widgets reused while scrolling. After changes call `scheduleUpdateWidgets()` (or
+     * `updateWidgets()`), which renders again without binding the cells anew. The grid sets "selected",
+     * "focused", "even" and "odd" itself.
+     */
+    rowStates: {
+      init: null,
+      nullable: true,
+      check: "Function",
+      event: "changeRowStates",
+      apply: "_applyRowStates"
+    },
+
+    /**
+     * States for the cell widgets, eg "changed", for the theme: `(model, column) => String[]?`; like
+     * `rowStates`. The grid sets "selected", "focused" and "invalid" itself; an invalid cell is reported
+     * with `setCellError`, which also tells screen readers.
+     */
+    cellStates: {
+      init: null,
+      nullable: true,
+      check: "Function",
+      event: "changeCellStates",
+      apply: "_applyCellStates"
+    },
+
     widgetsContextMenu: {
       check: "qx.ui.menu.Menu",
       init: null,
@@ -614,6 +642,26 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * Apply for `cellEditable`
      */
     _applyCellEditable() {
+      this.scheduleUpdateWidgets();
+    },
+
+    /**
+     * Apply for `rowStates`
+     *
+     * @param {Function?} value
+     */
+    _applyRowStates(value) {
+      this.getQxObject("oddEvenRows").setStatesFunction(value);
+      this.scheduleUpdateWidgets();
+    },
+
+    /**
+     * Apply for `cellStates`
+     *
+     * @param {Function?} value
+     */
+    _applyCellStates(value) {
+      this.getQxObject("widgetPane").setStatesFunction(value);
       this.scheduleUpdateWidgets();
     },
 

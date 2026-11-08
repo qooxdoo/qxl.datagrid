@@ -77,6 +77,19 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
       this.__cellIdFunction = fn;
     },
 
+    /** @type {Function?} `(model) => String[]?`, the grid's `rowStates` */
+    __statesFn: null,
+
+    /**
+     * Sets the function which returns the states of a row widget from the model of the row
+     * (`rowStates`)
+     *
+     * @param {Function?} fn `(model) => String[]?`
+     */
+    setStatesFunction(fn) {
+      this.__statesFn = fn;
+    },
+
     /**
      * Sets role, index and owned cells of a row widget; only writes the attributes when the row or
      * the columns on display have changed
@@ -174,10 +187,17 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
         let isSelected = false;
         let isFocused = false;
         let rowSelection = this.__selectionManager.getSelectionStyle() == "row";
+        let model = null;
+        if (rowSelection || this.__statesFn) {
+          model = this.getDataSource().getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
+        }
         if (rowSelection) {
-          let model = this.getDataSource().getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
           isSelected = this.__selectionManager.isSelected(model);
           isFocused = this.__selectionManager.getFocused() === model;
+        }
+        // also without a function, to remove the states of a function set before
+        if (this.__statesFn || child.getUserData("qxl.datagrid.states")) {
+          qxl.datagrid.ui.WidgetPane.applyStates(child, model && this.__statesFn ? this.__statesFn(model) : null, qxl.datagrid.ui.WidgetPane.RESERVED_ROW_STATES);
         }
         if (isSelected) {
           child.addState("selected");
