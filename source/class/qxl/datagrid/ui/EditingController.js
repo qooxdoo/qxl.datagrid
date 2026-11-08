@@ -254,6 +254,9 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
         return initialText === undefined && this.toggleFocusedCell();
       }
       cell.column.setEditorValue(editor, cell.column.getModelValue(cell.model));
+      if (cell.column.getCaption()) {
+        editor.setAriaLabel(cell.column.getCaption());
+      }
       let textEditor = editor instanceof qx.ui.form.AbstractField;
       if (textEditor && initialText !== undefined) {
         editor.setValue(initialText);
@@ -508,6 +511,7 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
       } else {
         this.__cellErrors.delete(key);
       }
+      this.__grid.getQxObject("widgetPane").setErrorText(key, message);
       let row = this.__grid.getDataSource()?.getPositionOfModel(model)?.getRow();
       if (row !== undefined && row >= 0) {
         this.__grid.getQxObject("widgetPane").updateCellError(row, columnIndex);
@@ -529,6 +533,8 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
      * Removes the error messages of all cells
      */
     resetCellErrors() {
+      let pane = this.__grid.getQxObject("widgetPane");
+      this.__cellErrors.forEach((message, key) => pane.setErrorText(key, null));
       this.__cellErrors.clear();
       this.__grid.getQxObject("widgetPane").updateCellErrors();
     }

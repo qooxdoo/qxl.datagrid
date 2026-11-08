@@ -173,7 +173,8 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
 
         let isSelected = false;
         let isFocused = false;
-        if (this.__selectionManager.getSelectionStyle() == "row") {
+        let rowSelection = this.__selectionManager.getSelectionStyle() == "row";
+        if (rowSelection) {
           let model = this.getDataSource().getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
           isSelected = this.__selectionManager.isSelected(model);
           isFocused = this.__selectionManager.getFocused() === model;
@@ -183,6 +184,8 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
         } else {
           child.removeState("selected");
         }
+        // with cell selection, the cells carry aria-selected
+        child.getContentElement().setAttribute("aria-selected", rowSelection ? String(isSelected) : null);
         if (isFocused) {
           child.addState("focused");
         } else {

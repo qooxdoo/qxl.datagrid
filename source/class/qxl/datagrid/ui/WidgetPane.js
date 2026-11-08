@@ -357,6 +357,8 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           } else {
             child.removeState("selected");
           }
+          // with row selection, the row carries aria-selected
+          child.getContentElement().setAttribute("aria-selected", cellSelection ? String(isSelected) : null);
           if (isFocused) {
             child.addState("focused");
           } else {
@@ -678,14 +680,66 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
      * @param {Integer} column column in the data source
      */
     __applyCellError(child, model, column) {
-      let message = model && this.__cellErrors?.get(qxl.datagrid.ui.WidgetPane.cellErrorKey(model, column));
+      let key = model ? qxl.datagrid.ui.WidgetPane.cellErrorKey(model, column) : null;
+      let message = key && this.__cellErrors?.get(key);
+      let element = child.getContentElement();
       if (message) {
         child.addState("invalid");
         child.setToolTipText(message);
+        element.setAttribute("aria-invalid", "true");
+        element.setAttribute("aria-describedby", this.__getErrorTextId(key));
       } else if (child.hasState("invalid")) {
         child.removeState("invalid");
         child.resetToolTipText();
+        element.setAttribute("aria-invalid", null);
+        element.setAttribute("aria-describedby", null);
       }
+    },
+
+    /** @type {qx.html.Element?} hidden container of the error messages, which `aria-describedby` refers to */
+    __errorTexts: null,
+
+    /** @type {Map<String, qx.html.Element>} element with the message by `cellErrorKey` */
+    __errorTextElements: null,
+
+    /**
+     * Returns the id of the element with the error message of a cell
+     *
+     * @param {String} key `cellErrorKey` of the cell
+     * @return {String}
+     */
+    __getErrorTextId(key) {
+      return "qxl-datagrid-" + this.toHashCode() + "-error-" + key.replace(":", "-");
+    },
+
+    /**
+     * Keeps the error message of a cell as text for screen readers (`aria-describedby`), also while
+     * the cell is not on display; the container is hidden, which `aria-describedby` still reads
+     *
+     * @param {String} key `cellErrorKey` of the cell
+     * @param {String?} message the error, null to remove it
+     */
+    setErrorText(key, message) {
+      let element = this.__errorTextElements?.get(key);
+      if (!message) {
+        if (element) {
+          this.__errorTexts.remove(element);
+          this.__errorTextElements.delete(key);
+          element.dispose();
+        }
+        return;
+      }
+      if (!this.__errorTexts) {
+        this.__errorTexts = new qx.html.Element("div", { display: "none" });
+        this.__errorTextElements = new Map();
+        this.getContentElement().add(this.__errorTexts);
+      }
+      if (!element) {
+        element = new qx.html.Element("span", null, { id: this.__getErrorTextId(key) });
+        this.__errorTextElements.set(key, element);
+        this.__errorTexts.add(element);
+      }
+      element.setText(message);
     },
 
     /**

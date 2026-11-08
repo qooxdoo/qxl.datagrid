@@ -298,10 +298,12 @@ qx.Class.define("qxl.datagrid.column.Column", {
         update = () => {
           widget.setReadOnly(this.isEffectivelyReadOnly());
           widget.setEnabled(this.isEffectivelyEnabled());
+          widget.getContentElement().setAttribute("aria-readonly", this.isEditable() ? null : "true");
         };
       } else {
         update = () => {
           widget.setEnabled(this.isEffectivelyEnabled() && !this.isEffectivelyReadOnly());
+          widget.getContentElement().setAttribute("aria-readonly", this.isEditable() ? null : "true");
         };
       }
       this.__widgetStateUpdaters.add(update);

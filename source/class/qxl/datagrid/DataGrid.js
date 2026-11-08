@@ -53,6 +53,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     // the DOM focus stays on the grid, screen readers follow the focused cell via aria-activedescendant
     this.getContentElement().setAttribute("role", "grid");
+    // `editable` starts as false, its apply is not called for the init value
+    this.getContentElement().setAttribute("aria-readonly", "true");
     this.getQxObject("oddEvenRows").setCellIdFunction((row, column) => this.getQxObject("widgetPane").getCellId(row, column));
     this.__selectionManager.addListener("changeFocusedPosition", () => this.__updateActiveDescendant());
     this.addListener("keypress", this._onKeyPress, this);
@@ -589,6 +591,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       if (!value) {
         this.__editingController?.cancelEditing();
       }
+      this.getContentElement().setAttribute("aria-readonly", value ? null : "true");
     },
 
     /**

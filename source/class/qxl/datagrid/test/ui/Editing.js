@@ -300,11 +300,50 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertFalse(pane._getChildren().some(child => child.hasState("invalid")));
       grid.setStartRowIndex(0);
       qx.ui.core.queue.Manager.flush();
-      this.assertTrue(pane.getChildAtPosition(2, 1).hasState("invalid"));
-      this.assertEquals("from the server", pane.getChildAtPosition(2, 1).getToolTipText());
+      let cell = pane.getChildAtPosition(2, 1);
+      this.assertTrue(cell.hasState("invalid"));
+      this.assertEquals("from the server", cell.getToolTipText());
+      // screen readers get the message too, not only the tool tip
+      let describedBy = cell.getContentElement().getDomElement().getAttribute("aria-describedby");
+      this.assertEquals("true", cell.getContentElement().getDomElement().getAttribute("aria-invalid"));
+      this.assertEquals("from the server", document.getElementById(describedBy).textContent);
 
       grid.resetCellErrors();
-      this.assertFalse(pane.getChildAtPosition(2, 1).hasState("invalid"));
+      qx.ui.core.queue.Manager.flush();
+      this.assertFalse(cell.hasState("invalid"));
+      this.assertNull(cell.getContentElement().getDomElement().getAttribute("aria-describedby"));
+      this.assertNull(document.getElementById(describedBy));
+    },
+
+    testAriaStates() {
+      let grid = this.__grid;
+      let pane = grid.getQxObject("widgetPane");
+      const attribute = (widget, name) => widget.getContentElement().getDomElement().getAttribute(name);
+      const rowWidget = row => grid.getQxObject("oddEvenRows")._getChildren().find(child => child.getUserData("qxl.datagrid.cellData")?.row === row);
+
+      // with row selection, the rows carry aria-selected, not the cells
+      grid.setFocusedPosition(1, 1);
+      grid.getSelectionManager().selectAt(grid.getFocusedPosition(), "move");
+      grid.updateWidgets();
+      qx.ui.core.queue.Manager.flush();
+      this.assertEquals("true", attribute(rowWidget(1), "aria-selected"));
+      this.assertEquals("false", attribute(rowWidget(2), "aria-selected"));
+      this.assertNull(attribute(pane.getChildAtPosition(1, 1), "aria-selected"));
+      grid.getSelectionManager().setSelectionStyle("cell");
+      grid.updateWidgets();
+      qx.ui.core.queue.Manager.flush();
+      this.assertEquals("true", attribute(pane.getChildAtPosition(1, 1), "aria-selected"));
+      this.assertNull(attribute(rowWidget(1), "aria-selected"));
+
+      // a locked column, and the whole grid without editing
+      grid.getColumns().getColumn(2).setReadOnly(true);
+      qx.ui.core.queue.Manager.flush();
+      this.assertEquals("true", attribute(pane.getChildAtPosition(1, 2), "aria-readonly"));
+      this.assertNull(attribute(pane.getChildAtPosition(1, 1), "aria-readonly"));
+      this.assertNull(attribute(grid, "aria-readonly"));
+      grid.setEditable(false);
+      qx.ui.core.queue.Manager.flush();
+      this.assertEquals("true", attribute(grid, "aria-readonly"));
     }
   }
 });
