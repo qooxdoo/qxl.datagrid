@@ -355,11 +355,14 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       paneLayers.setWidth(paneLayersSize.width);
       paneLayers.setHeight(paneLayersSize.height);
 
+      // scroll bars which are not overlaid take space from the visible part of the pane
       let scrollbarX = this.getChildControl("scrollbar-x");
-      scrollbarX.setMaximum(Math.max(0, paneLayersSize.width + fixedColumnsSize.width - thisSize.width));
-
       let scrollbarY = this.getChildControl("scrollbar-y");
-      scrollbarY.setMaximum(Math.max(0, paneLayersSize.height + headerSize.height - thisSize.height));
+      let overlaid = qx.core.Environment.get("os.scrollBarOverlayed");
+      let viewWidth = thisSize.width - (!overlaid && scrollbarY.isVisible() ? scrollbarY.getSizeHint().width : 0);
+      let viewHeight = thisSize.height - (!overlaid && scrollbarX.isVisible() ? scrollbarX.getSizeHint().height : 0);
+      scrollbarX.setMaximum(Math.max(0, paneLayersSize.width + fixedColumnsSize.width - viewWidth));
+      scrollbarY.setMaximum(Math.max(0, paneLayersSize.height + headerSize.height - viewHeight));
 
       this._updateScrollPositions();
     },
