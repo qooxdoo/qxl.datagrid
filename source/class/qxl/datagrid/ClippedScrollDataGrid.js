@@ -306,6 +306,37 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       }
     },
 
+    /**
+     * The clipped grid lays out all rows, so a page is the rows around the focused one which fit into
+     * the visible height (from the focused row downwards, near the end upwards), less one, like in
+     * `qx.ui.table`
+     *
+     * @override
+     */
+    _getPageRowCount() {
+      let sizes = this.getSizeCalculator().getSizes();
+      let viewBounds = this.getQxObject("dataPane").getBounds();
+      if (!sizes || !viewBounds) {
+        return 1;
+      }
+      let viewHeight = viewBounds.height - this.getQxObject("header").getSizeHint().height;
+      let dataRows = sizes.rows.filter(rowData => rowData.rowIndex >= 0);
+      let heights = dataRows.map(rowData => rowData.height);
+      let focusedRow = this.getFocusedPosition()?.getRow() ?? 0;
+      let first = dataRows.filter(rowData => rowData.rowIndex < focusedRow).length;
+      let ordered = heights.slice(first).concat(heights.slice(0, first).reverse());
+      let count = 0;
+      let height = 0;
+      for (let rowHeight of ordered) {
+        height += rowHeight;
+        if (height > viewHeight) {
+          break;
+        }
+        count++;
+      }
+      return Math.max(1, count - 1);
+    },
+
     _updateScrollbarVisibility() {
       if (this.__inUpdateScrollbarVisibility) {
         return;

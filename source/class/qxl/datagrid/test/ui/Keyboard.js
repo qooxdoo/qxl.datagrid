@@ -174,6 +174,13 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       this.assertEquals(0, grid.getChildControl("scrollbar-y").getPosition());
       this.assertEquals(0, grid.getChildControl("scrollbar-x").getPosition());
 
+      // Page Down moves by the rows on display, not by all rows the clipped grid lays out
+      let visibleRows = Math.floor((viewBounds.height - headerHeight) / cellBounds.height);
+      qxl.datagrid.test.util.InputHelper.press("PageDown");
+      this.assertEquals(visibleRows - 1, grid.getFocusedPosition().getRow());
+      qxl.datagrid.test.util.InputHelper.press("End", { ctrl: true });
+      qxl.datagrid.test.util.InputHelper.press("PageUp");
+      this.assertEquals(39 - (visibleRows - 1), grid.getFocusedPosition().getRow());
     }
   }
 });
