@@ -34,7 +34,11 @@ qx.Class.define("qxl.datagrid.column.NumberColumn", {
   },
 
   properties: {
-    /** Format for display and editing; null for 2 decimal places in the format of the current locale */
+    /**
+     * Format for display and editing; null for 2 decimal places in the format of the current locale.
+     * The cells are shown with an `Intl.NumberFormat` of the same settings (see `_formatForDisplay`),
+     * so the separators come from the browser.
+     */
     numberFormat: {
       init: null,
       nullable: true,
@@ -64,9 +68,10 @@ qx.Class.define("qxl.datagrid.column.NumberColumn", {
     },
 
     /**
-     * Formats a value for the cell. Without `numberFormat` this uses a cached `Intl.NumberFormat`,
-     * because `qx.util.format.NumberFormat.format` looks up the locale on every call, which is
-     * noticeable when hundreds of cells are bound while scrolling.
+     * Formats a value for the cell with an `Intl.NumberFormat` which has the settings of the number
+     * format, because `qx.util.format.NumberFormat.format` looks up the separators of the locale on
+     * every call (about 10 µs), which is noticeable when hundreds of cells are bound while scrolling.
+     * Only a format with `maximumIntegerDigits`, which `Intl` cannot express, is used directly.
      *
      * @param {Number?} value
      * @return {String}
@@ -75,22 +80,52 @@ qx.Class.define("qxl.datagrid.column.NumberColumn", {
       if (value === null || value === undefined || value === "") {
         return "";
       }
-      if (this.getNumberFormat()) {
-        return this.getNumberFormat().format(value);
+      let format = this.__getFormat();
+      let intl = this.__getIntlFormat(format);
+      if (!intl) {
+        return format.format(value);
       }
-      let locale = qx.locale.Manager.getInstance().getLocale().replace("_", "-");
-      if (this.__displayLocale !== locale) {
-        this.__displayLocale = locale;
-        this.__displayFormat = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
-      return this.__displayFormat.format(value);
+      return (format.getPrefix() || "") + intl.format(value) + (format.getPostfix() || "");
     },
 
-    /** @type {String?} locale of `__displayFormat` */
-    __displayLocale: null,
+    /** @type {Object?} `{format, settings, intl}`, the cached `Intl.NumberFormat` and what it was made of */
+    __intlCache: null,
 
-    /** @type {Intl.NumberFormat?} cached format for the cells */
-    __displayFormat: null,
+    /**
+     * Returns an `Intl.NumberFormat` with the settings of a number format; it is cached and made anew
+     * when a setting has changed, since `qx.util.format.NumberFormat` fires no event for most of them
+     *
+     * @param {qx.util.format.NumberFormat} format
+     * @return {Intl.NumberFormat?} null if `Intl` cannot express the settings
+     */
+    __getIntlFormat(format) {
+      let settings = [
+        format.getLocale() || qx.locale.Manager.getInstance().getLocale(),
+        format.getMinimumIntegerDigits(),
+        format.getMaximumIntegerDigits(),
+        format.getMinimumFractionDigits(),
+        format.getMaximumFractionDigits(),
+        format.getGroupingUsed()
+      ];
+      let cache = this.__intlCache;
+      if (cache && cache.format === format && settings.every((setting, i) => setting === cache.settings[i])) {
+        return cache.intl;
+      }
+      let [locale, minimumIntegerDigits, maximumIntegerDigits, minimumFractionDigits, maximumFractionDigits, groupingUsed] = settings;
+      let intl = null;
+      if (maximumIntegerDigits === null) {
+        // without a maximum, qx shows all places of the number; Intl needs a limit
+        let maximum = maximumFractionDigits ?? Math.max(minimumFractionDigits, 15);
+        intl = new Intl.NumberFormat(locale.replace("_", "-"), {
+          minimumIntegerDigits: Math.max(1, minimumIntegerDigits),
+          minimumFractionDigits: Math.min(minimumFractionDigits, maximum),
+          maximumFractionDigits: maximum,
+          useGrouping: groupingUsed
+        });
+      }
+      this.__intlCache = { format, settings, intl };
+      return intl;
+    },
 
     /**
      * @override
