@@ -68,6 +68,19 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
       nullable: true,
       transform: "__transformFocused",
       event: "changeFocused"
+    },
+
+    /**
+     * The focused cell, as row and column in the data source; `focused` follows with the model at
+     * this position. A cell needs a position because all cells of a row can share one model (eg with
+     * `ArrayDataSource`). Set a new `Position` object to change it, the object is not watched.
+     */
+    focusedPosition: {
+      init: null,
+      nullable: true,
+      check: "qxl.datagrid.source.Position",
+      apply: "_applyFocusedPosition",
+      event: "changeFocusedPosition"
     }
   },
 
@@ -92,6 +105,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * @param oldValue
      */
     _applyDataSource(value, oldValue) {
+      this.setFocusedPosition(null);
       if (oldValue) {
         oldValue.removeListener("changeSize", this.__onDataSourceChange, this);
       }
@@ -116,6 +130,44 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
         });
       }
       this.__selection.replace(newSelection);
+      this.__updateFocusedPosition();
+    },
+
+    /**
+     * Apply for `focusedPosition`
+     *
+     * @param {qxl.datagrid.source.Position?} value
+     */
+    _applyFocusedPosition(value) {
+      let dataSource = this.getDataSource();
+      this.setFocused(value && dataSource ? dataSource.getModelForPosition(value) || null : null);
+    },
+
+    /**
+     * Keeps the focused cell on its model after rows were added or removed; without a model there, the
+     * position is limited to the size of the data source
+     */
+    __updateFocusedPosition() {
+      let position = this.getFocusedPosition();
+      let dataSource = this.getDataSource();
+      if (!position || !dataSource) {
+        return;
+      }
+      let size = dataSource.getSize();
+      let focused = this.getFocused();
+      let row = position.getRow();
+      if (focused && dataSource.isModelValid(focused)) {
+        row = dataSource.getPositionOfModel(focused).getRow();
+      }
+      row = Math.min(row, size.getRow() - 1);
+      if (row < 0) {
+        this.setFocusedPosition(null);
+      } else if (row !== position.getRow()) {
+        this.setFocusedPosition(new qxl.datagrid.source.Position(row, position.getColumn()));
+      } else {
+        // the model at the same row may have been replaced
+        this._applyFocusedPosition(position);
+      }
     },
 
     /**
@@ -160,7 +212,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * @param value
      */
     __transformFocused(value) {
-      if (this.getSelectionStyle() === "row") {
+      if (value && this.getDataSource() && this.getSelectionStyle() === "row") {
         value = this.__forceRowModel(value);
       }
       return value;

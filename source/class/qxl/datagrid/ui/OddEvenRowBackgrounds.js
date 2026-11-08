@@ -64,6 +64,43 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
     /** @type{String} the appearance to set on each widget */
     __widgetAppearance: null,
 
+    /** @type{Function?} `(row, column) => String`, the DOM id of a cell, see `setCellIdFunction` */
+    __cellIdFunction: null,
+
+    /**
+     * Sets how to get the DOM id of a cell, so that each row can own its cells for screen readers
+     * (`aria-owns`); the cells are not children of the row widgets in the DOM
+     *
+     * @param {Function?} fn `(row, column) => String`, eg `qxl.datagrid.ui.WidgetPane#getCellId`
+     */
+    setCellIdFunction(fn) {
+      this.__cellIdFunction = fn;
+    },
+
+    /**
+     * Sets role, index and owned cells of a row widget; only writes the attributes when the row or
+     * the columns on display have changed
+     *
+     * @param {qx.ui.core.Widget} widget the row widget
+     * @param {Integer} row row in the data source
+     * @param {Object[]} columns the columns on display (`ColumnData` of `GridSizeCalculator`)
+     * @param {Integer} headerRowCount number of header rows, which come first in `aria-rowindex`
+     */
+    __setRowAria(widget, row, columns, headerRowCount) {
+      if (!this.__cellIdFunction) {
+        return;
+      }
+      let key = row + ":" + (columns[0]?.columnIndex ?? 0) + ":" + columns.length;
+      if (widget.getUserData("qxl.datagrid.ariaKey") === key) {
+        return;
+      }
+      widget.setUserData("qxl.datagrid.ariaKey", key);
+      let element = widget.getContentElement();
+      element.setAttribute("role", "row");
+      element.setAttribute("aria-rowindex", row + headerRowCount + 1);
+      element.setAttribute("aria-owns", columns.map(column => this.__cellIdFunction(row, column.columnIndex)).join(" "));
+    },
+
     /**
      * Called to update the widgets and synchronise the sizes
      */
@@ -132,6 +169,7 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
             row: rowSizeData.rowIndex
           });
         }
+        this.__setRowAria(child, rowSizeData.rowIndex, sizesData.columns, styling.getNumHeaderRows());
 
         let isSelected = false;
         let isFocused = false;

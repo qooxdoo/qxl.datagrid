@@ -30,6 +30,7 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
     this.__sizeCalculator = sizeCalculator;
     this.__widgetFactory = widgetFactory;
     this._setLayout(new qxl.datagrid.ui.layout.Fixed());
+    this.getContentElement().setAttribute("role", "row");
   },
 
   properties: {
@@ -135,6 +136,8 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
             });
             this._add(child);
             this.__widgetFactory.bindWidget(child);
+            child.getContentElement().setAttribute("role", "columnheader");
+            child.getContentElement().setAttribute("aria-colindex", columnSizeData.columnIndex + 1);
           }
 
           let callbackArguments = [null, child, currentRelativePosition, currentAbsolutePosition];

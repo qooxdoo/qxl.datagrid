@@ -279,6 +279,33 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       this.scrollToY(selectedBounds.top);
     },
 
+    /**
+     * Scrolls only as far as needed to show the cell completely
+     *
+     * @override
+     */
+    scrollToPosition(row, column) {
+      let cellBounds = this.getQxObject("widgetPane").getChildAtPosition(row, column)?.getBounds();
+      let viewBounds = this.getQxObject("dataPane").getBounds();
+      if (!cellBounds || !viewBounds) {
+        return;
+      }
+      let viewHeight = viewBounds.height - this.getQxObject("header").getSizeHint().height;
+      let viewWidth = viewBounds.width - this.getQxObject("fixedColumns").getSizeHint().width;
+      let scrollY = this.getChildControl("scrollbar-y").getPosition();
+      let scrollX = this.getChildControl("scrollbar-x").getPosition();
+      if (cellBounds.top < scrollY) {
+        this.scrollToY(cellBounds.top);
+      } else if (cellBounds.top + cellBounds.height > scrollY + viewHeight) {
+        this.scrollToY(cellBounds.top + cellBounds.height - viewHeight);
+      }
+      if (cellBounds.left < scrollX) {
+        this.scrollToX(cellBounds.left);
+      } else if (cellBounds.left + cellBounds.width > scrollX + viewWidth) {
+        this.scrollToX(cellBounds.left + cellBounds.width - viewWidth);
+      }
+    },
+
     _updateScrollbarVisibility() {
       if (this.__inUpdateScrollbarVisibility) {
         return;

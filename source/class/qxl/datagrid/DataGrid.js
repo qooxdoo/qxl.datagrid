@@ -50,6 +50,13 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     this.getQxObject("widgetPane").addListener("modelDoubleTap", evt => this.fireDataEvent("modelDoubleTap", evt.getData()));
     this.getQxObject("widgetPane").addListener("modelTap", evt => this.fireDataEvent("modelTap", evt.getData()));
+
+    // the DOM focus stays on the grid, screen readers follow the focused cell via aria-activedescendant
+    this.getContentElement().setAttribute("role", "grid");
+    this.getQxObject("oddEvenRows").setCellIdFunction((row, column) => this.getQxObject("widgetPane").getCellId(row, column));
+    this.__selectionManager.addListener("changeFocusedPosition", () => this.__updateActiveDescendant());
+    this.addListener("keypress", this._onKeyPress, this);
+    this.addListener("focus", this.__onFocus, this);
   },
 
   properties: {
@@ -72,6 +79,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     /** @override */
     appearance: {
       init: "qxl-datagrid",
+      refine: true
+    },
+
+    /** @override the grid takes the keyboard focus and moves it between its cells */
+    focusable: {
+      init: true,
       refine: true
     },
 
@@ -253,9 +266,126 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
     },
 
+    /**
+     * Called after the widget pane has been updated
+     */
     onPaneUpdated() {
       this.scheduleLayoutUpdate();
       this._updatingPromise = null;
+      this.__updateGridAria();
+      this.__updateActiveDescendant();
+    },
+
+    /**
+     * Sets the number of rows and columns of the whole data source for screen readers, including the
+     * rows which are not on display
+     */
+    __updateGridAria() {
+      let dataSource = this.getDataSource();
+      let columns = this.getColumns();
+      if (!dataSource || !columns) {
+        return;
+      }
+      let element = this.getContentElement();
+      element.setAttribute("aria-rowcount", dataSource.getSize().getRow() + this.getStyling().getNumHeaderRows());
+      element.setAttribute("aria-colcount", columns.getLength());
+      element.setAttribute("aria-multiselectable", ["multi", "additive"].includes(this.__selectionManager.getSelectionMode()));
+    },
+
+    /**
+     * Points `aria-activedescendant` to the focused cell, if it is on display
+     */
+    __updateActiveDescendant() {
+      let position = this.__selectionManager.getFocusedPosition();
+      let pane = this.getQxObject("widgetPane");
+      let cellOnDisplay = position && pane.getChildAtPosition(position.getRow(), position.getColumn());
+      this.getContentElement().setAttribute("aria-activedescendant", cellOnDisplay ? pane.getCellId(position.getRow(), position.getColumn()) : null);
+    },
+
+    /**
+     * Returns the focused cell
+     *
+     * @return {qxl.datagrid.source.Position?} row and column in the data source
+     */
+    getFocusedPosition() {
+      return this.__selectionManager.getFocusedPosition();
+    },
+
+    /**
+     * Moves the keyboard focus to a cell and scrolls it into view
+     *
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     */
+    setFocusedPosition(row, column) {
+      this.__selectionManager.setFocusedPosition(new qxl.datagrid.source.Position(row, column));
+      this.scrollToPosition(row, column);
+    },
+
+    /**
+     * Scrolls the grid so that the cell is on display; implemented by the scrolling grids
+     *
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     */
+    scrollToPosition(row, column) {},
+
+    /**
+     * Event handler for `focus`: without a focused cell, the first cell on display gets the focus
+     */
+    __onFocus() {
+      let sizes = this.__sizeCalculator.getSizes();
+      let dataSource = this.getDataSource();
+      if (this.getFocusedPosition() || !sizes || !dataSource || dataSource.getSize().getRow() == 0) {
+        return;
+      }
+      let row = sizes.rows.find(rowData => rowData.rowIndex >= 0)?.rowIndex ?? 0;
+      let column = sizes.columns[0]?.columnIndex ?? 0;
+      this.__selectionManager.setFocusedPosition(new qxl.datagrid.source.Position(row, column));
+    },
+
+    /**
+     * Event handler for `keypress`: moves the focus between the cells
+     *
+     * @param {qx.event.type.KeySequence} evt
+     */
+    _onKeyPress(evt) {
+      let dataSource = this.getDataSource();
+      let columns = this.getColumns();
+      if (!dataSource || !columns || dataSource.getSize().getRow() == 0) {
+        return;
+      }
+      let position = this.getFocusedPosition();
+      let modifiers = { shift: evt.isShiftPressed(), ctrl: evt.isCtrlOrCommandPressed() };
+      let target = qxl.datagrid.DataGrid.computeFocusMove(
+        evt.getKeyIdentifier(),
+        modifiers,
+        position ? { row: position.getRow(), column: position.getColumn() } : null,
+        dataSource.getSize().getRow(),
+        columns.getLength(),
+        this._getPageRowCount()
+      );
+      if (target === undefined) {
+        return;
+      }
+      if (target === null) {
+        // Tab on the first or last cell leaves the grid, the focus handler moves on
+        return;
+      }
+      evt.preventDefault();
+      evt.stopPropagation();
+      this.setFocusedPosition(target.row, target.column);
+    },
+
+    /**
+     * Returns how many rows Page Up and Page Down move, ie the rows fully on display
+     *
+     * @return {Integer} number of rows, at least 1
+     */
+    _getPageRowCount() {
+      let sizes = this.__sizeCalculator.getSizes();
+      let dataRows = sizes ? sizes.rows.filter(rowData => rowData.rowIndex >= 0).length : 1;
+      return Math.max(1, dataRows - 1);
     },
 
     /**
@@ -426,6 +556,60 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      */
     getDataSourceSize() {
       return this.getDataSource().getSize();
+    }
+  },
+
+  statics: {
+    /**
+     * Computes where a key moves the focus to
+     *
+     * @param {String} key key identifier, eg "Down", "Tab", "PageUp"
+     * @param {{shift: Boolean, ctrl: Boolean}} modifiers pressed modifier keys
+     * @param {{row: Integer, column: Integer}?} position the focused cell, null if there is none
+     * @param {Integer} rowCount number of rows in the data source
+     * @param {Integer} columnCount number of columns
+     * @param {Integer} pageRows how many rows Page Up and Page Down move
+     * @return {{row: Integer, column: Integer}|null|undefined} the cell to focus; null if the focus
+     *  leaves the grid (Tab on the last or Shift+Tab on the first cell); undefined if the key does not
+     *  move the focus
+     */
+    computeFocusMove(key, modifiers, position, rowCount, columnCount, pageRows) {
+      const clamp = (value, max) => Math.max(0, Math.min(max - 1, value));
+      if (!position) {
+        return ["Up", "Down", "Left", "Right", "Home", "End", "PageUp", "PageDown"].includes(key) ? { row: 0, column: 0 } : undefined;
+      }
+      let { row, column } = position;
+      switch (key) {
+        case "Up":
+          return { row: clamp(row - 1, rowCount), column };
+        case "Down":
+          return { row: clamp(row + 1, rowCount), column };
+        case "Left":
+          return { row, column: clamp(column - 1, columnCount) };
+        case "Right":
+          return { row, column: clamp(column + 1, columnCount) };
+        case "PageUp":
+          return { row: clamp(row - pageRows, rowCount), column };
+        case "PageDown":
+          return { row: clamp(row + pageRows, rowCount), column };
+        case "Home":
+          return modifiers.ctrl ? { row: 0, column: 0 } : { row, column: 0 };
+        case "End":
+          return modifiers.ctrl ? { row: rowCount - 1, column: columnCount - 1 } : { row, column: columnCount - 1 };
+        case "Tab":
+          if (modifiers.shift) {
+            if (column > 0) {
+              return { row, column: column - 1 };
+            }
+            return row > 0 ? { row: row - 1, column: columnCount - 1 } : null;
+          }
+          if (column < columnCount - 1) {
+            return { row, column: column + 1 };
+          }
+          return row < rowCount - 1 ? { row: row + 1, column: 0 } : null;
+        default:
+          return undefined;
+      }
     }
   }
 });

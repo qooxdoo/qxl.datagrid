@@ -322,6 +322,74 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
     },
 
     /**
+     * Changes `startRowIndex` and `startColumnIndex` only as far as needed to show the cell completely.
+     * Widths of columns which are not on display are taken from their `width` or `minWidth`, so a flex
+     * column may end up partly visible.
+     *
+     * @override
+     */
+    scrollToPosition(row, column) {
+      let calculator = this.getSizeCalculator();
+      let sizes = calculator.getSizes();
+      if (!sizes) {
+        return;
+      }
+      let available = calculator.getAvailableSize();
+      let styling = this.getStyling();
+      let verticalSpacing = styling.getVerticalSpacing();
+      let horizontalSpacing = styling.getHorizontalSpacing();
+
+      // header rows take their space first, then count the data rows which are fully on display
+      let usedHeight = 0;
+      sizes.rows.filter(rowData => rowData.rowIndex < 0).forEach(rowData => (usedHeight += rowData.height + verticalSpacing));
+      let dataRows = sizes.rows.filter(rowData => rowData.rowIndex >= 0);
+      let fullRows = 0;
+      for (let rowData of dataRows) {
+        usedHeight += rowData.height;
+        if (usedHeight > available.height) {
+          break;
+        }
+        usedHeight += verticalSpacing;
+        fullRows++;
+      }
+      fullRows = Math.max(1, fullRows);
+      let firstRow = dataRows[0]?.rowIndex ?? this.getStartRowIndex();
+      if (row < firstRow) {
+        this.setStartRowIndex(row);
+      } else if (row >= firstRow + fullRows) {
+        this.setStartRowIndex(row - fullRows + 1);
+      }
+
+      let usedWidth = 0;
+      let fullColumns = 0;
+      for (let columnData of sizes.columns) {
+        usedWidth += columnData.width;
+        if (usedWidth > available.width) {
+          break;
+        }
+        usedWidth += horizontalSpacing;
+        fullColumns++;
+      }
+      let firstColumn = sizes.columns[0]?.columnIndex ?? 0;
+      if (column < firstColumn) {
+        this.setStartColumnIndex(column);
+      } else if (column >= firstColumn + Math.max(1, fullColumns)) {
+        // walk back from the target column for as long as the columns fit
+        const widthOf = index => {
+          let columnObject = this.getColumns().getColumn(index);
+          return columnObject.getWidth() ?? columnObject.getMinWidth() ?? styling.getMinColumnWidth() ?? 0;
+        };
+        let start = column;
+        let width = widthOf(column);
+        while (start > 0 && width + horizontalSpacing + widthOf(start - 1) <= available.width) {
+          width += horizontalSpacing + widthOf(start - 1);
+          start--;
+        }
+        this.setStartColumnIndex(start);
+      }
+    },
+
+    /**
      * Handles changes to the visibility of either scrollbar
      *
      * @param {String} side either "x" or "y"

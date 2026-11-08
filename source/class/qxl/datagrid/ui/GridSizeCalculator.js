@@ -232,6 +232,15 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     },
 
     /**
+     * Gets the space available for rows and columns, including the header rows
+     *
+     * @returns {{ width: Integer, height: Integer }} the size as last passed to `setAvailableSize`
+     */
+    getAvailableSize() {
+      return { width: this._width, height: this._height };
+    },
+
+    /**
      * Gets the left and top initial offsets
      *
      * @returns {{ left: Integer, top: Integer }} the offsets

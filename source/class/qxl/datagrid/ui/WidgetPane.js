@@ -37,11 +37,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         this.updateWidgets();
       }
     });
-    selectionManager.addListener("changeFocused", () => {
-      if (selectionManager.getSelectionStyle() == "cell") {
-        this.updateWidgets();
-      }
-    });
+    selectionManager.addListener("changeFocusedPosition", evt => this.__updateFocusState(evt.getData(), evt.getOldData()));
     if (dataSource) {
       this.setDataSource(dataSource);
     }
@@ -89,7 +85,13 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     modelTap: "qx.event.type.Data",
 
     /** Fired when the user double clicks on a model item */
-    modelDoubleTap: "qx.event.type.Data"
+    modelDoubleTap: "qx.event.type.Data",
+
+    /** Fired when the user clicks on a cell, after the focus has moved there; data is `{row, column, model}` */
+    cellTap: "qx.event.type.Data",
+
+    /** Fired when the user double clicks on a cell; data is `{row, column, model}` */
+    cellDoubleTap: "qx.event.type.Data"
   },
 
   members: {
@@ -232,7 +234,10 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let gridStyleColSpanFn = styling.getColSpan();
       let selectionStyle = this.__selectionManager.getSelectionStyle();
       let cellSelection = selectionStyle == "cell" || selectionStyle == "area";
-      let focusedModel = this.__selectionManager.getFocused();
+      let focusedPosition = this.__selectionManager.getFocusedPosition();
+      let focusedRow = focusedPosition?.getRow() ?? -1;
+      let focusedColumn = focusedPosition?.getColumn() ?? -1;
+      let headerRowCount = styling.getNumHeaderRows();
 
       let currentRelativePosition = new qxl.datagrid.source.Position();
       let currentAbsolutePosition = new qxl.datagrid.source.Position();
@@ -281,6 +286,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
               colSpan: 1
             });
             this.__widgetFactory.bindWidget(child, model);
+            this.__setCellAria(child, rowSizeData.rowIndex, columnSizeData.columnIndex, headerRowCount);
           } else {
             model = this.__widgetFactory.getModelForWidget(child);
             this.__widgetFactory.updateState(child, model);
@@ -325,10 +331,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           }
 
           let isSelected = false;
-          let isFocused = false;
+          let isFocused = rowSizeData.rowIndex === focusedRow && columnSizeData.columnIndex === focusedColumn;
           if (cellSelection) {
             isSelected = this.__selectionManager.isSelected(model);
-            isFocused = focusedModel === model;
           } else {
             if (rowModel === undefined) {
               rowModel = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
@@ -470,26 +475,20 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
      * @param evt
      */
     __onTap(evt) {
-      let widget = qx.ui.core.Widget.getWidgetByElement(evt.getOriginalTarget());
-      let model = null;
-      while (widget && widget != this && !model) {
-        model = this.__widgetFactory.getModelForWidget(widget);
-        if (model) {
-          break;
-        }
-        widget = widget.getLayoutParent();
-      }
+      let cell = this.__getCellForEvent(evt);
+      let model = cell?.model;
       if (!model) {
         return;
       }
       let manager = this.__selectionManager;
       let style = manager.getSelectionStyle();
       let mode = manager.getSelectionMode();
+      let widgetPosition = new qxl.datagrid.source.Position(cell.row, cell.column);
+      manager.setFocusedPosition(widgetPosition);
 
       /**@type {Array<any>|qxl.datagrid.source.Range}*/
       let selection;
       if (style === "area") {
-        let widgetPosition = this.getDataSource().getPositionOfModel(model);
         if (evt.getNativeEvent().shiftKey) {
           let lastSelection = manager.getSelectionRange();
           if (!(lastSelection instanceof qxl.datagrid.source.Range)) {
@@ -528,30 +527,85 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             }
           }
         }
-        this.__selectionManager.setFocused(model);
       }
       this.__selectionManager.setSelection(selection);
       this.fireDataEvent("modelTap", model);
+      this.fireDataEvent("cellTap", cell);
     },
 
     /**
-     * Event handler for double taps (starts editing)
+     * Event handler for double taps
      *
-     * @param {*} evt
+     * @param {qx.event.type.Pointer} evt
      */
     __onDoubleTap(evt) {
+      let cell = this.__getCellForEvent(evt);
+      if (!cell?.model) {
+        return;
+      }
+      this.fireDataEvent("modelDoubleTap", cell.model);
+      this.fireDataEvent("cellDoubleTap", cell);
+    },
+
+    /**
+     * Finds the cell of the widget the pointer event happened on
+     *
+     * @param {qx.event.type.Pointer} evt
+     * @return {Object?} the cell as `{row, column, model}`, null if not on a cell
+     */
+    __getCellForEvent(evt) {
       let widget = qx.ui.core.Widget.getWidgetByElement(evt.getOriginalTarget());
-      while (widget && widget.isAnonymous()) {
+      while (widget && widget.getLayoutParent() !== this) {
         widget = widget.getLayoutParent();
       }
-      if (!widget) {
-        return;
+      let cellData = widget?.getUserData("qxl.datagrid.cellData");
+      if (!cellData) {
+        return null;
       }
-      let model = this.__widgetFactory.getModelForWidget(widget);
-      if (!model) {
-        return;
+      return { row: cellData.row, column: cellData.column, model: this.__widgetFactory.getModelForWidget(widget) };
+    },
+
+    /**
+     * Moves the state `focused` from the previous to the new focused cell, without updating all cells
+     *
+     * @param {qxl.datagrid.source.Position?} value the focused cell
+     * @param {qxl.datagrid.source.Position?} oldValue the previously focused cell
+     */
+    __updateFocusState(value, oldValue) {
+      if (oldValue) {
+        this.getChildAtPosition(oldValue.getRow(), oldValue.getColumn())?.removeState("focused");
       }
-      this.fireDataEvent("modelDoubleTap", model);
+      if (value) {
+        this.getChildAtPosition(value.getRow(), value.getColumn())?.addState("focused");
+      }
+    },
+
+    /**
+     * Returns the DOM id of a cell, for ARIA attributes like `aria-activedescendant` and `aria-owns`;
+     * the element only exists while the cell is on display
+     *
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     * @return {String} the id
+     */
+    getCellId(row, column) {
+      return "qxl-datagrid-" + this.toHashCode() + "-" + row + "-" + column;
+    },
+
+    /**
+     * Sets the ARIA role, id and indexes of a cell widget which has been created or reused for a cell
+     *
+     * @param {qx.ui.core.Widget} widget
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     * @param {Integer} headerRowCount number of header rows, which come first in `aria-rowindex`
+     */
+    __setCellAria(widget, row, column, headerRowCount) {
+      let element = widget.getContentElement();
+      element.setAttribute("role", "gridcell");
+      element.setAttribute("id", this.getCellId(row, column));
+      element.setAttribute("aria-rowindex", row + headerRowCount + 1);
+      element.setAttribute("aria-colindex", column + 1);
     }
   },
 
