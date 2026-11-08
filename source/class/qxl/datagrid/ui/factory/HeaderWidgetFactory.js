@@ -52,6 +52,7 @@ qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
       bindings.add(column, column.bind("caption", widget, "label"));
       bindings.add(column, column.bind("sortable", widget, "sortable"));
       bindings.add(widget, widget.addListener("sortRequest", evt => this.__onSortRequest(column, evt.getData().add)), "listener");
+      bindings.add(widget, widget.addListener("resizeRequest", evt => column.resize(evt.getData().width)), "listener");
       let columns = this.getColumns();
       const updateRank = () => {
         let sortColumns = columns.getSortColumns();

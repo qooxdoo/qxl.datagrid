@@ -2,9 +2,9 @@
  * The widget for the column header cell in the datagrid.
  * Shows the column's custom icon, label, sort icon and, with several sorted columns, the rank.
  *
- * A click sorts the column (Shift+click adds it to the sorted columns). In the grid,
- * `HeaderWidgetFactory` handles it via the event `sortRequest`; a cell on its own switches its
- * `sortOrder` itself.
+ * A click sorts the column (Shift+click adds it to the sorted columns), dragging the right edge
+ * changes its width. In the grid, `HeaderWidgetFactory` handles both via the events `sortRequest`
+ * and `resizeRequest`; a cell on its own switches its `sortOrder` itself.
  * Changes its appearance based on the sort order of the column.
  */
 qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
@@ -23,6 +23,8 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
     this.bind("icon", this.getChildControl("icon"), "source");
     this.bind("label", this.getChildControl("label"), "value");
 
+    this.addListener("pointerdown", this._onPointerDown);
+    this.addListener("pointermove", this._onPointerMove);
     this.addListener("pointerup", this._onPointerUp);
 
     this.addListener("execute", e => {
@@ -43,7 +45,10 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
 
   events: {
     /** Fired when the user wants to sort by this column (click, Enter); data is `{add}`, true with Shift */
-    sortRequest: "qx.event.type.Data"
+    sortRequest: "qx.event.type.Data",
+
+    /** Fired while the user drags the right edge; data is `{width}`, the wanted width in pixels */
+    resizeRequest: "qx.event.type.Data"
   },
 
   properties: {
@@ -116,14 +121,61 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
     /** @type {Boolean} whether Shift was pressed with the click which executes */
     __shift: false,
 
+    /** @type {Object?} while dragging the right edge: `{startX, startWidth}`; the pointer up then does not sort */
+    __resizing: null,
+
     /**
-     * Listener for "pointerup" event: sorts the column
+     * Whether a pointer event is on the right edge, where dragging changes the width
+     *
+     * @param {qx.event.type.Pointer} e
+     * @return {Boolean}
+     */
+    __isOnResizeEdge(e) {
+      let location = this.getContentLocation();
+      return !!location && this.hasListener("resizeRequest") && location.right - e.getDocumentLeft() <= qxl.datagrid.ui.ColumnHeaderCell.RESIZE_EDGE;
+    },
+
+    /**
+     * Listener for "pointerdown": starts dragging the right edge
+     *
+     * @param {qx.event.type.Pointer} e
+     */
+    _onPointerDown(e) {
+      if (!e.isLeftPressed() || !this.__isOnResizeEdge(e)) {
+        return;
+      }
+      this.__resizing = { startX: e.getDocumentLeft(), startWidth: this.getBounds()?.width ?? 0 };
+      this.capture();
+      e.stopPropagation();
+    },
+
+    /**
+     * Listener for "pointermove": changes the width while dragging, otherwise shows the resize
+     * cursor on the right edge
+     *
+     * @param {qx.event.type.Pointer} e
+     */
+    _onPointerMove(e) {
+      let resizing = this.__resizing;
+      if (resizing) {
+        this.fireDataEvent("resizeRequest", { width: Math.max(0, resizing.startWidth + e.getDocumentLeft() - resizing.startX) });
+        return;
+      }
+      this.setCursor(this.__isOnResizeEdge(e) ? "col-resize" : null);
+    },
+
+    /**
+     * Listener for "pointerup" event: ends dragging, otherwise sorts the column
      *
      * @param {qx.event.type.Pointer} e
      */
     _onPointerUp(e) {
       this.releaseCapture();
       e.stopPropagation();
+      if (this.__resizing) {
+        this.__resizing = null;
+        return;
+      }
       this.__shift = e.isShiftPressed();
       try {
         this.execute();
@@ -227,5 +279,10 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
 
       return super._createChildControlImpl(id);
     }
+  },
+
+  statics: {
+    /** @type {Integer} width in pixels of the right edge where dragging changes the width */
+    RESIZE_EDGE: 5
   }
 });

@@ -109,6 +109,9 @@ qx.Class.define("qxl.datagrid.column.Columns", {
           column: column
         });
         column.removeListener("changeSortOrder", this.__onColumnSortOrderChange, this);
+        for (let event of qxl.datagrid.column.Columns.SIZE_EVENTS) {
+          column.removeListener(event, this.__onColumnSizeChange, this);
+        }
         if (qx.lang.Array.remove(this.__sortColumns, column)) {
           this.__fireChangeSort(column);
         }
@@ -116,7 +119,7 @@ qx.Class.define("qxl.datagrid.column.Columns", {
     },
 
     /**
-     * Listens to the sort order of a column which has been added
+     * Listens to the sort order and the width settings of a column which has been added
      *
      * @param {qxl.datagrid.column.Column} column
      * @param {Boolean} moved whether the column was in the list already
@@ -126,9 +129,21 @@ qx.Class.define("qxl.datagrid.column.Columns", {
         return;
       }
       column.addListener("changeSortOrder", this.__onColumnSortOrderChange, this);
+      for (let event of qxl.datagrid.column.Columns.SIZE_EVENTS) {
+        column.addListener(event, this.__onColumnSizeChange, this);
+      }
       if (column.getSortOrder() && !this.__sortColumns.includes(column)) {
         this.__sortColumns.push(column);
       }
+    },
+
+    /**
+     * Event handler for changes of the width settings of a column: the grid lays out again
+     *
+     * @param {qx.event.type.Data} evt
+     */
+    __onColumnSizeChange(evt) {
+      this.fireDataEvent("change", { type: "size", column: evt.getTarget() });
     },
 
     /**
@@ -391,6 +406,9 @@ qx.Class.define("qxl.datagrid.column.Columns", {
   },
 
   statics: {
+    /** @type {String[]} events of a column which change its width */
+    SIZE_EVENTS: ["changeWidth", "changeMinWidth", "changeMaxWidth", "changeFlex"],
+
     /** @type {Intl.Collator?} compares texts, made for the locale on first use */
     __collator: null,
 

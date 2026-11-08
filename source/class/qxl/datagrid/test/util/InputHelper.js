@@ -84,24 +84,59 @@ qx.Class.define("qxl.datagrid.test.util.InputHelper", {
      * qooxdoo's gesture handler turns them into `tap`, a second call within a short time into `dbltap`
      *
      * @param {qx.ui.core.Widget} widget a rendered widget
+     * @param {Object?} modifiers modifier keys held down, `{shift, ctrl}`
      */
-    tap(widget) {
+    tap(widget, modifiers) {
       let element = widget.getContentElement().getDomElement();
       let rect = element.getBoundingClientRect();
-      let init = {
+      let init = qxl.datagrid.test.util.InputHelper.__pointerInit(rect.left + rect.width / 2, rect.top + rect.height / 2, modifiers);
+      element.dispatchEvent(new PointerEvent("pointerdown", init));
+      element.dispatchEvent(new PointerEvent("pointerup", { ...init, buttons: 0 }));
+      qx.ui.core.queue.Manager.flush();
+    },
+
+    /**
+     * Drags with the mouse within a widget, from one horizontal position to another, with native
+     * pointer events, and flushes the qooxdoo queues
+     *
+     * @param {qx.ui.core.Widget} widget a rendered widget
+     * @param {Number} fromX start, in pixels from the left edge of the widget
+     * @param {Number} toX end, in pixels from the left edge of the widget
+     */
+    drag(widget, fromX, toX) {
+      const pointerInit = qxl.datagrid.test.util.InputHelper.__pointerInit;
+      let element = widget.getContentElement().getDomElement();
+      let rect = element.getBoundingClientRect();
+      let y = rect.top + rect.height / 2;
+      element.dispatchEvent(new PointerEvent("pointerdown", pointerInit(rect.left + fromX, y)));
+      element.dispatchEvent(new PointerEvent("pointermove", pointerInit(rect.left + (fromX + toX) / 2, y)));
+      element.dispatchEvent(new PointerEvent("pointermove", pointerInit(rect.left + toX, y)));
+      element.dispatchEvent(new PointerEvent("pointerup", { ...pointerInit(rect.left + toX, y), buttons: 0 }));
+      qx.ui.core.queue.Manager.flush();
+    },
+
+    /**
+     * Returns the init dictionary of a native pointer event with the left mouse button
+     *
+     * @param {Number} clientX
+     * @param {Number} clientY
+     * @param {Object?} modifiers modifier keys held down, `{shift, ctrl}`
+     * @return {Object}
+     */
+    __pointerInit(clientX, clientY, modifiers) {
+      return {
         bubbles: true,
         cancelable: true,
-        clientX: rect.left + rect.width / 2,
-        clientY: rect.top + rect.height / 2,
+        clientX,
+        clientY,
         pointerId: 1,
         pointerType: "mouse",
         isPrimary: true,
         button: 0,
-        buttons: 1
+        buttons: 1,
+        shiftKey: !!modifiers?.shift,
+        ctrlKey: !!modifiers?.ctrl
       };
-      element.dispatchEvent(new PointerEvent("pointerdown", init));
-      element.dispatchEvent(new PointerEvent("pointerup", { ...init, buttons: 0 }));
-      qx.ui.core.queue.Manager.flush();
     },
 
     /**

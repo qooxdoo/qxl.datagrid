@@ -421,6 +421,25 @@ qx.Class.define("qxl.datagrid.column.Column", {
     },
 
     /**
+     * Changes the width like the user does (dragging the header edge, Shift+Left/Right in the header):
+     * within `minWidth`/`maxWidth`, and a flexible column gets this fixed width, like in `qx.ui.table`.
+     * A column with `minWidth` equal to `maxWidth` keeps its width.
+     *
+     * @param {Number} width the wanted width in pixels
+     * @return {Boolean} true if the column can be resized
+     */
+    resize(width) {
+      let minWidth = this.getMinWidth() ?? 0;
+      let maxWidth = this.getMaxWidth() ?? Infinity;
+      if (minWidth == maxWidth) {
+        return false;
+      }
+      this.setFlex(0);
+      this.setWidth(Math.round(Math.min(maxWidth, Math.max(minWidth, width))));
+      return true;
+    },
+
+    /**
      * Returns the value a model is sorted by in this column, compared with
      * `qxl.datagrid.column.Columns.compareValues`; by default the value of the model
      *

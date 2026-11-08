@@ -196,6 +196,35 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       }
     },
 
+    async testHeaderByPointer() {
+      const helper = qxl.datagrid.test.util.InputHelper;
+      let grid = this.__grid;
+      let columns = grid.getColumns();
+      columns.toArray().forEach(column => column.setSortable(true));
+      const headerCell = column => grid.getQxObject("header")._getChildren().find(child => child.getUserData("qxl.datagrid.cellData")?.column === column);
+
+      // dragging the right edge changes the width, header and cells follow, and it does not sort
+      let cell = headerCell(1);
+      let width = cell.getBounds().width;
+      helper.drag(cell, width - 2, width + 28);
+      this.assertEquals(width + 30, columns.getColumn(1).getWidth());
+      this.assertNull(columns.getColumn(1).getSortOrder());
+      for (let i = 0; i < 20 && headerCell(1).getBounds().width != width + 30; i++) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        qx.ui.core.queue.Manager.flush();
+      }
+      this.assertEquals(width + 30, headerCell(1).getBounds().width);
+      this.assertEquals(width + 30, grid.getQxObject("widgetPane").getChildAtPosition(0, 1).getBounds().width);
+
+      // a click sorts, Shift+click adds a criterion
+      helper.tap(headerCell(1));
+      helper.tap(headerCell(2), { shift: true });
+      this.assertArrayEquals([columns.getColumn(1), columns.getColumn(2)], columns.getSortColumns());
+      helper.tap(headerCell(2));
+      this.assertArrayEquals([columns.getColumn(2)], columns.getSortColumns());
+      this.assertEquals("desc", columns.getColumn(2).getSortOrder());
+    },
+
     testClickFocusesCell() {
       let pane = this.__grid.getQxObject("widgetPane");
       qxl.datagrid.test.util.InputHelper.tap(pane.getChildAtPosition(3, 2));

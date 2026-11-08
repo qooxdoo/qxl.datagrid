@@ -295,7 +295,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     /**
-     * Event handler for changes in the columns array
+     * Event handler for changes in the columns array and of the widths of columns: the sizes are
+     * calculated again; a new width is shown at once, so that dragging a header edge follows smoothly
      *
      * @param {qx.event.type.Data} evt
      */
@@ -306,6 +307,10 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
       if (data.type == "add") {
         data.column.setDataGrid(this);
+      }
+      this.__sizeCalculator.invalidate();
+      if (data.type == "size") {
+        this.updateWidgets();
       }
       this.scheduleLayoutUpdate();
     },
