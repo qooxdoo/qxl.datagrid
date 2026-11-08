@@ -27,6 +27,18 @@
       "theme": "qxl.datagrid.demo.theme.tangible.Theme",
       "name": "qxl.datagrid",
       "bootPath": "source/boot"
+    },
+    {
+      "class": "qxl.testtapper.Application",
+      "name": "testtapper",
+      "theme": "qxl.datagrid.demo.theme.tangible.Theme",
+      "title": "qxl.datagrid Tests",
+      "default": false,
+      "deploy": false,
+      "environment": {
+        "qxl.testtapper.testNameSpace": "qxl.datagrid.test"
+      },
+      "include": ["qxl.datagrid.test.*"]
     }
   ]
 }
