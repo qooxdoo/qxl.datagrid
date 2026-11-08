@@ -181,12 +181,19 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
     /**
      * Whether the column is shown; a hidden column keeps its index, its values and errors and may stay
-     * sorted, it is just not laid out.
+     * sorted, it is just not laid out. The user switches it in the column menu of the grid.
      */
     visible: {
       init: true,
       check: "Boolean",
       event: "changeVisible"
+    },
+
+    /** Whether the user may hide the column in the column menu of the grid; in code `visible` still works */
+    hideable: {
+      init: true,
+      check: "Boolean",
+      event: "changeHideable"
     }
   },
 

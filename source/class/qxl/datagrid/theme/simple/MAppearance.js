@@ -29,6 +29,8 @@ qx.Theme.define("qxl.datagrid.theme.simple.MAppearance", {
     "qxl-datagrid/scrollbar-y": "scrollbar",
 
     "qxl-datagrid-header": "table-scroller/header",
+    // the button for the column menu looks like the one of qx.ui.table
+    "qxl-datagrid-column-button": "table/column-button",
     "qxl-datagrid-header-cell": {
       include: "widget",
       style(states) {

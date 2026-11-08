@@ -301,6 +301,46 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       this.assertEquals(1, widgetsOf(header, 1).length);
     },
 
+    testColumnMenu() {
+      const helper = qxl.datagrid.test.util.InputHelper;
+      let grid = this.__grid;
+      let columns = grid.getColumns();
+      const openMenu = () => qx.core.Init.getApplication().getRoot()._getChildren().find(child => child instanceof qx.ui.menu.Menu && child.isVisible());
+      columns.getColumn(0).setHideable(false);
+      grid.setColumnVisibilityButtonVisible(true);
+      qx.ui.core.queue.Manager.flush();
+
+      // the button opens a check box for each column the user may hide
+      helper.tap(grid.getQxObject("columnButton"));
+      let menu = openMenu();
+      this.assertNotNull(menu);
+      let items = menu.getChildren();
+      this.assertEquals(12, items.length, "the column which is not hideable is missing");
+      items[0].setValue(false);
+      this.assertFalse(columns.getColumn(1).getVisible());
+      menu.hide();
+
+      // the last shown column cannot be hidden; the menu key in the header opens the menu as well
+      columns.toArray().forEach((column, index) => column.setVisible(index == 5));
+      qx.ui.core.queue.Manager.flush();
+      grid.setFocusedPosition(0, 5);
+      helper.press("Up");
+      helper.press("Apps");
+      menu = openMenu();
+      this.assertNotNull(menu);
+      this.assertFalse(menu.getChildren()[4].getEnabled(), "the last shown column");
+      this.assertTrue(menu.getChildren()[5].getEnabled());
+      menu.hide();
+
+      // a right click on the header opens it at the pointer
+      let cell = grid.getQxObject("header").getCell(5).getContentElement().getDomElement();
+      let rect = cell.getBoundingClientRect();
+      cell.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: rect.left + 5, clientY: rect.top + 5, button: 2 }));
+      qx.ui.core.queue.Manager.flush();
+      this.assertNotNull(openMenu());
+      openMenu().hide();
+    },
+
     testClickFocusesCell() {
       let pane = this.__grid.getQxObject("widgetPane");
       qxl.datagrid.test.util.InputHelper.tap(pane.getChildAtPosition(3, 2));

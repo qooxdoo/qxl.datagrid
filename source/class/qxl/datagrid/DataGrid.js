@@ -68,6 +68,12 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     this.addListener("keydown", this.__onKeyDown, this);
     this.addListener("focus", this.__onFocus, this);
     // qooxdoo has no clipboard events; the browser sends them to the focused grid element
+    // a right click on the header opens the column menu at the pointer
+    this.getQxObject("header").addListener("contextmenu", evt => {
+      if (this.__openColumnMenu(null, evt)) {
+        evt.stop();
+      }
+    });
     this.__onClipboard = evt => this.__handleClipboard(evt);
     qx.bom.Event.addNativeListener(document, "copy", this.__onClipboard);
     qx.bom.Event.addNativeListener(document, "paste", this.__onClipboard);
@@ -187,6 +193,18 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       apply: "_applyCellStates"
     },
 
+    /**
+     * Whether a button at the right end of the header opens the column menu, where the user shows and
+     * hides columns (`Column.visible`, except columns with `hideable: false`), like in `qx.ui.table`.
+     * The same menu opens with a right click on the header and with the menu key in the header.
+     */
+    columnVisibilityButtonVisible: {
+      init: false,
+      check: "Boolean",
+      event: "changeColumnVisibilityButtonVisible",
+      apply: "_applyColumnVisibilityButtonVisible"
+    },
+
     widgetsContextMenu: {
       check: "qx.ui.menu.Menu",
       init: null,
@@ -198,7 +216,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
   objects: {
     dataPane() {
       var comp = new qx.ui.container.Composite(new qx.ui.layout.VBox());
-      comp.add(this.getQxObject("header"));
+      comp.add(this.getQxObject("headerArea"));
       var comp2 = new qx.ui.container.Composite(new qxl.datagrid.ui.layout.Layered());
       comp2.add(this.getQxObject("widgetPane"), { layer: 0 });
       comp2.add(this.getQxObject("oddEvenRows"), { layer: 1 });
@@ -226,6 +244,22 @@ qx.Class.define("qxl.datagrid.DataGrid", {
 
     header() {
       return new qxl.datagrid.ui.HeaderRows(this.__sizeCalculator, this.getQxObject("headerWidgetFactory"));
+    },
+
+    /** The header with the column button over its right end, in one place for all grids */
+    headerArea() {
+      let area = new qx.ui.container.Composite(new qx.ui.layout.Canvas());
+      area.add(this.getQxObject("header"), { edge: 0 });
+      area.add(this.getQxObject("columnButton"), { right: 0, top: 0, bottom: 0 });
+      return area;
+    },
+
+    /** Opens the column menu; shown with `columnVisibilityButtonVisible` */
+    columnButton() {
+      let button = new qx.ui.form.Button().set({ appearance: "qxl-datagrid-column-button", visibility: "excluded", width: 16 });
+      button.setAriaLabel(qx.locale.Manager.tr("Columns"));
+      button.addListener("execute", () => this.__openColumnMenu(button));
+      return button;
     },
 
     fixedColumns() {
@@ -454,6 +488,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         // the same moves as in the data, over hidden columns
         let target = qxl.datagrid.DataGrid.computeFocusMove(key, {}, { row: 0, column }, 1, columns.getVisibleIndexes(), 1);
         this.__setHeaderColumn(target.column);
+      } else if (key == "Apps" || (key == "F10" && shift)) {
+        this.__openColumnMenu(this.getQxObject("header").getCell(column));
       } else if (key == "Down") {
         this.__setHeaderColumn(null);
         this._moveFocusTo(0, column);
@@ -581,15 +617,78 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     __openContextMenu() {
       let position = this.getFocusedPosition();
       let cell = position && this.getQxObject("widgetPane").getChildAtPosition(position.getRow(), position.getColumn());
-      let menu = cell?.getContextMenu();
-      if (!menu) {
+      return this.__openMenuAt(cell, cell?.getContextMenu());
+    },
+
+    /**
+     * Opens a menu next to a widget, for the keyboard
+     *
+     * @param {qx.ui.core.Widget?} widget
+     * @param {qx.ui.menu.Menu?} menu
+     * @return {Boolean} true if a menu has been opened
+     */
+    __openMenuAt(widget, menu) {
+      if (!widget || !menu) {
         return false;
       }
-      // all cells share the menu, its opener is the last cell it was given to
-      menu.setOpener(cell);
-      menu.placeToWidget(cell, true);
+      // a menu shared by several widgets keeps the opener it was given last
+      menu.setOpener(widget);
+      menu.placeToWidget(widget, true);
       menu.show();
       return true;
+    },
+
+    /** @type {qx.ui.menu.Menu?} the column menu, made on first use */
+    __columnMenu: null,
+
+    /**
+     * Fills the column menu with a check box for each column the user may hide; the last shown
+     * column cannot be hidden. It is filled anew each time, so added and removed columns need no care.
+     *
+     * @return {qx.ui.menu.Menu?} null if no column may be hidden
+     */
+    __buildColumnMenu() {
+      let columns = this.getColumns().toArray().filter(column => column.getHideable());
+      if (!columns.length) {
+        return null;
+      }
+      let menu = (this.__columnMenu ??= new qx.ui.menu.Menu());
+      menu.removeAll().forEach(item => item.destroy());
+      let lastShown = this.getColumns().getVisibleIndexes().length == 1;
+      for (let column of columns) {
+        let item = new qx.ui.menu.CheckBox(column.getCaption() || column.getPath() || "").set({
+          value: column.getVisible(),
+          enabled: !(lastShown && column.getVisible())
+        });
+        item.addListener("changeValue", evt => column.setVisible(evt.getData()));
+        menu.add(item);
+      }
+      return menu;
+    },
+
+    /**
+     * Opens the column menu next to a widget (button, header cell) or at the pointer
+     *
+     * @param {qx.ui.core.Widget?} widget where to open it
+     * @param {qx.event.type.Pointer?} pointerEvent a right click, to open it at the pointer instead
+     * @return {Boolean} true if the menu has been opened
+     */
+    __openColumnMenu(widget, pointerEvent) {
+      let menu = this.__buildColumnMenu();
+      if (menu && pointerEvent) {
+        menu.openAtPointer(pointerEvent);
+        return true;
+      }
+      return this.__openMenuAt(widget, menu);
+    },
+
+    /**
+     * Apply for `columnVisibilityButtonVisible`
+     *
+     * @param {Boolean} value
+     */
+    _applyColumnVisibilityButtonVisible(value) {
+      this.getQxObject("columnButton").setVisibility(value ? "visible" : "excluded");
     },
 
     /**
@@ -1105,7 +1204,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
   destruct() {
     qx.bom.Event.removeNativeListener(document, "copy", this.__onClipboard);
     qx.bom.Event.removeNativeListener(document, "paste", this.__onClipboard);
-    this._disposeObjects("__editingController");
+    this._disposeObjects("__editingController", "__columnMenu");
   },
 
   statics: {

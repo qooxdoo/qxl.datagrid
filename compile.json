@@ -29,6 +29,7 @@
       "URLSearchParams": "readonly",
       "KeyboardEvent": "readonly",
       "PointerEvent": "readonly",
+      "MouseEvent": "readonly",
       "ClipboardEvent": "readonly",
       "DataTransfer": "readonly",
       "Intl": "readonly"
