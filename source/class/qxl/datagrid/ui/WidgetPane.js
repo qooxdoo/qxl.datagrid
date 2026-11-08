@@ -116,6 +116,12 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     /** @type {Integer} top of the first data row on display, ie how far the content is shifted up */
     __firstTop: 0,
 
+    /** @type {{widget: qx.ui.core.Widget, row: Integer, column: Integer}?} the editor over the cell being edited */
+    __editor: null,
+
+    /** @type {Map<String, String>?} error messages by `cellErrorKey`, owned by the grid */
+    __cellErrors: null,
+
     _applyWidgetsContextMenu(value, old) {
       for (let child of Object.values(this.__children)) {
         let ctxMenu = child.getContextMenu();
@@ -192,6 +198,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let spareWidgets = {};
 
       for (let child of qx.lang.Array.clone(this._getChildren())) {
+        if (child === this.__editor?.widget) {
+          continue;
+        }
         let cellData = child.getUserData("qxl.datagrid.cellData");
         let id = cellData.row + ":" + cellData.column;
         if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
@@ -238,6 +247,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let focusedRow = focusedPosition?.getRow() ?? -1;
       let focusedColumn = focusedPosition?.getColumn() ?? -1;
       let headerRowCount = styling.getNumHeaderRows();
+      let cellErrors = this.__cellErrors;
 
       let currentRelativePosition = new qxl.datagrid.source.Position();
       let currentAbsolutePosition = new qxl.datagrid.source.Position();
@@ -350,6 +360,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           } else {
             child.removeState("focused");
           }
+          if (cellErrors?.size || child.hasState("invalid")) {
+            this.__applyCellError(child, model, columnSizeData.columnIndex);
+          }
 
           // every change of layout properties invalidates the layout of the pane, so only for real changes
           let props = child.getLayoutProperties();
@@ -370,6 +383,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         widgets.forEach(widget => this.__discardSpareWidget(widget));
       }
       this.__applyFirstTop(firstTop);
+      this.__positionEditor();
       return null;
     },
 
@@ -581,6 +595,124 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     },
 
     /**
+     * Shows an editor over a cell; the editor is a child of the pane but not a cell, it follows the
+     * cell while scrolling and is hidden while the cell is not on display
+     *
+     * @param {qx.ui.core.Widget} widget the editor
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     */
+    showEditor(widget, row, column) {
+      this.__editor = { widget, row, column };
+      this._add(widget);
+      this.__positionEditor();
+    },
+
+    /**
+     * Moves the editor to another row, eg after rows have been inserted above it
+     *
+     * @param {Integer} row row in the data source
+     */
+    moveEditor(row) {
+      if (this.__editor) {
+        this.__editor.row = row;
+        this.__positionEditor();
+      }
+    },
+
+    /**
+     * Removes the editor from the pane; disposing it is up to the caller
+     */
+    removeEditor() {
+      if (this.__editor) {
+        this._remove(this.__editor.widget);
+        this.__editor = null;
+      }
+    },
+
+    /**
+     * Whether the editor is shown, ie its cell is on display
+     *
+     * @return {Boolean}
+     */
+    isEditorOnDisplay() {
+      return !!this.__editor && this.__editor.widget.getVisibility() === "visible";
+    },
+
+    /**
+     * Gives the editor the bounds of its cell, or hides it while the cell is not on display
+     */
+    __positionEditor() {
+      let editor = this.__editor;
+      if (!editor) {
+        return;
+      }
+      let cell = this.getChildAtPosition(editor.row, editor.column);
+      if (!cell) {
+        editor.widget.exclude();
+        return;
+      }
+      let props = cell.getLayoutProperties();
+      let current = editor.widget.getLayoutProperties();
+      if (current.left !== props.left || current.top !== props.top || current.width !== props.width || current.height !== props.height) {
+        editor.widget.setLayoutProperties({ left: props.left, top: props.top, width: props.width, height: props.height });
+      }
+      editor.widget.show();
+    },
+
+    /**
+     * Sets the map of error messages per cell, which the grid owns and changes
+     *
+     * @param {Map<String, String>} cellErrors messages by `cellErrorKey`
+     */
+    setCellErrors(cellErrors) {
+      this.__cellErrors = cellErrors;
+    },
+
+    /**
+     * Shows the current error of one cell, if the cell is on display
+     *
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     */
+    updateCellError(row, column) {
+      let child = this.getChildAtPosition(row, column);
+      if (child) {
+        this.__applyCellError(child, this.__widgetFactory.getModelForWidget(child), column);
+      }
+    },
+
+    /**
+     * Shows the current errors of all cells on display
+     */
+    updateCellErrors() {
+      for (let child of Object.values(this.__children)) {
+        let cellData = child.getUserData("qxl.datagrid.cellData");
+        if (cellData) {
+          this.__applyCellError(child, this.__widgetFactory.getModelForWidget(child), cellData.column);
+        }
+      }
+    },
+
+    /**
+     * Gives a cell widget the state `invalid` and the message as tool tip, or removes both
+     *
+     * @param {qx.ui.core.Widget} child the cell widget
+     * @param {qx.core.Object?} model the model bound to it
+     * @param {Integer} column column in the data source
+     */
+    __applyCellError(child, model, column) {
+      let message = model && this.__cellErrors?.get(qxl.datagrid.ui.WidgetPane.cellErrorKey(model, column));
+      if (message) {
+        child.addState("invalid");
+        child.setToolTipText(message);
+      } else if (child.hasState("invalid")) {
+        child.removeState("invalid");
+        child.resetToolTipText();
+      }
+    },
+
+    /**
      * Returns the DOM id of a cell, for ARIA attributes like `aria-activedescendant` and `aria-owns`;
      * the element only exists while the cell is on display
      *
@@ -611,6 +743,18 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
   statics: {
     /** @type {Integer} beyond this shift of the content in pixels, all rows are positioned from 0 again */
-    MAX_FIRST_TOP: 1000000
+    MAX_FIRST_TOP: 1000000,
+
+    /**
+     * Returns the key of a cell in the map of error messages; a cell is identified by model and
+     * column, since all cells of a row can share one model
+     *
+     * @param {qx.core.Object} model the model of the cell
+     * @param {Integer} column column in the data source
+     * @return {String} the key
+     */
+    cellErrorKey(model, column) {
+      return model.toHashCode() + ":" + column;
+    }
   }
 });

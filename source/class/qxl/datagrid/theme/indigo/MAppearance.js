@@ -51,6 +51,9 @@ qx.Theme.define("qxl.datagrid.theme.indigo.MAppearance", {
         if (states.focused) {
           decorator = "qxl-datagrid-cell-focused";
         }
+        if (states.invalid) {
+          decorator = "qxl-datagrid-cell-invalid";
+        }
         return {
           backgroundColor,
           textColor,

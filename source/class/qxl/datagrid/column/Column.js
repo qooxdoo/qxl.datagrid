@@ -370,6 +370,108 @@ qx.Class.define("qxl.datagrid.column.Column", {
     },
 
     /**
+     * Creates the editor for a cell of this column; the grid creates it only for the cell being
+     * edited, never for every cell. Override for other editors, together with `setEditorValue` and
+     * `getEditorValue`.
+     *
+     * @return {qx.ui.core.Widget?} the editor, null if cells of this column have no editor (they
+     *  may still be changed with `getToggledValue`)
+     */
+    createWidgetForEdit() {
+      return new qx.ui.form.TextField();
+    },
+
+    /**
+     * Whether the user may change values of this column, taking into account `readOnly` and
+     * `enabled` of the column and the grid
+     *
+     * @return {Boolean}
+     */
+    isEditable() {
+      return !this.isEffectivelyReadOnly() && this.isEffectivelyEnabled();
+    },
+
+    /**
+     * Reads the value of this column from a model, following the path
+     *
+     * @param {qx.core.Object} model
+     * @return {*} the value, undefined if the path cannot be resolved
+     */
+    getModelValue(model) {
+      let path = this.getPath();
+      if (!model || !path) {
+        return undefined;
+      }
+      return path == "." ? model : qx.data.SingleValueBinding.resolvePropertyChain(model, path);
+    },
+
+    /**
+     * Writes the value of this column into a model, following the path
+     *
+     * @param {qx.core.Object} model
+     * @param {*} value the new value
+     */
+    setModelValue(model, value) {
+      let path = this.getPath();
+      let pos = path.lastIndexOf(".");
+      let target = pos < 0 ? model : qx.data.SingleValueBinding.resolvePropertyChain(model, path.substring(0, pos));
+      target.set(path.substring(pos + 1), value);
+    },
+
+    /**
+     * Puts a value into the editor
+     *
+     * @param {qx.ui.core.Widget} editor as created by `createWidgetForEdit`
+     * @param {*} value the value of the model
+     */
+    setEditorValue(editor, value) {
+      editor.setValue(this._formatForEdit(value));
+    },
+
+    /**
+     * Reads the value from the editor
+     *
+     * @param {qx.ui.core.Widget} editor as created by `createWidgetForEdit`
+     * @return {*} the value for the model
+     * @throws {Error} with a message for the user if the input is not valid
+     */
+    getEditorValue(editor) {
+      return this._parseFromEditor(editor.getValue());
+    },
+
+    /**
+     * Converts a value of the model into the text of a text editor
+     *
+     * @param {*} value
+     * @return {String}
+     */
+    _formatForEdit(value) {
+      return value === null || value === undefined ? "" : String(value);
+    },
+
+    /**
+     * Converts the text of a text editor into a value of the model
+     *
+     * @param {String?} text
+     * @return {*} the value
+     * @throws {Error} with a message for the user if the text is not valid
+     */
+    _parseFromEditor(text) {
+      return text ?? "";
+    },
+
+    /**
+     * For columns without editor whose value is switched directly (eg a boolean with Space or a
+     * click): returns the value after switching
+     *
+     * @param {*} value the current value
+     * @return {*} the new value, undefined if the value cannot be switched
+     */
+    getToggledValue(value) {
+      return undefined;
+    },
+
+    /**
      * Called to allow the column to update the state of the widget based on the model;
      * this is typically used by the expansion column to show the correct icon for
      * expanding/collapsing

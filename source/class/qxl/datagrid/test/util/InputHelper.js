@@ -52,6 +52,10 @@ qx.Class.define("qxl.datagrid.test.util.InputHelper", {
       }
       let send = qxl.datagrid.test.util.InputHelper.__send;
       send("keydown", keyCode, 0, modifiers);
+      // like a browser, Enter and Space also send keypress with a character code
+      if (key == "Enter" || key == "Space") {
+        send("keypress", keyCode, keyCode, modifiers);
+      }
       send("keyup", keyCode, 0, modifiers);
       qx.ui.core.queue.Manager.flush();
     },

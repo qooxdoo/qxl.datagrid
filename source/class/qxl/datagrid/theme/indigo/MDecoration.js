@@ -48,6 +48,15 @@ qx.Theme.define("qxl.datagrid.theme.indigo.MDecoration", {
         color: "table-row-selected",
         style: "dashed"
       }
+    },
+
+    "qxl-datagrid-cell-invalid": {
+      style: {
+        radius: 0,
+        width: 1,
+        color: "invalid",
+        style: "solid"
+      }
     }
   }
 });
