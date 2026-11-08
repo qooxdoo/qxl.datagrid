@@ -102,11 +102,11 @@ qx.Class.define("qxl.datagrid.source.Position", {
      * object of row & column, or row and column parameters
      *
      * @param  {...any} args
-     * @returns
+     * @returns {Boolean} true if row and column are the same
      */
     equals(...args) {
       let { row, column } = qxl.datagrid.source.Position.__coerceValues(args);
-      return row !== this.getRow() && column == this.getColumn();
+      return row === this.getRow() && column === this.getColumn();
     },
 
     /**

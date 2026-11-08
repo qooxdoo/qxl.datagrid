@@ -76,12 +76,13 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
         }
       };
 
+      // header rows have negative row indexes
       let widgets = headerWidgetFactory.getWidgets();
-      this.assertTrue(widgets["0:0"] === undefined);
-      this.assertTrue(widgets["0:12"] === undefined);
-      this.assertTrue(widgets["0:1"].getLabel() === "B");
-      assertMapEquals(widgets["0:2"].getLayoutProperties(), { height: 40, top: 0, left: 40, width: 40 });
-      assertMapEquals(widgets["0:3"].getLayoutProperties(), { height: 40, top: 0, left: 80, width: 40 });
+      this.assertTrue(widgets["-1:0"] === undefined);
+      this.assertTrue(widgets["-1:12"] === undefined);
+      this.assertTrue(widgets["-1:1"].getLabel() === "B");
+      assertMapEquals(widgets["-1:2"].getLayoutProperties(), { height: 40, top: 0, left: 40, width: 40 });
+      assertMapEquals(widgets["-1:3"].getLayoutProperties(), { height: 40, top: 0, left: 80, width: 40 });
 
       widgets = paneWidgetFactory.getWidgets();
       this.assertTrue(widgets["0:0"] === undefined);
