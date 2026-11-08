@@ -116,7 +116,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     /** @type {Integer} top of the first data row on display, ie how far the content is shifted up */
     __firstTop: 0,
 
-    /** @type {{widget: qx.ui.core.Widget, row: Integer, column: Integer}?} the editor over the cell being edited */
+    /** @type {Object?} the editor over the cell being edited, `{widget, row, column, coveredCell}` */
     __editor: null,
 
     /** @type {Map<String, String>?} error messages by `cellErrorKey`, owned by the grid */
@@ -627,9 +627,28 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
      */
     removeEditor() {
       if (this.__editor) {
+        this.__setCoveredCell(null);
         this._remove(this.__editor.widget);
         this.__editor = null;
       }
+    },
+
+    /**
+     * Hides the cell widget under the editor, because editors may have a transparent background;
+     * the widget hidden before is shown again, since cell widgets are reused for other cells
+     *
+     * @param {qx.ui.core.Widget?} cell the cell widget under the editor, null if there is none
+     */
+    __setCoveredCell(cell) {
+      let editor = this.__editor;
+      if (editor.coveredCell === cell) {
+        return;
+      }
+      if (editor.coveredCell && !editor.coveredCell.isDisposed()) {
+        editor.coveredCell.setOpacity(null);
+      }
+      editor.coveredCell = cell;
+      cell?.setOpacity(0);
     },
 
     /**
@@ -650,6 +669,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         return;
       }
       let cell = this.getChildAtPosition(editor.row, editor.column);
+      this.__setCoveredCell(cell);
       if (!cell) {
         editor.widget.exclude();
         return;

@@ -208,6 +208,9 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       let pane = grid.getQxObject("widgetPane");
       let editor = this.__openEditor(2, 1);
       editor.setValue("scrolled");
+      // the cell under the editor is hidden, editors may be transparent
+      const hiddenCells = () => pane._getChildren().filter(child => child.getOpacity() === 0);
+      this.assertArrayEquals([pane.getChildAtPosition(2, 1)], hiddenCells());
 
       // far away the cell widgets are reused for other rows, the editor waits hidden
       grid.setStartRowIndex(100);
@@ -215,6 +218,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       await new Promise(resolve => setTimeout(resolve, 20));
       this.assertTrue(grid.isEditing());
       this.assertFalse(pane.isEditorOnDisplay());
+      this.assertEquals(0, hiddenCells().length, "no reused cell stays hidden");
       this.assertEquals("Vehicle type 3", this.__model.getItem(2).getName(), "hiding the editor takes nothing");
       this.assertTrue(qx.ui.core.FocusHandler.getInstance().isFocused(grid));
 
@@ -222,9 +226,11 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       qx.ui.core.queue.Manager.flush();
       this.assertTrue(pane.isEditorOnDisplay());
       this.assertJsonEquals(pane.getChildAtPosition(2, 1).getBounds(), editor.getBounds());
+      this.assertArrayEquals([pane.getChildAtPosition(2, 1)], hiddenCells());
       press("F2");
       this.assertTrue(qx.ui.core.FocusHandler.getInstance().isFocused(editor));
       press("Enter");
+      this.assertEquals(0, hiddenCells().length);
       this.assertEquals("scrolled", this.__model.getItem(2).getName());
       this.assertEquals("Vehicle type 2", this.__model.getItem(1).getName());
       this.assertEquals("Vehicle type 4", this.__model.getItem(3).getName());
