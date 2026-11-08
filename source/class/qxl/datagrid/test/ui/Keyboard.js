@@ -105,12 +105,46 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       this.__assertFocus(0, 0);
       this.assertEquals(0, grid.getStartRowIndex());
 
-      // Tab wraps into the next row, Shift+Tab on the first cell leaves the focus where it is
+      // without an editor, Tab leaves the grid like in qx.ui.table, the focused cell stays
       press("End");
       press("Tab");
-      this.__assertFocus(1, 0);
-      press("Tab", { shift: true });
-      this.__assertFocus(0, 12);
+      this.assertTrue(grid.getFocusedPosition().equals(0, 12));
+    },
+
+    testSelectionByKeyboard() {
+      const press = qxl.datagrid.test.util.InputHelper.press;
+      let grid = this.__grid;
+      let model = grid.getDataSource().getModel();
+      let fired = 0;
+      grid.addListener("changeSelection", () => fired++);
+      const selectedRows = () =>
+        grid
+          .getSelection()
+          .toArray()
+          .map(item => model.indexOf(item))
+          .sort((a, b) => a - b);
+
+      // "single": the selection follows the focus, a move within the row changes nothing
+      press("Down");
+      press("Right");
+      this.assertArrayEquals([1], selectedRows());
+      this.assertEquals(1, fired);
+      press("Down", { ctrl: true });
+      this.assertArrayEquals([1], selectedRows(), "Ctrl moves only the focus");
+      press("Space", { ctrl: true });
+      this.assertArrayEquals([2], selectedRows());
+
+      // "multi": Shift selects from the anchor, Ctrl+A everything, Ctrl+Space switches one row
+      grid.getSelectionManager().setSelectionMode("multi");
+      fired = 0;
+      press("Down", { shift: true });
+      press("Down", { shift: true });
+      this.assertArrayEquals([2, 3, 4], selectedRows());
+      press("A", { ctrl: true });
+      this.assertEquals(200, grid.getSelection().getLength());
+      press("Space", { ctrl: true });
+      this.assertEquals(199, grid.getSelection().getLength());
+      this.assertEquals(4, fired, "one change per key, like with the pointer");
     },
 
     testClickFocusesCell() {
@@ -139,6 +173,7 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       qxl.datagrid.test.util.InputHelper.press("Home", { ctrl: true });
       this.assertEquals(0, grid.getChildControl("scrollbar-y").getPosition());
       this.assertEquals(0, grid.getChildControl("scrollbar-x").getPosition());
+
     }
   }
 });

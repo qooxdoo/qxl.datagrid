@@ -80,7 +80,8 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
           stop();
           return true;
         }
-        if (key == "Space" && this.toggleFocusedCell()) {
+        // with Ctrl or Shift, the space bar belongs to the selection
+        if (key == "Space" && evt.getModifiers() == 0 && this.toggleFocusedCell()) {
           stop();
           return true;
         }
@@ -97,8 +98,8 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
             // the select box takes the item first
             return true;
           }
-          this.commitEditing();
           stop();
+          this.__commitAndEditBelow();
           return true;
 
         case "Tab":
@@ -131,8 +132,24 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
     },
 
     /**
-     * Capturing event handler for `keypress` in the editor: Enter takes the value (unless a drop down
-     * list of the editor is open, then it picks the item), Tab takes the value and moves on
+     * Takes the value of the editor and, like `qx.ui.table`, opens the editor of the cell below; in
+     * the last row the focus stays, a rejected value keeps the editor open
+     */
+    __commitAndEditBelow() {
+      let editing = this.__editing;
+      if (!this.commitEditing()) {
+        return;
+      }
+      if (editing.row + 1 < this.__grid.getDataSource().getSize().getRow()) {
+        this.__grid._moveFocusTo(editing.row + 1, editing.columnIndex);
+        this.startEditing();
+      }
+    },
+
+    /**
+     * Capturing event handler for `keypress` in the editor: Enter takes the value and goes on in the
+     * row below (unless a drop down list of the editor is open, then it picks the item), Tab takes the
+     * value and moves on
      *
      * @param {qx.event.type.KeySequence} evt
      */
@@ -144,7 +161,7 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
       if (key == "Enter" && !this.__isEditorPopupOpen()) {
         evt.preventDefault();
         evt.stopPropagation();
-        this.commitEditing();
+        this.__commitAndEditBelow();
       } else if (key == "Tab") {
         evt.preventDefault();
         evt.stopPropagation();

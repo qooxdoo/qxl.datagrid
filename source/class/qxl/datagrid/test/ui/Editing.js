@@ -102,22 +102,33 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertJsonEquals(cell.getBounds(), editor.getBounds(), "editor covers the cell");
       this.assertTrue(qx.ui.core.FocusHandler.getInstance().isFocused(editor));
 
+      // Enter takes the value and goes on with the cell below, like qx.ui.table
       editor.setValue("New");
       press("Enter");
-      this.assertFalse(grid.isEditing());
       this.assertEquals("New", this.__model.getItem(0).getName());
       this.assertEquals("New", cell.getValue());
       this.assertEquals(1, this.__changes.length);
       this.assertEquals("Vehicle type 1", this.__changes[0].oldValue);
       this.assertEquals(1, this.__changes[0].columnIndex);
+      this.assertTrue(grid.getFocusedPosition().equals(1, 1));
+      this.assertEquals("Vehicle type 2", this.__getEditor().getValue());
+      press("Escape");
+      this.assertFalse(grid.isEditing());
       this.assertTrue(qx.ui.core.FocusHandler.getInstance().isFocused(grid), "the grid takes the focus back");
+
+      // in the last row Enter only takes the value
+      this.__openEditor(199, 1).setValue("Last");
+      press("Enter");
+      this.assertFalse(grid.isEditing());
+      this.assertEquals("Last", this.__model.getItem(199).getName());
+      this.assertTrue(grid.getFocusedPosition().equals(199, 1));
 
       editor = this.__openEditor(0, 1);
       editor.setValue("Discarded");
       press("Escape");
       this.assertFalse(grid.isEditing());
       this.assertEquals("New", this.__model.getItem(0).getName());
-      this.assertEquals(1, this.__changes.length);
+      this.assertEquals(2, this.__changes.length);
     },
 
     testTypedCharacterStartsEditor() {
@@ -145,7 +156,8 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertFalse(editor.getValid());
       editor.setValue("120");
       press("Enter");
-      this.assertFalse(grid.isEditing());
+      this.assertTrue(grid.getFocusedPosition().equals(1, 5), "the accepted value goes on with the row below");
+      press("Escape");
       this.assertEquals(120, first.getMaxSpeed());
       this.assertNull(grid.getCellError(first, speedColumn));
 
@@ -182,6 +194,9 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       press("Space");
       this.assertTrue(first.getInMotorVehicles());
       this.assertNull(this.__getEditor(), "a boolean has no editor");
+      // with Ctrl the space bar belongs to the selection
+      press("Space", { ctrl: true });
+      this.assertTrue(first.getInMotorVehicles());
       // a typed character does not switch it
       qxl.datagrid.test.util.InputHelper.type("x");
       this.assertTrue(first.getInMotorVehicles());
@@ -230,6 +245,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       press("F2");
       this.assertTrue(qx.ui.core.FocusHandler.getInstance().isFocused(editor));
       press("Enter");
+      press("Escape");
       this.assertEquals(0, hiddenCells().length);
       this.assertEquals("scrolled", this.__model.getItem(2).getName());
       this.assertEquals("Vehicle type 2", this.__model.getItem(1).getName());
@@ -266,7 +282,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertEquals("car", first.getIcon());
       // with the list closed, Enter takes the value
       press("Enter");
-      this.assertFalse(this.__grid.isEditing());
+      this.assertTrue(this.__grid.getFocusedPosition().equals(1, 3));
       this.assertEquals("truck", first.getIcon());
     },
 

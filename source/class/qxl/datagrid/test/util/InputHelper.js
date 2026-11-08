@@ -36,7 +36,8 @@ qx.Class.define("qxl.datagrid.test.util.InputHelper", {
       Escape: 27,
       F2: 113,
       Space: 32,
-      Backspace: 8
+      Backspace: 8,
+      A: 65
     },
 
     /**

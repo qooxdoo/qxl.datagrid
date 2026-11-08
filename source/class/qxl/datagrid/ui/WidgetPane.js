@@ -496,55 +496,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       if (!model) {
         return;
       }
-      let manager = this.__selectionManager;
-      let style = manager.getSelectionStyle();
-      let mode = manager.getSelectionMode();
-      let widgetPosition = new qxl.datagrid.source.Position(cell.row, cell.column);
-      manager.setFocusedPosition(widgetPosition);
-
-      /**@type {Array<any>|qxl.datagrid.source.Range}*/
-      let selection;
-      if (style === "area") {
-        if (evt.getNativeEvent().shiftKey) {
-          let lastSelection = manager.getSelectionRange();
-          if (!(lastSelection instanceof qxl.datagrid.source.Range)) {
-            lastSelection = new qxl.datagrid.source.Range(widgetPosition, widgetPosition);
-          }
-          selection = new qxl.datagrid.source.Range(lastSelection.getStart(), widgetPosition);
-        } else {
-          selection = new qxl.datagrid.source.Range(widgetPosition, widgetPosition);
-        }
-      } else {
-        selection = qx.lang.Array.clone(manager.getSelection().toArray());
-        if (mode == "single") {
-          selection = model ? [model] : [];
-        } else if (mode == "one") {
-          if (model) {
-            selection = model ? [model] : [];
-          }
-        } else if (mode == "multi") {
-          if (model) {
-            if ((evt.getModifiers() & qx.event.type.Dom.CTRL_MASK) != 0) {
-              if (selection.indexOf(model) < 0) {
-                selection.push(model);
-              } else {
-                qx.lang.Array.remove(selection, model);
-              }
-            } else {
-              selection = model ? [model] : [];
-            }
-          }
-        } else if (mode == "additive") {
-          if (model) {
-            if (selection.indexOf(model) < 0) {
-              selection.push(model);
-            } else {
-              qx.lang.Array.remove(selection, model);
-            }
-          }
-        }
-      }
-      this.__selectionManager.setSelection(selection);
+      let position = new qxl.datagrid.source.Position(cell.row, cell.column);
+      this.__selectionManager.setFocusedPosition(position);
+      this.__selectionManager.selectAt(position, "tap", { shift: evt.isShiftPressed(), ctrl: evt.isCtrlOrCommandPressed() });
       this.fireDataEvent("modelTap", model);
       this.fireDataEvent("cellTap", cell);
     },

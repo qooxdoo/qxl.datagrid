@@ -29,10 +29,12 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     super();
     this.__batchSelectionChange = new qxl.datagrid.util.Batch(() => this.__fireSelectionChange());
     this.__selection = new qx.data.Array();
+    this.__selectedSet = new Set();
     this.__selection.addListener("change", () => {
       if (qx.core.Environment.get("qx.debug")) {
         this.__selection.forEach(item => this.assertTrue(!!item));
       }
+      this.__selectedSet = new Set(this.__selection.toArray());
       this.__batchSelectionChange.run();
     });
   },
@@ -92,6 +94,12 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
   members: {
     /** @type{qx.data.Array<qx.core.Object>} currently selected model objects */
     __selection: null,
+
+    /** @type{Set<qx.core.Object>} the same objects as `__selection`, for `isSelected` while rendering */
+    __selectedSet: null,
+
+    /** @type{qxl.datagrid.source.Position?} where a range selected with Shift starts */
+    __anchor: null,
 
     /** @type{qxl.datagrid.util.Batch} the batched notification for selection change */
     __batchSelectionChange: null,
@@ -265,6 +273,7 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
         this.assertInstance(range, qxl.datagrid.source.Range, `Failed to set selection in area selection style. The selection ${range} is not an instance of qxl.datagrid.source.Range`);
       }
       this.__selectionRange = range;
+      this.__anchor = range.getStart();
       this.__selection.replace(this.__cellsFromRange(range));
       this.setFocused(this.__selection.getItem(0));
     },
@@ -327,7 +336,155 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * @throws {Error} if one of the items is not a child element.
      */
     isSelected(item) {
-      return this.__selection.contains(item);
+      return this.__selectedSet.has(item);
+    },
+
+    /**
+     * Changes the selection for a click, a key which moved the focus or the space bar, depending on
+     * `selectionMode` and `selectionStyle`, like the selection of qooxdoo lists
+     * (`qx.ui.core.selection.Abstract`) and `qx.ui.table`:
+     *
+     * - a move selects the focused row in the modes "single", "one" and "multi"; in "additive" it
+     *   only moves the focus; with Ctrl it leaves the selection as it is
+     * - the space bar selects the focused row, in "additive" it switches it; with Ctrl it switches the
+     *   row in every mode ("one" cannot be emptied)
+     * - a click keeps its former behaviour per mode
+     * - in "multi", Shift selects the range from the anchor (move, click, space bar), Ctrl+Shift adds
+     *   it to the selection
+     * - with `selectionStyle` "area", the range is the focused cell, with Shift it reaches from the
+     *   anchor
+     *
+     * Without Shift, the position becomes the anchor of later ranges.
+     *
+     * @param {qxl.datagrid.source.Position} position the cell clicked or focused
+     * @param {"tap"|"move"|"space"} action what happened
+     * @param {Object?} modifiers pressed modifier keys, `{shift, ctrl}`
+     */
+    selectAt(position, action, modifiers) {
+      let shift = !!modifiers?.shift;
+      let ctrl = !!modifiers?.ctrl;
+      let anchor = this.__anchor ?? position;
+      if (!shift) {
+        this.__anchor = position;
+      }
+      let mode = this.getSelectionMode();
+      if (action == "move" && ctrl && !(shift && mode == "multi")) {
+        return;
+      }
+      if (this.getSelectionStyle() == "area") {
+        this.setSelection(new qxl.datagrid.source.Range(shift ? anchor : position, position));
+        return;
+      }
+      let model = this.__getSelectableModel(position);
+      if (!model) {
+        return;
+      }
+      if (shift && mode == "multi") {
+        this.__selectRange(anchor, position, ctrl);
+      } else if (action == "tap") {
+        if (mode == "single") {
+          // a click on the selected row unselects it
+          this.setSelection([model]);
+        } else if (mode == "additive" || (mode == "multi" && ctrl)) {
+          this.__toggle(model);
+        } else {
+          this.__replaceWith(model);
+        }
+      } else if (action == "space" && (ctrl || mode == "additive")) {
+        this.__toggle(model);
+      } else if (action == "space" || mode != "additive") {
+        this.__replaceWith(model);
+      }
+    },
+
+    /**
+     * Selects all rows (or cells, or the whole area); does nothing in the modes "single" and "one"
+     *
+     * @return {Boolean} true if everything has been selected
+     */
+    selectAll() {
+      let size = this.getDataSource()?.getSize();
+      if (!size || size.getRow() == 0) {
+        return false;
+      }
+      let start = new qxl.datagrid.source.Position(0, 0);
+      let end = new qxl.datagrid.source.Position(size.getRow() - 1, Math.max(0, size.getColumn() - 1));
+      if (this.getSelectionStyle() == "area") {
+        this.setSelection(new qxl.datagrid.source.Range(start, end));
+        return true;
+      }
+      if (!["multi", "additive"].includes(this.getSelectionMode())) {
+        return false;
+      }
+      this.__selectRange(start, end, false);
+      return true;
+    },
+
+    /**
+     * Returns the model which a position selects: the row model with `selectionStyle` "row"
+     *
+     * @param {qxl.datagrid.source.Position} position
+     * @return {qx.core.Object?}
+     */
+    __getSelectableModel(position) {
+      let dataSource = this.getDataSource();
+      if (!dataSource) {
+        return null;
+      }
+      let column = this.getSelectionStyle() == "row" ? 0 : position.getColumn();
+      return dataSource.getModelForPosition(new qxl.datagrid.source.Position(position.getRow(), column)) || null;
+    },
+
+    /**
+     * Makes one model the selection, unless it is already; unlike `setSelection` in the mode "single",
+     * selecting the selected model again does not unselect it
+     *
+     * @param {qx.core.Object} model
+     */
+    __replaceWith(model) {
+      if (this.__selection.getLength() != 1 || this.__selection.getItem(0) !== model) {
+        this.__selectionRange = null;
+        this.__selection.replace([model]);
+      }
+    },
+
+    /**
+     * Adds a model to the selection or removes it; in the mode "one" it is only selected, in "single"
+     * it replaces the selection
+     *
+     * @param {qx.core.Object} model
+     */
+    __toggle(model) {
+      let mode = this.getSelectionMode();
+      this.__selectionRange = null;
+      if (this.isSelected(model)) {
+        if (mode != "one") {
+          this.__selection.remove(model);
+        }
+      } else if (mode == "multi" || mode == "additive") {
+        this.__selection.push(model);
+      } else {
+        this.__selection.replace([model]);
+      }
+    },
+
+    /**
+     * Selects the rows (or with `selectionStyle` "cell" the rectangle of cells) between two positions;
+     * the models come from the data source, so they are not checked one by one like in `setSelection`
+     *
+     * @param {qxl.datagrid.source.Position} from
+     * @param {qxl.datagrid.source.Position} to
+     * @param {Boolean} add whether the range is added to the current selection instead of replacing it
+     */
+    __selectRange(from, to, add) {
+      let range = new qxl.datagrid.source.Range(from, to);
+      if (this.getSelectionStyle() == "row") {
+        range = new qxl.datagrid.source.Range(new qxl.datagrid.source.Position(from.getRow(), 0), new qxl.datagrid.source.Position(to.getRow(), 0));
+      }
+      let models = new Set(add ? this.__selection.toArray() : []);
+      this.__cellsFromRange(range).forEach(model => models.add(model));
+      this.__selectionRange = null;
+      this.__selection.replace([...models]);
     },
 
     /**

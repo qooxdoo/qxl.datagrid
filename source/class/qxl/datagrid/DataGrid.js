@@ -56,6 +56,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     this.getQxObject("oddEvenRows").setCellIdFunction((row, column) => this.getQxObject("widgetPane").getCellId(row, column));
     this.__selectionManager.addListener("changeFocusedPosition", () => this.__updateActiveDescendant());
     this.addListener("keypress", this._onKeyPress, this);
+    // browsers fire no keypress for Ctrl with a letter
+    this.addListener("keydown", this.__onKeyDown, this);
     this.addListener("focus", this.__onFocus, this);
 
     this.__editingController = new qxl.datagrid.ui.EditingController(this);
@@ -383,7 +385,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     /**
-     * Event handler for `keypress`: moves the focus between the cells
+     * Event handler for `keypress`: moves the focus between the cells and changes the selection
+     * (space bar); Tab without an open editor leaves the grid like in `qx.ui.table`
      *
      * @param {qx.event.type.KeySequence} evt
      */
@@ -393,14 +396,51 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       if (!dataSource || !columns || dataSource.getSize().getRow() == 0) {
         return;
       }
+      let wasEditing = this.isEditing();
       if (this.__editingController.handleKey(evt)) {
+        return;
+      }
+      let key = evt.getKeyIdentifier();
+      if (key == "Tab" && !wasEditing) {
+        return;
+      }
+      if (key == "Space") {
+        let position = this.getFocusedPosition();
+        if (position) {
+          this.__selectionManager.selectAt(position, "space", { shift: evt.isShiftPressed(), ctrl: evt.isCtrlOrCommandPressed() });
+          evt.preventDefault();
+          evt.stopPropagation();
+        }
         return;
       }
       this._moveFocusByKey(evt);
     },
 
     /**
-     * Moves the focus for a navigation key and scrolls along
+     * Event handler for `keydown`: Ctrl+A selects everything, if the selection mode allows it
+     *
+     * @param {qx.event.type.KeySequence} evt
+     */
+    __onKeyDown(evt) {
+      if (evt.getTarget() === this && evt.isCtrlOrCommandPressed() && evt.getKeyIdentifier() == "A" && this.selectAll()) {
+        evt.preventDefault();
+        evt.stopPropagation();
+      }
+    },
+
+    /**
+     * Selects all rows (or cells), if `selectionMode` allows more than one
+     *
+     * @return {Boolean} true if everything has been selected
+     */
+    selectAll() {
+      return this.__selectionManager.selectAll();
+    },
+
+    /**
+     * Moves the focus for a navigation key, scrolls along and lets the selection follow (see
+     * `SelectionManager.selectAt`); Shift+Tab does not select a range and Ctrl+Home/End select like
+     * moves without Ctrl
      *
      * @param {qx.event.type.KeySequence} evt
      */
@@ -408,9 +448,10 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       let dataSource = this.getDataSource();
       let columns = this.getColumns();
       let position = this.getFocusedPosition();
+      let key = evt.getKeyIdentifier();
       let modifiers = { shift: evt.isShiftPressed(), ctrl: evt.isCtrlOrCommandPressed() };
       let target = qxl.datagrid.DataGrid.computeFocusMove(
-        evt.getKeyIdentifier(),
+        key,
         modifiers,
         position ? { row: position.getRow(), column: position.getColumn() } : null,
         dataSource.getSize().getRow(),
@@ -426,7 +467,23 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       }
       evt.preventDefault();
       evt.stopPropagation();
-      this.setFocusedPosition(target.row, target.column);
+      this._moveFocusTo(target.row, target.column, {
+        shift: modifiers.shift && key != "Tab",
+        ctrl: modifiers.ctrl && key != "Home" && key != "End"
+      });
+    },
+
+    /**
+     * Moves the focus to a cell, scrolls it into view and lets the selection follow like for a key
+     * which moved the focus
+     *
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     * @param {Object?} modifiers modifier keys for the selection, `{shift, ctrl}`
+     */
+    _moveFocusTo(row, column, modifiers) {
+      this.setFocusedPosition(row, column);
+      this.__selectionManager.selectAt(this.getFocusedPosition(), "move", modifiers);
     },
 
     /**
