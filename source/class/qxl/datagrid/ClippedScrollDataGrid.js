@@ -126,6 +126,11 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       comp.add(fixedColumns);
       fixedColumns.setZIndex(200);
 
+      // the header scrolls with the cells, the column button stays at the right edge
+      let columnButton = this.getQxObject("columnButton");
+      comp.add(columnButton, { top: 0, right: 0 });
+      columnButton.setZIndex(300);
+
       return comp;
     },
 
@@ -389,6 +394,13 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
         left: -scrollX + fixedColumns.getSizeHint().width
       });
       this._updateScrollbarVisibility();
+
+      // the vertical scroll bar covers the right edge of the header, the column button stays left of it
+      let scrollbarY = this.getChildControl("scrollbar-y");
+      let overlaid = qx.core.Environment.get("os.scrollBarOverlayed");
+      let columnButton = this.getQxObject("columnButton");
+      columnButton.setLayoutProperties({ top: 0, right: !overlaid && scrollbarY.isVisible() ? scrollbarY.getSizeHint().width : 0 });
+      columnButton.setHeight(header.getSizeHint().height);
     },
 
     _updateSizes() {
