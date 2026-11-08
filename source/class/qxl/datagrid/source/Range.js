@@ -267,7 +267,8 @@ qx.Class.define("qxl.datagrid.source.Range", {
       if (!oldValue) {
         return value;
       }
-      oldValue.copyFrom(value);
+      oldValue.set({ row: value.getRow(), column: value.getColumn() });
+      return oldValue;
     },
 
     /**

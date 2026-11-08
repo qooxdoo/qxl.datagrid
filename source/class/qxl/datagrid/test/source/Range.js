@@ -63,6 +63,17 @@ qx.Class.define("qxl.datagrid.test.source.Range", {
       this.assertTrue(range.contains(new qxl.datagrid.source.Position(4, 5)));
       this.assertTrue(!range.contains(new qxl.datagrid.source.Position(5, 5)));
       this.assertTrue(!range.contains(new qxl.datagrid.source.Position(4, 6)));
+    },
+
+    testSetStartKeepsObject() {
+      let range = new qxl.datagrid.source.Range([2, 3], [4, 5]);
+      let start = range.getStart();
+      let changes = 0;
+      range.addListener("change", () => changes++);
+      range.setStart(new qxl.datagrid.source.Position(1, 2));
+      this.assertIdentical(start, range.getStart());
+      this.assertTrue(start.equals(1, 2));
+      this.assertTrue(changes > 0);
     }
   }
 });
