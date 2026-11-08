@@ -76,8 +76,8 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
         if (!this.__grid.getEditable()) {
           return false;
         }
-        if (key == "F2" || key == "Enter") {
-          this.startEditing();
+        // a cell which cannot be edited leaves Enter to the grid, eg to open a tree node
+        if ((key == "F2" || key == "Enter") && this.startEditing()) {
           stop();
           return true;
         }

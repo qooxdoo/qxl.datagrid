@@ -462,7 +462,13 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         }
         return;
       }
-      if (key == "Escape" && evt.getModifiers() == 0 && this.__clearSelectionByKey()) {
+      let handled = false;
+      if (key == "Escape") {
+        handled = evt.getModifiers() == 0 && this.__clearSelectionByKey();
+      } else {
+        handled = evt.getModifiers() == 0 && this.__handleTreeKey(key);
+      }
+      if (handled) {
         evt.preventDefault();
         evt.stopPropagation();
         return;
@@ -482,6 +488,45 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         return false;
       }
       manager.resetSelection();
+      return true;
+    },
+
+    /**
+     * Keys of a tree in its expansion column, like `qx.ui.tree.Tree`: Right opens a closed node, Left
+     * closes an open one or moves to the parent node, Enter opens or closes a node whose cell cannot be
+     * edited (otherwise Enter opens the editor). Left on a closed node moves to the parent even if the
+     * expansion column is not the first one.
+     *
+     * @param {String} key key identifier
+     * @return {Boolean} true if the key has been dealt with
+     */
+    __handleTreeKey(key) {
+      let dataSource = this.getDataSource();
+      let position = this.getFocusedPosition();
+      if (!["Left", "Right", "Enter"].includes(key) || !position || typeof dataSource.getNodeStateFor != "function") {
+        return false;
+      }
+      let column = this.getColumns().getColumn(position.getColumn());
+      let model = dataSource.getModelForPosition(position);
+      let state = model && column instanceof qxl.datagrid.column.tree.ExpansionColumn ? dataSource.getNodeStateFor(model)?.state : null;
+      if (!state) {
+        return false;
+      }
+      const logError = ex => this.error("Cannot open or close the node", ex);
+      if (state == "closed" && (key == "Right" || key == "Enter")) {
+        dataSource.expandNode(model).catch(logError);
+      } else if (state == "open" && (key == "Left" || key == "Enter")) {
+        dataSource.collapseNode(model).catch(logError);
+      } else if (key == "Left") {
+        let parent = dataSource.getParentOf(model);
+        let parentRow = parent ? dataSource.getPositionOfModel(parent)?.getRow() : -1;
+        if (parentRow === undefined || parentRow < 0) {
+          return false;
+        }
+        this._moveFocusTo(parentRow, position.getColumn());
+      } else {
+        return false;
+      }
       return true;
     },
 

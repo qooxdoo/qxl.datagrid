@@ -31,7 +31,44 @@ qx.Class.define("qxl.datagrid.test.demo.Demos", {
         for (let i = 0; i < 50 && grid.getDataSource().getSize().getRow() == 0; i++) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
+        await this.__checkTreeKeys(grid);
       });
+    },
+
+    /**
+     * Opens and closes a node with the keys of `qx.ui.tree.Tree`: Right, Left, Enter, and Left on a
+     * child moves to its parent
+     *
+     * @param {qxl.datagrid.DataGrid} grid a grid on a tree data source, with the expansion column first
+     */
+    async __checkTreeKeys(grid) {
+      const press = qxl.datagrid.test.util.InputHelper.press;
+      let dataSource = grid.getDataSource();
+      const stateAt = row => dataSource.getNodeStateFor(dataSource.getModelForPosition(new qxl.datagrid.source.Position(row, 0))).state;
+      const until = async condition => {
+        for (let i = 0; i < 50 && !condition(); i++) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        this.assertTrue(condition());
+      };
+      let row = 0;
+      while (stateAt(row) != "closed") {
+        row++;
+      }
+      grid.focus();
+      grid.setFocusedPosition(row, 0);
+      press("Right");
+      await until(() => stateAt(row) == "open");
+      this.assertTrue(grid.getFocusedPosition().equals(row, 0), "the focus stays on the node");
+      press("Down");
+      press("Left");
+      this.assertTrue(grid.getFocusedPosition().equals(row, 0), "Left on a child moves to the parent");
+      press("Left");
+      await until(() => stateAt(row) == "closed");
+      press("Enter");
+      await until(() => stateAt(row) == "open");
+      press("Enter");
+      await until(() => stateAt(row) == "closed");
     },
 
     async testBigGridDemo() {
