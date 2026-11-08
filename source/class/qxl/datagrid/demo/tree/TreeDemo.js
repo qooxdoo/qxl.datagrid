@@ -45,6 +45,11 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
 
     let grid = this.getQxObject("grid");
     this.add(this.getQxObject("toolbar"));
+    this.add(
+      qxl.datagrid.demo.Demo.createKeyHint(
+        "Right opens a folder, Left closes it or goes to the parent, Enter opens or closes; a click on a header sorts the folders and files on each level"
+      )
+    );
     this.add(grid, { flex: 1 });
   },
 
@@ -117,6 +122,8 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
           path: "name",
           minWidth: 160,
           flex: 1,
+          sortable: true,
+          hideable: false,
           iconPathProvider: node => (node.getType() == "directory" ? "@MaterialIcons/folder/16" : "@MaterialIcons/description/16")
         })
       );
@@ -124,14 +131,16 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
         new qxl.datagrid.column.FileSizeColumn().set({
           caption: "Size",
           path: "size",
-          minWidth: 70
+          minWidth: 70,
+          sortable: true
         })
       );
       columns.add(
         new qxl.datagrid.column.TextColumn().set({
           caption: "Permissions",
           path: "permissions",
-          minWidth: 100
+          minWidth: 100,
+          sortable: true
         })
       );
       columns.add(
@@ -139,6 +148,7 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
           caption: "Last Modified",
           path: "lastModified",
           minWidth: 240,
+          sortable: true,
           dateFormat: new qx.util.format.DateFormat("dd/MM/yyyy hh:mm")
         })
       );
@@ -149,7 +159,8 @@ qx.Class.define("qxl.datagrid.demo.tree.TreeDemo", {
       var dataSource = this.getQxObject("dataSource");
 
       var grid = new qxl.datagrid.ClippedScrollDataGrid(this.getQxObject("columns")).set({
-        dataSource: dataSource
+        dataSource: dataSource,
+        columnVisibilityButtonVisible: true
       });
       let sel = grid.getSelection();
       sel.addListener("change", this._updateUi, this);

@@ -25,6 +25,6 @@ qx.Theme.define("qxl.datagrid.demo.theme.tangible.Theme", {
     decoration: qxl.datagrid.demo.theme.tangible.Decoration,
     font: qx.theme.tangible.Font,
     icon: qx.theme.icon.Tango,
-    appearance: qxl.datagrid.demo.theme.tangible.Appearance
+    appearance: qxl.datagrid.demo.theme.tangible.DemoAppearance
   }
 });

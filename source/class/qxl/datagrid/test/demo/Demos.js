@@ -24,6 +24,34 @@ qx.Class.define("qxl.datagrid.test.demo.Demos", {
       await this.__checkDemo(new qxl.datagrid.demo.array.ArrayDemo());
     },
 
+    async testArrayDemoMarksChanges() {
+      let demo = new qxl.datagrid.demo.array.ArrayDemo();
+      qx.core.Init.getApplication().getRoot().add(demo, { left: 0, top: 0, width: "60%", height: "60%" });
+      try {
+        await demo.init();
+        let grid = demo.getQxObject("grid");
+        await this.__settle(grid);
+        // the clipped grid has a data pane of its own, the column button must be laid out there too
+        this.assertNotNull(grid.getQxObject("columnButton").getBounds(), "column button laid out");
+        const rowWidget = row => grid.getQxObject("oddEvenRows")._getChildren().find(child => child.getUserData("qxl.datagrid.cellData")?.row === row);
+        const changed = () => [rowWidget(0).hasState("changed"), grid.getQxObject("widgetPane").getChildAtPosition(0, 1).hasState("changed"), grid.getQxObject("widgetPane").getChildAtPosition(0, 0).hasState("changed")];
+
+        // a changed value marks its row and its cell, not the other cells
+        grid.setFocusedPosition(0, 1);
+        grid.getEditingController().pasteIntoFocusedCell("Somebody");
+        grid.updateWidgets();
+        await this.__settle(grid);
+        this.assertArrayEquals([true, true, false], changed());
+
+        demo.resetChanges();
+        grid.updateWidgets();
+        await this.__settle(grid);
+        this.assertArrayEquals([false, false, false], changed());
+      } finally {
+        demo.destroy();
+      }
+    },
+
     async testTreeDemo() {
       let demo = new qxl.datagrid.demo.tree.TreeDemo();
       await this.__checkDemo(demo, async grid => {
