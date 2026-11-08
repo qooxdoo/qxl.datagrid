@@ -235,7 +235,7 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       const result = { config: this.__config, init: this.__initResult };
       result.lines = await this.scrollLines();
       result.jumps = await this.scrollJumps();
-      if (this.__grid.getEditable?.()) {
+      if (this.__config.grid === "table" || this.__grid.getEditable()) {
         result.focus = await this.focusLatency();
         result.edit = await this.editLatency();
       }
@@ -248,7 +248,8 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
 
     /**
      * Measures from an arrow key to the focus on the next cell, scrolling along beyond the rows on
-     * display; the key events take the way of real key strokes
+     * display; the key events take the way of real key strokes. The table moves its focus on the same
+     * keys itself.
      *
      * @param {Integer} steps number of key strokes
      * @return {Promise<Object>} statistics of JS work and time to the next frame per key stroke
@@ -257,7 +258,7 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       const grid = this.__grid;
       this.__scrollToRow(0);
       grid.focus();
-      grid.setFocusedPosition(0, 0);
+      this.__setFocusedCell(0, 0);
       await this.__settle();
       const work = [];
       const frames = [];
@@ -271,7 +272,9 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
     },
 
     /**
-     * Measures from F2 to the editor on display, alternating text, number and select columns
+     * Measures from F2 to the editor on display, alternating text, number and select columns. The table
+     * opens its cell editor on F2 as well; Enter would also open it there, but in an open editor Enter
+     * commits, moves down and opens the next one, while the grid keeps the focus on the cell.
      *
      * @param {Integer} steps number of editors opened
      * @return {Promise<Object>} statistics of JS work and time to the next frame per editor
@@ -286,7 +289,7 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       const frames = [];
       const columns = [1, 5, 3];
       for (let i = 0; i < steps; i++) {
-        grid.setFocusedPosition(i % 20, columns[i % columns.length]);
+        this.__setFocusedCell(i % 20, columns[i % columns.length]);
         await this.__nextFrame();
         const t = performance.now();
         helper.press("F2");
@@ -298,6 +301,20 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
         helper.press("Escape");
       }
       return { workMs: this.__stats(work), frameMs: this.__stats(frames) };
+    },
+
+    /**
+     * Puts the keyboard focus on a cell of the grid or the table
+     *
+     * @param {Integer} row
+     * @param {Integer} column
+     */
+    __setFocusedCell(row, column) {
+      if (this.__config.grid === "table") {
+        this.__grid.setFocusedCell(column, row, true);
+      } else {
+        this.__grid.setFocusedPosition(row, column);
+      }
     },
 
     /**
@@ -341,7 +358,8 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
     },
 
     /**
-     * Creates the baseline table with the same columns
+     * Creates the baseline table with the same columns, all editable with the cell editors of the
+     * table: text fields (numbers stay numbers), check boxes and a select box for the icon
      *
      * @return {qx.ui.table.Table}
      */
@@ -354,9 +372,19 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       );
       const table = new qx.ui.table.Table(model);
       const columnModel = table.getTableColumnModel();
+      const selectEditor = new qx.ui.table.celleditor.SelectBox().set({
+        listData: qxl.datagrid.demo.perf.PerfModel.ICONS.map(name => [name, null, name])
+      });
       columns.forEach((column, i) => {
-        if (column[1] === "bool") {
+        const kind = column[1];
+        model.setColumnEditable(i, true);
+        if (kind === "bool") {
           columnModel.setDataCellRenderer(i, new qx.ui.table.cellrenderer.Boolean());
+          columnModel.setCellEditorFactory(i, new qx.ui.table.celleditor.CheckBox());
+        } else if (kind === "select") {
+          columnModel.setCellEditorFactory(i, selectEditor);
+        } else {
+          columnModel.setCellEditorFactory(i, new qx.ui.table.celleditor.TextField());
         }
       });
       return table;
