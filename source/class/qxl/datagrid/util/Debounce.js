@@ -21,6 +21,10 @@
 
 /**
  * Class for debouncing a call, with promise support
+ *
+ * TODO: replace with `qx.util.Debounce` (`new qx.util.Debounce(fn, timeout)`, `trigger()` instead of
+ * `run()`) once a released qooxdoo version contains it; 8.0.0-beta.3 only has `qx.tool.utils.Debounce`
+ * in the compiler namespace, `qx.util.Debounce` exists so far only in the johnspackman/qooxdoo fork
  */
 qx.Class.define("qxl.datagrid.util.Debounce", {
   extend: qx.core.Object,
@@ -29,12 +33,12 @@ qx.Class.define("qxl.datagrid.util.Debounce", {
    * Constructor
    *
    * @param {Function?} fn function to call, can be null if you override `_runImpl`
-   * @param {Integer?} timeout the timeout
+   * @param {Integer?} timeout the timeout in milliseconds, 0 runs it in the next task
    */
   construct(fn, timeout) {
     super();
     this.__fn = fn;
-    if (timeout) {
+    if (timeout !== undefined && timeout !== null) {
       this.setTimeout(timeout);
     }
   },

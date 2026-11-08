@@ -30,7 +30,8 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
 
   construct() {
     super();
-    this.__debounceChangeSize = new qxl.datagrid.util.Debounce(() => this.fireDataEvent("changeSize", this.getSize()), 100);
+    // collects all changes of the array within one task (eg a loop of `push`) into one `changeSize`
+    this.__debounceChangeSize = new qxl.datagrid.util.Debounce(() => this.fireDataEvent("changeSize", this.getSize()), 0);
   },
 
   properties: {
