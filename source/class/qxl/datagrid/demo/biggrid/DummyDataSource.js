@@ -130,6 +130,10 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
       // Create our model object
       const allocate = pos => {
         let id = pos.toId();
+        // column zero is in the range and in the rows iterator; keep the model of the first pass
+        if (newData[id]) {
+          return;
+        }
         let model = oldData[id];
         if (!model) {
           model = new qxl.datagrid.demo.biggrid.DummyModel().set({

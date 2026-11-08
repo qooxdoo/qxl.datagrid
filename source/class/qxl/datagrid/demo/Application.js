@@ -45,6 +45,12 @@ qx.Class.define("qxl.datagrid.demo.Application", {
 
       let doc = this.getRoot();
       try {
+        if (new URLSearchParams(window.location.search).has("perf")) {
+          let perf = new qxl.datagrid.demo.perf.PerfDemo();
+          doc.add(perf, { left: 0, top: 0, right: 0, bottom: 0 });
+          await perf.init();
+          return;
+        }
         doc.add(new qxl.datagrid.demo.Demo(), { left: 0, top: 0, right: 0, bottom: 0 });
       } catch (ex) {
         // main() is async, so without this an exception is swallowed and leaves a blank page

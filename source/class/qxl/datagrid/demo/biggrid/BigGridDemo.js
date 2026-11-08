@@ -98,7 +98,8 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
         columns.add(column);
       }
 
-      var grid = new qxl.datagrid.ClippedScrollDataGrid(columns).set({
+      // ClippedScrollDataGrid would create widgets for all cells; on demand data needs the virtual grid
+      var grid = new qxl.datagrid.VirtualScrollDataGrid(columns).set({
         dataSource: dataSource
       });
 
