@@ -380,6 +380,46 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
     },
 
     /**
+     * Writes text from the clipboard into the focused cell, converted by `Column.parseFromClipboard`;
+     * of several lines or tab separated fields only the first one counts. Invalid or rejected text
+     * becomes the error of the cell.
+     *
+     * @param {String} text
+     * @param {Boolean?} skipToggling whether columns which switch their value directly are left alone
+     * @return {Boolean} true if the cell may be edited and the text has been dealt with
+     */
+    pasteIntoFocusedCell(text, skipToggling) {
+      let cell = this.__getFocusedCell();
+      if (this.__editing || !cell || !this.isCellEditable(cell.model, cell.column)) {
+        return false;
+      }
+      if (skipToggling && cell.column.getToggledValue(cell.column.getModelValue(cell.model)) !== undefined) {
+        return false;
+      }
+      let error;
+      try {
+        let value = cell.column.parseFromClipboard(text.split(/\r?\n/)[0].split("\t")[0]);
+        error = this.__writeValue(cell, value);
+      } catch (ex) {
+        error = ex.message;
+      }
+      if (error) {
+        this.setCellError(cell.model, cell.column, error);
+      }
+      return true;
+    },
+
+    /**
+     * Returns the value of the focused cell as text for the clipboard (`Column.formatForClipboard`)
+     *
+     * @return {String?} null without a focused cell
+     */
+    getFocusedCellText() {
+      let cell = this.__getFocusedCell();
+      return cell ? cell.column.formatForClipboard(cell.column.getModelValue(cell.model)) : null;
+    },
+
+    /**
      * Checks a value with `cellValidator`, writes it into the model and fires `cellValueChanged`;
      * a value accepted for the cell removes its error
      *

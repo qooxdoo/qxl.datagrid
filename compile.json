@@ -29,6 +29,8 @@
       "URLSearchParams": "readonly",
       "KeyboardEvent": "readonly",
       "PointerEvent": "readonly",
+      "ClipboardEvent": "readonly",
+      "DataTransfer": "readonly",
       "Intl": "readonly"
     }
   },

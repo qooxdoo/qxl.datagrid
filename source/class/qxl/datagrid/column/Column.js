@@ -463,6 +463,29 @@ qx.Class.define("qxl.datagrid.column.Column", {
     },
 
     /**
+     * Converts a value of the model into text for the clipboard (Ctrl+C); by default the text of the
+     * editor
+     *
+     * @param {*} value
+     * @return {String}
+     */
+    formatForClipboard(value) {
+      return this._formatForEdit(value);
+    },
+
+    /**
+     * Converts text from the clipboard (Ctrl+V) into a value of the model; by default like the text
+     * of the editor. An empty text is what Delete writes into the cell.
+     *
+     * @param {String} text
+     * @return {*} the value
+     * @throws {Error} with a message for the user if the text is not valid
+     */
+    parseFromClipboard(text) {
+      return this._parseFromEditor(text);
+    },
+
+    /**
      * For columns without editor whose value is switched directly (eg a boolean with Space or a
      * click): returns the value after switching
      *

@@ -61,6 +61,10 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     // browsers fire no keypress for Ctrl with a letter
     this.addListener("keydown", this.__onKeyDown, this);
     this.addListener("focus", this.__onFocus, this);
+    // qooxdoo has no clipboard events; the browser sends them to the focused grid element
+    this.__onClipboard = evt => this.__handleClipboard(evt);
+    qx.bom.Event.addNativeListener(document, "copy", this.__onClipboard);
+    qx.bom.Event.addNativeListener(document, "paste", this.__onClipboard);
 
     this.__editingController = new qxl.datagrid.ui.EditingController(this);
   },
@@ -461,6 +465,32 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       this._moveFocusByKey(evt);
     },
 
+    /** @type {Function} `__handleClipboard` bound to the grid, the native listener for `copy` and `paste` */
+    __onClipboard: null,
+
+    /**
+     * Native handler for `copy` and `paste` of the document: while the grid itself has the keyboard
+     * focus (not an editor), Ctrl+C copies the text of the focused cell and Ctrl+V writes the text
+     * into it (see `Column.formatForClipboard` and `Column.parseFromClipboard`)
+     *
+     * @param {ClipboardEvent} evt
+     */
+    __handleClipboard(evt) {
+      let element = this.getContentElement().getDomElement();
+      if (!element || evt.target !== element || !evt.clipboardData) {
+        return;
+      }
+      if (evt.type == "copy") {
+        let text = this.__editingController.getFocusedCellText();
+        if (text !== null) {
+          evt.clipboardData.setData("text/plain", text);
+          evt.preventDefault();
+        }
+      } else if (this.__editingController.pasteIntoFocusedCell(evt.clipboardData.getData("text/plain"))) {
+        evt.preventDefault();
+      }
+    },
+
     /**
      * Event handler for `keydown`: Ctrl+A selects everything, if the selection mode allows it
      *
@@ -848,6 +878,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
   },
 
   destruct() {
+    qx.bom.Event.removeNativeListener(document, "copy", this.__onClipboard);
+    qx.bom.Event.removeNativeListener(document, "paste", this.__onClipboard);
     this._disposeObjects("__editingController");
   },
 

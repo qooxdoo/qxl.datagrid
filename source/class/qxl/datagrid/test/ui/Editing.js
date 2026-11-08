@@ -183,6 +183,42 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertTrue(this.__grid.getFocusedPosition().equals(0, 2));
     },
 
+    testCopyAndPaste() {
+      let grid = this.__grid;
+      let second = this.__model.getItem(1);
+      const clipboard = (type, text) => {
+        let data = new DataTransfer();
+        if (text !== undefined) {
+          data.setData("text/plain", text);
+        }
+        let evt = new ClipboardEvent(type, { clipboardData: data, bubbles: true, cancelable: true });
+        grid.getContentElement().getDomElement().dispatchEvent(evt);
+        return data.getData("text/plain");
+      };
+
+      grid.setFocusedPosition(0, 3);
+      this.assertEquals("car", clipboard("copy"));
+      grid.setFocusedPosition(0, 5);
+      this.assertEquals("30", clipboard("copy"));
+
+      // a select takes the label, of several fields only the first one counts
+      grid.setFocusedPosition(1, 3);
+      clipboard("paste", "car\tignored\nignored");
+      this.assertEquals("car", second.getIcon());
+      // numbers in the format of the column, booleans as text
+      grid.setFocusedPosition(1, 4);
+      clipboard("paste", "1.5");
+      this.assertEquals(1.5, second.getWeight());
+      grid.setFocusedPosition(1, 9);
+      clipboard("paste", "true");
+      this.assertTrue(second.getInTrucks());
+      // invalid text becomes the error of the cell
+      grid.setFocusedPosition(1, 5);
+      clipboard("paste", "fast");
+      this.assertEquals(40, second.getMaxSpeed());
+      this.assertNotNull(grid.getCellError(second, grid.getColumns().getColumn(5)));
+    },
+
     testToggleAndReadOnly() {
       const press = qxl.datagrid.test.util.InputHelper.press;
       let grid = this.__grid;

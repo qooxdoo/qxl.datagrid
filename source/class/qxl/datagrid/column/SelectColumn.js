@@ -81,6 +81,30 @@ qx.Class.define("qxl.datagrid.column.SelectColumn", {
      */
     getEditorValue(editor) {
       return editor.getModelSelection().getItem(0) ?? null;
+    },
+
+    /**
+     * @override
+     */
+    formatForClipboard(value) {
+      return this.getLabelFor(value);
+    },
+
+    /**
+     * Accepts the label or the model value of an option; an empty text is null
+     *
+     * @override
+     */
+    parseFromClipboard(text) {
+      let trimmed = text.trim();
+      if (trimmed === "") {
+        return null;
+      }
+      let option = (this.getOptions() || []).find(option => option.label === trimmed || String(option.model) === trimmed);
+      if (!option) {
+        throw new Error(qx.locale.Manager.tr("Not one of the choices: %1", text));
+      }
+      return option.model;
     }
   }
 });

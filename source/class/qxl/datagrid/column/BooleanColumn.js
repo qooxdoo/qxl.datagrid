@@ -52,6 +52,29 @@ qx.Class.define("qxl.datagrid.column.BooleanColumn", {
      */
     getToggledValue(value) {
       return !value;
+    },
+
+    /**
+     * @override
+     */
+    formatForClipboard(value) {
+      return value ? "true" : "false";
+    },
+
+    /**
+     * Accepts "true"/"false", "1"/"0" and the check mark
+     *
+     * @override
+     */
+    parseFromClipboard(text) {
+      let trimmed = text.trim().toLowerCase();
+      if (trimmed == "true" || trimmed == "1" || trimmed == this.getCheckMark()) {
+        return true;
+      }
+      if (trimmed == "false" || trimmed == "0" || trimmed == "") {
+        return false;
+      }
+      throw new Error(qx.locale.Manager.tr("Not a yes/no value: %1", text));
     }
   }
 });
