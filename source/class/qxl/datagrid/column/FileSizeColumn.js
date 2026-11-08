@@ -29,11 +29,14 @@ qx.Class.define("qxl.datagrid.column.FileSizeColumn", {
     /** Whether to use IEC "binary" (ie 1kb == 1,024 bytes); if false then 1kb == 1,000 bytes */
     binary: {
       init: true,
-      check: "Binary"
+      check: "Boolean"
     }
   },
-  construct() {
-    super();
+  /**
+   * @param {String?} path the path to the value in the model
+   */
+  construct(path) {
+    super(path);
     this.setBindingOptions((widget, model) => ({
       converter: (data, model, source, target) => (!data ? "" : this._convertValueForDisplay(data))
     }));

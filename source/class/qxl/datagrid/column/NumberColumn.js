@@ -22,8 +22,11 @@
 qx.Class.define("qxl.datagrid.column.NumberColumn", {
   extend: qxl.datagrid.column.Column,
 
-  construct() {
-    super();
+  /**
+   * @param {String?} path the path to the value in the model
+   */
+  construct(path) {
+    super(path);
     this.setBindingOptions((widget, model) => ({
       converter: value => (value ? value.toFixed(2) : "")
     }));
