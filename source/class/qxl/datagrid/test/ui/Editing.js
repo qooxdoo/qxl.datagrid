@@ -337,6 +337,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
 
       // a locked column, and the whole grid without editing
       grid.getColumns().getColumn(2).setReadOnly(true);
+      grid.updateWidgets();
       qx.ui.core.queue.Manager.flush();
       this.assertEquals("true", attribute(pane.getChildAtPosition(1, 2), "aria-readonly"));
       this.assertNull(attribute(pane.getChildAtPosition(1, 1), "aria-readonly"));
@@ -344,6 +345,48 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       grid.setEditable(false);
       qx.ui.core.queue.Manager.flush();
       this.assertEquals("true", attribute(grid, "aria-readonly"));
+    },
+
+    testCellEditable() {
+      const press = qxl.datagrid.test.util.InputHelper.press;
+      let grid = this.__grid;
+      let pane = grid.getQxObject("widgetPane");
+      const readOnly = (row, column) => pane.getChildAtPosition(row, column).getContentElement().getDomElement().getAttribute("aria-readonly");
+      let locked = new Set([this.__model.getItem(1)]);
+      grid.setCellEditable(model => !locked.has(model));
+      grid.updateWidgets();
+      qx.ui.core.queue.Manager.flush();
+
+      // a locked row: no editor, no switching by key or click, aria-readonly; the next row stays editable
+      this.assertNull(this.__openEditor(1, 1));
+      this.assertEquals("true", readOnly(1, 1));
+      this.assertNull(readOnly(2, 1));
+      this.assertNotNull(this.__openEditor(2, 1));
+      press("Escape");
+      let second = this.__model.getItem(1);
+      let inTrucks = second.getInTrucks();
+      grid.setFocusedPosition(1, 9);
+      press("Space");
+      qxl.datagrid.test.util.InputHelper.tap(pane.getChildAtPosition(1, 9));
+      this.assertEquals(inTrucks, second.getInTrucks());
+      grid.setFocusedPosition(1, 1);
+
+      // the condition changes with the model; the cells follow after rendering again
+      locked = new Set([this.__model.getItem(2)]);
+      grid.updateWidgets();
+      qx.ui.core.queue.Manager.flush();
+      this.assertNull(readOnly(1, 1));
+      this.assertEquals("true", readOnly(2, 1));
+
+      // an editor whose cell got locked meanwhile writes nothing, Enter goes on with the row below
+      let editor = this.__openEditor(3, 1);
+      editor.setValue("written?");
+      locked.add(this.__model.getItem(3));
+      press("Enter");
+      this.assertEquals("Vehicle type 4", this.__model.getItem(3).getName());
+      this.assertEquals(0, this.__changes.length);
+      this.assertTrue(grid.getFocusedPosition().equals(4, 1));
+      press("Escape");
     }
   }
 });

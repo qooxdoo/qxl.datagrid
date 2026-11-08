@@ -134,6 +134,21 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       event: "changeCellValidator"
     },
 
+    /**
+     * Decides per cell whether it may be edited, on top of `editable` and the column:
+     * `(model, column) => Boolean`; only `false` locks the cell. It applies to the editor, to switching
+     * booleans and to `aria-readonly`. When the answer changes with the model, call
+     * `scheduleUpdateWidgets()` (or `updateWidgets()` at once) so that the cells on display follow.
+     * A locked cell looks like any other; to show it, return a state from `cellStates`.
+     */
+    cellEditable: {
+      init: null,
+      nullable: true,
+      check: "Function",
+      event: "changeCellEditable",
+      apply: "_applyCellEditable"
+    },
+
     widgetsContextMenu: {
       check: "qx.ui.menu.Menu",
       init: null,
@@ -592,6 +607,25 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         this.__editingController?.cancelEditing();
       }
       this.getContentElement().setAttribute("aria-readonly", value ? null : "true");
+      this.scheduleUpdateWidgets();
+    },
+
+    /**
+     * Apply for `cellEditable`
+     */
+    _applyCellEditable() {
+      this.scheduleUpdateWidgets();
+    },
+
+    /**
+     * Whether a cell may be edited: `editable`, the column and `cellEditable` allow it
+     *
+     * @param {qx.core.Object} model the model of the cell
+     * @param {qxl.datagrid.column.Column} column the column of the cell
+     * @return {Boolean}
+     */
+    isCellEditable(model, column) {
+      return this.__editingController.isCellEditable(model, column);
     },
 
     /**

@@ -200,10 +200,12 @@ qx.Class.define("qxl.datagrid.column.Column", {
     __widgetStateUpdaters: null,
 
     /**
-     * Event handler for `changeEffectivelyReadOnly` and `changeEffectivelyEnabled`
+     * Event handler for `changeEffectivelyReadOnly` and `changeEffectivelyEnabled`; the grid renders
+     * again, since `aria-readonly` of the cells depends on it
      */
     __updateWidgetStates() {
       this.__widgetStateUpdaters.forEach(update => update());
+      this.__datagrid?.scheduleUpdateWidgets();
     },
 
     /**
@@ -298,12 +300,10 @@ qx.Class.define("qxl.datagrid.column.Column", {
         update = () => {
           widget.setReadOnly(this.isEffectivelyReadOnly());
           widget.setEnabled(this.isEffectivelyEnabled());
-          widget.getContentElement().setAttribute("aria-readonly", this.isEditable() ? null : "true");
         };
       } else {
         update = () => {
           widget.setEnabled(this.isEffectivelyEnabled() && !this.isEffectivelyReadOnly());
-          widget.getContentElement().setAttribute("aria-readonly", this.isEditable() ? null : "true");
         };
       }
       this.__widgetStateUpdaters.add(update);

@@ -122,6 +122,18 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     /** @type {Map<String, String>?} error messages by `cellErrorKey`, owned by the grid */
     __cellErrors: null,
 
+    /** @type {Function?} `(model, column, columnEditable) => Boolean`, for `aria-readonly` of the cells */
+    __cellEditableFn: null,
+
+    /**
+     * Sets the function which tells whether a cell may be edited, for `aria-readonly`
+     *
+     * @param {Function?} fn `(model, column, columnEditable) => Boolean`
+     */
+    setCellEditableFunction(fn) {
+      this.__cellEditableFn = fn;
+    },
+
     _applyWidgetsContextMenu(value, old) {
       for (let child of Object.values(this.__children)) {
         let ctxMenu = child.getContextMenu();
@@ -247,6 +259,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let focusedRow = focusedPosition?.getRow() ?? -1;
       let focusedColumn = focusedPosition?.getColumn() ?? -1;
       let cellErrors = this.__cellErrors;
+      let cellEditableFn = this.__cellEditableFn;
+      // `column.isEditable()` once per column, not per cell
+      let editableColumns = [];
 
       let currentRelativePosition = new qxl.datagrid.source.Position();
       let currentAbsolutePosition = new qxl.datagrid.source.Position();
@@ -363,6 +378,13 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
             child.addState("focused");
           } else {
             child.removeState("focused");
+          }
+          if (cellEditableFn) {
+            let columnIndex = columnSizeData.columnIndex;
+            let column = columns.getColumn(columnIndex);
+            editableColumns[columnIndex] ??= column.isEditable();
+            let editable = cellEditableFn(model, column, editableColumns[columnIndex]);
+            child.getContentElement().setAttribute("aria-readonly", editable ? null : "true");
           }
           if (cellErrors?.size || child.hasState("invalid")) {
             this.__applyCellError(child, model, columnSizeData.columnIndex);

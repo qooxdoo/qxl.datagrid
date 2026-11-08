@@ -31,6 +31,7 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
     this.__cellErrors = new Map();
     let pane = grid.getQxObject("widgetPane");
     pane.setCellErrors(this.__cellErrors);
+    pane.setCellEditableFunction((model, column, columnEditable) => this.isCellEditable(model, column, columnEditable));
     pane.addListener("cellTap", evt => this.__onCellTap(evt.getData()));
     pane.addListener("cellDoubleTap", evt => this.__onCellDoubleTap(evt.getData()));
     // editors like the select box stop Enter and Tab themselves, so these are taken before them
@@ -220,6 +221,23 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
     },
 
     /**
+     * Whether a cell may be edited: `editable` of the grid, the column and the grid's `cellEditable`
+     * allow it
+     *
+     * @param {qx.core.Object} model the model of the cell
+     * @param {qxl.datagrid.column.Column} column the column of the cell
+     * @param {Boolean?} columnEditable `column.isEditable()` if the caller has it already
+     * @return {Boolean}
+     */
+    isCellEditable(model, column, columnEditable) {
+      if (!this.__grid.getEditable() || !(columnEditable ?? column.isEditable())) {
+        return false;
+      }
+      let cellEditable = this.__grid.getCellEditable();
+      return !cellEditable || cellEditable(model, column) !== false;
+    },
+
+    /**
      * Whether an editor is open, possibly scrolled out of view
      *
      * @return {Boolean}
@@ -246,7 +264,7 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
         return true;
       }
       let cell = this.__getFocusedCell();
-      if (!cell || !this.__grid.getEditable() || !cell.column.isEditable()) {
+      if (!cell || !this.isCellEditable(cell.model, cell.column)) {
         return false;
       }
       let editor = cell.column.createWidgetForEdit();
@@ -295,6 +313,14 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
       if (!editing) {
         return true;
       }
+      if (!this.isCellEditable(editing.model, editing.column)) {
+        // the model has changed while editing and the cell is locked now: discard
+        if (editing.rejected) {
+          this.setCellError(editing.model, editing.column, null);
+        }
+        this.__closeEditor(refocus);
+        return true;
+      }
       let error;
       try {
         let value = editing.column.getEditorValue(editing.editor);
@@ -339,7 +365,7 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
      */
     toggleFocusedCell() {
       let cell = this.__getFocusedCell();
-      if (!cell || !this.__grid.getEditable() || !cell.column.isEditable()) {
+      if (!cell || !this.isCellEditable(cell.model, cell.column)) {
         return false;
       }
       let value = cell.column.getToggledValue(cell.column.getModelValue(cell.model));
