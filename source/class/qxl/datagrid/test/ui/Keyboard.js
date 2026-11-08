@@ -147,7 +147,7 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       this.assertEquals(4, fired, "one change per key, like with the pointer");
     },
 
-    testEscapeClearsSelection() {
+    testEscapeAndContextMenu() {
       const press = qxl.datagrid.test.util.InputHelper.press;
       let grid = this.__grid;
       let root = qx.core.Init.getApplication().getRoot();
@@ -174,6 +174,25 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
         this.assertEquals(2, escapesOutside);
       } finally {
         root.removeListener("keypress", onRootKey);
+      }
+
+      // the menu key and Shift+F10 open the context menu next to the focused cell
+      let menu = new qx.ui.menu.Menu();
+      menu.add(new qx.ui.menu.Button("Action"));
+      grid.setWidgetsContextMenu(menu);
+      try {
+        press("Apps");
+        qx.ui.core.queue.Manager.flush();
+        this.assertTrue(menu.isVisible());
+        this.assertIdentical(grid.getQxObject("widgetPane").getChildAtPosition(2, 0), menu.getOpener());
+        menu.hide();
+        press("F10", { shift: true });
+        qx.ui.core.queue.Manager.flush();
+        this.assertTrue(menu.isVisible());
+        menu.hide();
+      } finally {
+        grid.setWidgetsContextMenu(null);
+        menu.destroy();
       }
     },
 

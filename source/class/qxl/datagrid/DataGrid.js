@@ -465,6 +465,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       let handled = false;
       if (key == "Escape") {
         handled = evt.getModifiers() == 0 && this.__clearSelectionByKey();
+      } else if (key == "Apps" || (key == "F10" && evt.isShiftPressed())) {
+        handled = this.__openContextMenu();
       } else {
         handled = evt.getModifiers() == 0 && this.__handleTreeKey(key);
       }
@@ -488,6 +490,26 @@ qx.Class.define("qxl.datagrid.DataGrid", {
         return false;
       }
       manager.resetSelection();
+      return true;
+    },
+
+    /**
+     * Opens the context menu of the focused cell next to it (menu key, Shift+F10); pointers open it
+     * with the `contextmenu` event as usual
+     *
+     * @return {Boolean} true if a menu has been opened
+     */
+    __openContextMenu() {
+      let position = this.getFocusedPosition();
+      let cell = position && this.getQxObject("widgetPane").getChildAtPosition(position.getRow(), position.getColumn());
+      let menu = cell?.getContextMenu();
+      if (!menu) {
+        return false;
+      }
+      // all cells share the menu, its opener is the last cell it was given to
+      menu.setOpener(cell);
+      menu.placeToWidget(cell, true);
+      menu.show();
       return true;
     },
 
