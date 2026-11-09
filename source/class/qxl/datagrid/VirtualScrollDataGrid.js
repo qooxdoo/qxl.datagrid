@@ -280,7 +280,9 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
       let styling = this.getSizeCalculator().getStyling();
       let oddEvenBounds = this.getQxObject("oddEvenRows").getBounds();
       if (oddEvenBounds && "height" in oddEvenBounds) {
-        return Math.floor(oddEvenBounds.height / (styling.getMaxRowHeight() ?? styling.getMinRowHeight()));
+        // n rows take n heights and n - 1 spacings
+        let verticalSpacing = styling.getVerticalSpacing();
+        return Math.floor((oddEvenBounds.height + verticalSpacing) / ((styling.getMaxRowHeight() ?? styling.getMinRowHeight()) + verticalSpacing));
       }
       if (qx.core.Environment.get("qx.debug")) {
         this.warn(`${this.classname}.getMaxRows called too early, assuming maximum of zero rows`);

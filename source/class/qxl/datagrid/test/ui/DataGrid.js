@@ -92,6 +92,35 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
       assertMapEquals(widgets["3:3"].getLayoutProperties(), { top: 80, height: 40, left: 80, width: 40 });
     },
 
+    async testScrollToAppendedRow() {
+      let columns = new qxl.datagrid.column.Columns();
+      columns.add(new qxl.datagrid.column.TextColumn("name").set({ caption: "Name", width: 200 }));
+      let dataSource = new qxl.datagrid.source.ArrayDataSource();
+      dataSource.setColumns(columns);
+      let grid = new qxl.datagrid.VirtualScrollDataGrid(columns).set({ width: 400, height: 480 });
+      grid.getStyling().setHeaderRowHeight(22);
+      grid.setDataSource(dataSource);
+      qx.core.Init.getApplication().getRoot().add(grid, { left: 0, top: 0 });
+      const nextChangeSize = () => new Promise(resolve => dataSource.addListenerOnce("changeSize", resolve));
+      const createModel = name => qx.data.marshal.Json.createModel({ name });
+      let sized = nextChangeSize();
+      let model = new qx.data.Array(Array.from({ length: 44 }, (_, i) => createModel("Row " + i)));
+      dataSource.setModel(model);
+      await sized;
+      qx.ui.core.queue.Manager.flush();
+
+      // the size of the data source is reported after the grid has scrolled to the new row
+      sized = nextChangeSize();
+      model.push(createModel("Row 44"));
+      grid.setFocusedPosition(44, 0);
+      await sized;
+      qx.ui.core.queue.Manager.flush();
+
+      let rows = grid.getSizeCalculator().getSizes().rows.map(rowData => rowData.rowIndex);
+      grid.destroy();
+      this.assertTrue(rows.includes(44), `row 44 not on display, rows ${rows}`);
+    },
+
     testComputeFocusMove() {
       const move = (key, row, column, modifiers = {}, columns = [0, 1, 2, 3]) =>
         qxl.datagrid.DataGrid.computeFocusMove(key, { shift: false, ctrl: false, ...modifiers }, { row, column }, 10, columns, 3);
