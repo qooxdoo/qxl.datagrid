@@ -15,6 +15,8 @@
 
 /**
  * Keyboard navigation in a rendered virtual grid, driven by synthetic key events
+ *
+ * @ignore(MouseEvent)
  */
 qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
   extend: qx.dev.unit.TestCase,

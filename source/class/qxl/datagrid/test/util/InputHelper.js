@@ -16,6 +16,9 @@
 /**
  * Sends synthetic native keyboard and pointer events, so that they take the same way through
  * qooxdoo's event handlers as real input; used by the tests and the performance page
+ *
+ * @ignore(PointerEvent)
+ * @ignore(KeyboardEvent)
  */
 qx.Class.define("qxl.datagrid.test.util.InputHelper", {
   type: "static",

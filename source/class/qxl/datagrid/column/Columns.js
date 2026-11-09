@@ -21,6 +21,8 @@
 
 /**
  * Provides a simple list of columns
+ *
+ * @ignore(Intl)
  */
 qx.Class.define("qxl.datagrid.column.Columns", {
   extend: qx.core.Object,

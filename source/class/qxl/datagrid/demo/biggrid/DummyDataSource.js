@@ -42,6 +42,9 @@
  * Models no longer on display are not disposed but left to the garbage collector; as long as
  * something holds one (eg the selection of the grid), the cell gets the same model again when it
  * comes back into view, so it is still shown as selected.
+ *
+ * @ignore(FinalizationRegistry)
+ * @ignore(WeakRef)
  */
 qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
   extend: qx.core.Object,

@@ -12,6 +12,8 @@
  *
  * In the console: `await perf.runAll()` returns the results as an object; `perf.focusLatency()` and
  * `perf.editLatency()` measure keyboard focus and opening editors.
+ *
+ * @ignore(URLSearchParams)
  */
 qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
   extend: qx.ui.container.Composite,

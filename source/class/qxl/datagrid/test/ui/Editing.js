@@ -15,6 +15,9 @@
 
 /**
  * Editing in a rendered virtual grid with the 13 typed columns of the performance page
+ *
+ * @ignore(DataTransfer)
+ * @ignore(ClipboardEvent)
  */
 qx.Class.define("qxl.datagrid.test.ui.Editing", {
   extend: qx.dev.unit.TestCase,

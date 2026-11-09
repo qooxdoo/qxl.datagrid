@@ -20,6 +20,7 @@
  * This is the demo application class of "qxl.datagrid"
  *
  * @asset(qxl/datagrid/*)
+ * @ignore(URLSearchParams)
  */
 qx.Class.define("qxl.datagrid.demo.Application", {
   extend: qx.application.Standalone,

@@ -19,6 +19,8 @@
 /**
  * Displays and edits a number with `numberFormat`, by default with 2 decimal places in the format of
  * the current locale; an empty input becomes null
+ *
+ * @ignore(Intl)
  */
 qx.Class.define("qxl.datagrid.column.NumberColumn", {
   extend: qxl.datagrid.column.Column,
