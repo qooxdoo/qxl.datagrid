@@ -235,8 +235,68 @@ Cells can be changed when `editable` is set on the grid; a column with `readOnly
 
 The grid creates an editor only for the cell being edited: a text field by default (`TextColumn`, `NumberColumn` with
 parsing), a select box for `SelectColumn` (`options`); a `BooleanColumn` has no editor, Space or a click switches it.
-`DateColumn` edits the text in its `dateFormat`. Other editors come from overriding `createWidgetForEdit`, `setEditorValue` and
-`getEditorValue` of the column; `formatForClipboard` and `parseFromClipboard` convert the values for Ctrl+C and Ctrl+V.
+`DateColumn` edits the text in its `dateFormat`. For other editors, see below.
+
+#### Custom Editors
+
+The editor belongs to the column, so a custom editor is a subclass of `qxl.datagrid.column.Column` (or of one of the
+existing columns) which overrides three methods:
+
+- `createWidgetForEdit()` - returns the editor, any widget; it is created only for the cell being edited and disposed
+  when editing ends
+- `setEditorValue(editor, value)` - puts the value of the model into the editor
+- `getEditorValue(editor)` - returns the value for the model; an `Error` thrown here becomes the error of the cell and
+  the editor stays open
+
+```js
+qx.Class.define("myapp.ColorColumn", {
+  extend: qxl.datagrid.column.Column,
+
+  members: {
+    createWidgetForEdit() {
+      let box = new qx.ui.form.ComboBox();
+      ["#ff0000", "#00ff00", "#0000ff"].forEach(color => box.add(new qx.ui.form.ListItem(color)));
+      return box;
+    },
+
+    setEditorValue(editor, value) {
+      editor.setValue(value ?? "");
+    },
+
+    getEditorValue(editor) {
+      let value = editor.getValue()?.trim();
+      if (value && !/^#[0-9a-f]{6}$/i.test(value)) {
+        throw new Error("Not a color: " + value);
+      }
+      return value || null;
+    }
+  }
+});
+```
+
+The column is then added like any other, and the grid must be `editable`; `readOnly`, `cellEditable` and
+`cellValidator` apply as for the built-in columns:
+
+```js
+const columns = new qxl.datagrid.column.Columns();
+columns.add(new qxl.datagrid.column.TextColumn("name").set({ caption: "Name" }));
+columns.add(new myapp.ColorColumn("color").set({ caption: "Color" }));
+
+const grid = new qxl.datagrid.DataGrid(columns).set({ dataSource: myDataSource, editable: true });
+```
+
+Shortcuts and related methods:
+
+- if the editor stays a text field, overriding `_formatForEdit(value)` and `_parseFromEditor(text)` is enough, like
+  `NumberColumn` and `DateColumn` do; Ctrl+C and Ctrl+V use them as well
+- `formatForClipboard(value)` and `parseFromClipboard(text)` change only what Ctrl+C and Ctrl+V do
+- a column whose value is switched directly, like `BooleanColumn`, returns `null` from `createWidgetForEdit()` and the
+  new value from `getToggledValue(value)`
+- the cell on display still comes from `createWidgetForDisplay()` and `bindingOptions`
+
+The grid knows only one kind of popup: while the list of a select box or combo box (`qx.ui.form.AbstractSelectBox`) is
+open, Enter chooses in the list. With an editor that has another popup, such as a `DateField`, Enter takes the value
+and ends editing.
 
 ### Row and Cell States
 
