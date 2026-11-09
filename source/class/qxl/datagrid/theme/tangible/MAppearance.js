@@ -80,6 +80,16 @@ qx.Theme.define("qxl.datagrid.theme.tangible.MAppearance", {
       }
     },
 
+    // icons of `SelectColumn` and `BooleanColumn` stay within the row, keeping their proportions
+    "qxl-datagrid-cell/icon": {
+      style(states) {
+        return {
+          scale: true,
+          maxHeight: 20
+        };
+      }
+    },
+
     "qxl-datagrid-row": {
       style(states) {
         let backgroundColor = "qxl-datagrid-row-background-even";

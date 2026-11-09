@@ -29,12 +29,17 @@ qx.Class.define("qxl.datagrid.column.SelectColumn", {
       this.setOptions(options);
     }
     this.setBindingOptions((widget, model) => ({
-      converter: value => this.getLabelFor(value)
+      converter: value => ({ label: this.getLabelFor(value), icon: this.__findOption(value)?.icon ?? null })
     }));
   },
 
   properties: {
-    /** The list to choose from, as objects `{label, model}`; `model` is the value written into the model */
+    /**
+     * The list to choose from, as objects `{label, model, icon}`; `model` is the value written into the
+     * model, the optional `icon` is a source for `qx.ui.basic.Image` (a resource, an alias or a font icon),
+     * shown in the cell and in the editor with the size of `qxl-datagrid-cell/icon` in the theme; with an
+     * empty label the cell shows only the icon
+     */
     options: {
       init: null,
       nullable: true,
@@ -51,20 +56,51 @@ qx.Class.define("qxl.datagrid.column.SelectColumn", {
      * @return {String} the label, the value itself if it is not in `options`
      */
     getLabelFor(value) {
-      let option = (this.getOptions() || []).find(option => option.model === value);
+      let option = this.__findOption(value);
       if (option) {
-        return option.label;
+        return option.label ?? "";
       }
       return value === null || value === undefined ? "" : String(value);
     },
 
     /**
+     * Returns the option of a value
+     *
+     * @param {*} value a value of the model
+     * @return {Object?} the option, null if the value is not in `options`
+     */
+    __findOption(value) {
+      return (this.getOptions() || []).find(option => option.model === value) ?? null;
+    },
+
+    /**
+     * @override
+     */
+    createWidgetForDisplay() {
+      return new qxl.datagrid.ui.IconCell();
+    },
+
+    /**
+     * The icons get the size which the theme gives the icons of the cells
+     *
      * @override
      */
     createWidgetForEdit() {
+      let style = qx.theme.manager.Appearance.getInstance().styleFrom("qxl-datagrid-cell/icon", {}) ?? {};
+      let size = {};
+      for (let key of ["scale", "maxWidth", "maxHeight"]) {
+        if (style[key] !== undefined) {
+          size[key] = style[key];
+        }
+      }
       let box = new qx.ui.form.SelectBox();
+      box.getChildControl("atom").getChildControl("icon").set(size);
       for (let option of this.getOptions() || []) {
-        box.add(new qx.ui.form.ListItem(option.label, null, option.model));
+        let item = new qx.ui.form.ListItem(option.label ?? "", option.icon ?? null, option.model);
+        if (option.icon) {
+          item.getChildControl("icon").set(size);
+        }
+        box.add(item);
       }
       return box;
     },

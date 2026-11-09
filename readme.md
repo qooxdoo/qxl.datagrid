@@ -240,6 +240,11 @@ The grid creates an editor only for the cell being edited: a text field by defau
 parsing), a select box for `SelectColumn` (`options`); a `BooleanColumn` has no editor, Space or a click switches it.
 `DateColumn` edits the text in its `dateFormat`. For other editors, see below.
 
+An option of a `SelectColumn` may have an `icon` besides `label` and `model` (a resource, an alias or a font icon);
+the cell (`qxl.datagrid.ui.IconCell`) and the items of the select box show it, an empty label leaves only the icon.
+The theme sizes the icons with the appearance `qxl-datagrid-cell/icon`; the themes of the package set `scale` and a
+`maxHeight` of 20 pixels, so an icon is scaled down within the row and keeps its proportions.
+
 #### Custom Editors
 
 The editor belongs to the column, so a custom editor is a subclass of `qxl.datagrid.column.Column` (or of one of the
