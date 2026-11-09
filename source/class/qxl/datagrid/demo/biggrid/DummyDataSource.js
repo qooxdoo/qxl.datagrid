@@ -38,6 +38,10 @@
  * The other functions (ie those defined by `qxl.datagrid.source.IDataSource`) are
  * all synchronous and report data from the cache kept by the DummyDataSource; the
  * DataGrid will wait until `makeAvailable` has completed.
+ *
+ * Models no longer on display are not disposed but left to the garbage collector; as long as
+ * something holds one (eg the selection of the grid), the cell gets the same model again when it
+ * comes back into view, so it is still shown as selected.
  */
 qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
   extend: qx.core.Object,
@@ -52,6 +56,13 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
   construct(numRows, numColumns) {
     super();
     this.__data = {};
+    this.__cache = new Map();
+    // a cell may have a newer model by then, its entry stays
+    this.__finalizer = new FinalizationRegistry(id => {
+      if (!this.__cache.get(id)?.deref()) {
+        this.__cache.delete(id);
+      }
+    });
     if (numRows) {
       this.setNumRows(numRows);
     }
@@ -88,6 +99,12 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
     /** @type{qxl.datagrid.source.Range} the current range of data that has been promised via `makeAvailable` */
     __range: null,
 
+    /** @type{Map<String,WeakRef>} every model still alive, indexed by row:column, eg because it is selected */
+    __cache: null,
+
+    /** @type{FinalizationRegistry} removes the entries of collected models from `__cache` */
+    __finalizer: null,
+
     /**
      * Apply for numRows and numColumns
      * @param value
@@ -96,8 +113,6 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
       for (let id in this.__data) {
         let pos = qxl.datagrid.source.Position.fromId(id);
         if (pos.getColumn() >= this.getNumColumns() || pos.getRow() >= this.getNumRows()) {
-          let model = this.__data[id];
-          model.dispose();
           delete this.__data[id];
         }
       }
@@ -125,24 +140,23 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
      * @override
      */
     async makeAvailable(range) {
-      let oldData = this.__data;
       let newData = {};
 
-      // Create our model object
+      // Create our model object, or take the one still alive for this cell
       const allocate = pos => {
         let id = pos.toId();
         // column zero is in the range and in the rows iterator; keep the model of the first pass
         if (newData[id]) {
           return;
         }
-        let model = oldData[id];
+        let model = this.__cache.get(id)?.deref();
         if (!model) {
           model = new qxl.datagrid.demo.biggrid.DummyModel().set({
             rowIndex: pos.getRow(),
             columnIndex: pos.getColumn()
           });
-        } else {
-          delete oldData[id];
+          this.__cache.set(id, new WeakRef(model));
+          this.__finalizer.register(model, id);
         }
         newData[id] = model;
       };
@@ -157,12 +171,8 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
         allocate(pos);
       }
 
-      // Get rid of data no longer on display
-      for (let id in oldData) {
-        oldData[id].dispose();
-      }
-
-      // Save it
+      // Data no longer on display is left to the garbage collector, not disposed: the selection of
+      // the grid may still hold it
       this.__data = newData;
       this.__range = range;
     },

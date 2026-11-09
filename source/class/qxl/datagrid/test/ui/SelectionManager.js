@@ -157,6 +157,15 @@ qx.Class.define("qxl.datagrid.test.ui.SelectionManager", {
       select(94, { shift: true });
       this.assertEquals(3, manager.getSelection().getLength(), "a range within the loaded rows");
 
+      // a selected model is not disposed while scrolled away and comes back as the same object
+      let held = manager.getSelection().getItem(0);
+      let heldPosition = dataSource.getPositionOfModel(held);
+      await load(0, 4);
+      await load(90, 99);
+      this.assertFalse(held.isDisposed());
+      this.assertIdentical(held, dataSource.getModelForPosition(heldPosition));
+      this.assertTrue(manager.isSelected(dataSource.getModelForPosition(heldPosition)));
+
       manager.setSelectionStyle("area");
       await load(0, 4);
       select(0);

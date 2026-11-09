@@ -235,7 +235,7 @@ Cells can be changed when `editable` is set on the grid; a column with `readOnly
 
 The grid creates an editor only for the cell being edited: a text field by default (`TextColumn`, `NumberColumn` with
 parsing), a select box for `SelectColumn` (`options`); a `BooleanColumn` has no editor, Space or a click switches it.
-`DateColumn` has no date editor yet. Other editors come from overriding `createWidgetForEdit`, `setEditorValue` and
+`DateColumn` edits the text in its `dateFormat`. Other editors come from overriding `createWidgetForEdit`, `setEditorValue` and
 `getEditorValue` of the column; `formatForClipboard` and `parseFromClipboard` convert the values for Ctrl+C and Ctrl+V.
 
 ### Row and Cell States

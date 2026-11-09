@@ -24,8 +24,8 @@
  * in the massive spreadsheet demo in `qxl.datagrid.demo.biggrid.BigGridDemo`,
  * i.e. one instance of this object relates to one row/column combination.
  *
- * The `DummyDataSource` will create and dispose of these on demand, out of a
- * fabricated data set of 10 billion model objects
+ * The `DummyDataSource` will create these on demand, out of a fabricated data
+ * set of 10 billion model objects, and leave them to the garbage collector
  */
 qx.Class.define("qxl.datagrid.demo.biggrid.DummyModel", {
   extend: qx.core.Object,

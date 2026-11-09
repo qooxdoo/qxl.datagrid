@@ -53,10 +53,10 @@ qx.Class.define("qxl.datagrid.demo.array.ArrayDemo", {
         editable: true,
         columnVisibilityButtonVisible: true,
         widgetsContextMenu: this.getQxObject("contextMenu"),
-        // a title is required
-        cellValidator: (model, column, value) => (column.getPath() == "title" && !value ? "A title is required" : null),
-        // dates are only shown; books which are not in stock keep their price
-        cellEditable: (model, column) => column.getPath() != "date" && !(column.getPath() == "price" && !model.getInStock()),
+        // a title and a date are required
+        cellValidator: (model, column, value) => (["title", "date"].includes(column.getPath()) && !value ? `A ${column.getPath()} is required` : null),
+        // books which are not in stock keep their price
+        cellEditable: (model, column) => !(column.getPath() == "price" && !model.getInStock()),
         rowStates: model => (this.__changed.has(model) ? ["changed"] : null),
         cellStates: (model, column) => (this.__changed.get(model)?.has(column.getPath()) ? ["changed"] : null)
       });
