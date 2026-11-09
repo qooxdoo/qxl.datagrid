@@ -348,6 +348,13 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       // the keyboard continues from the clicked cell
       qxl.datagrid.test.util.InputHelper.press("Down");
       this.__assertFocus(4, 2);
+      // a real click (mousedown, which tap does not send) activates the cell widget, so qooxdoo sends
+      // the keys there; Ctrl+A still reaches the grid
+      pane.getChildAtPosition(4, 2).activate();
+      qx.ui.core.queue.Manager.flush();
+      this.__grid.getSelectionManager().setSelectionMode("multi");
+      qxl.datagrid.test.util.InputHelper.press("A", { ctrl: true });
+      this.assertEquals(this.__grid.getDataSource().getSize().getRow(), this.__grid.getSelection().getLength());
     },
 
     async testClippedGridScrolls() {

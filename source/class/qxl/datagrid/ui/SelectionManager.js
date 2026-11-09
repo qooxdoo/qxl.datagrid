@@ -255,31 +255,53 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     /**
      * Replaces current selection with the given items.
      *
+     * With `selectionStyle` "area", a range the data source has not loaded is ignored.
+     *
      * @param {qx.ui.core.Widget[]|qx.data.Array<qx.ui.core.Widget>|qxl.datagrid.source.Range} selection Items to select.
      * @throws {Error} if one of the items is not a child element and if
      *    items contains more than one elements.
      */
     setSelection(selection) {
-      this.__selectionRange = null;
       if (this.getSelectionStyle() === "area") {
         this.__setSelectionArea(selection);
       } else {
+        this.__selectionRange = null;
         this.__setSelectionStandard(selection);
       }
     },
 
+    /**
+     * Selects a range with `selectionStyle` "area"; a range the data source has not loaded leaves the
+     * selection as it is
+     *
+     * @param {qxl.datagrid.source.Range} range
+     */
     __setSelectionArea(range) {
       if (qx.core.Environment.get("qx.debug")) {
         this.assertInstance(range, qxl.datagrid.source.Range, `Failed to set selection in area selection style. The selection ${range} is not an instance of qxl.datagrid.source.Range`);
       }
+      let cells = this.__cellsFromRange(range);
+      if (!cells) {
+        return;
+      }
       this.__selectionRange = range;
       this.__anchor = range.getStart();
-      this.__selection.replace(this.__cellsFromRange(range));
+      this.__selection.replace(cells);
       this.setFocused(this.__selection.getItem(0));
     },
 
+    /**
+     * Collects the models of all cells in a range, one by one, so only from a range the data source
+     * has loaded
+     *
+     * @param {qxl.datagrid.source.Range} range
+     * @return {qx.data.Array?} the models, null if the data source has not loaded the range
+     */
     __cellsFromRange(range) {
       let dataSource = this.getDataSource();
+      if (!dataSource.isAvailable(range)) {
+        return null;
+      }
       let x1 = Math.min(range.getStart().getColumn(), range.getEnd().getColumn());
       let x2 = Math.max(range.getStart().getColumn(), range.getEnd().getColumn());
       let y1 = Math.min(range.getStart().getRow(), range.getEnd().getRow());
@@ -354,7 +376,8 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * - with `selectionStyle` "area", the range is the focused cell, with Shift it reaches from the
      *   anchor
      *
-     * Without Shift, the position becomes the anchor of later ranges.
+     * Without Shift, the position becomes the anchor of later ranges. A range over cells the data
+     * source has not loaded is not selected, only the focus moves.
      *
      * @param {qxl.datagrid.source.Position} position the cell clicked or focused
      * @param {"tap"|"move"|"space"} action what happened
@@ -398,26 +421,32 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
     },
 
     /**
-     * Selects all rows (or cells, or the whole area); does nothing in the modes "single" and "one"
+     * Selects all rows (or cells, or the whole area); does nothing in the modes "single" and "one",
+     * and only if the data source has loaded all cells (see `IDataSource.isAvailable`), because the
+     * selection holds every model
      *
      * @return {Boolean} true if everything has been selected
      */
     selectAll() {
-      let size = this.getDataSource()?.getSize();
+      let dataSource = this.getDataSource();
+      let size = dataSource?.getSize();
       if (!size || size.getRow() == 0) {
         return false;
       }
       let start = new qxl.datagrid.source.Position(0, 0);
       let end = new qxl.datagrid.source.Position(size.getRow() - 1, Math.max(0, size.getColumn() - 1));
       if (this.getSelectionStyle() == "area") {
-        this.setSelection(new qxl.datagrid.source.Range(start, end));
+        let range = new qxl.datagrid.source.Range(start, end);
+        if (!dataSource.isAvailable(range)) {
+          return false;
+        }
+        this.setSelection(range);
         return true;
       }
       if (!["multi", "additive"].includes(this.getSelectionMode())) {
         return false;
       }
-      this.__selectRange(start, end, false);
-      return true;
+      return this.__selectRange(start, end, false);
     },
 
     /**
@@ -475,16 +504,22 @@ qx.Class.define("qxl.datagrid.ui.SelectionManager", {
      * @param {qxl.datagrid.source.Position} from
      * @param {qxl.datagrid.source.Position} to
      * @param {Boolean} add whether the range is added to the current selection instead of replacing it
+     * @return {Boolean} false if the data source has not loaded the range, the selection is unchanged then
      */
     __selectRange(from, to, add) {
       let range = new qxl.datagrid.source.Range(from, to);
       if (this.getSelectionStyle() == "row") {
         range = new qxl.datagrid.source.Range(new qxl.datagrid.source.Position(from.getRow(), 0), new qxl.datagrid.source.Position(to.getRow(), 0));
       }
+      let cells = this.__cellsFromRange(range);
+      if (!cells) {
+        return false;
+      }
       let models = new Set(add ? this.__selection.toArray() : []);
-      this.__cellsFromRange(range).forEach(model => models.add(model));
+      cells.forEach(model => models.add(model));
       this.__selectionRange = null;
       this.__selection.replace([...models]);
+      return true;
     },
 
     /**

@@ -130,6 +130,42 @@ qx.Class.define("qxl.datagrid.test.ui.SelectionManager", {
       manager.selectAt(new Position(3, 1), "move", { shift: true });
       let range = manager.getSelectionRange();
       this.assertTrue(range.getStart().equals(1, 0) && range.getEnd().equals(3, 1), `range ${range.getStart()} - ${range.getEnd()}`);
+    },
+
+    /**
+     * The selection holds every model, so a data source loading on demand (like the big grid demo) is
+     * only selected where it has loaded; like the demo, the anchor stays behind when Ctrl+End jumps
+     * and loads the last rows
+     */
+    async testUnavailableRangesAreNotSelected() {
+      const Position = qxl.datagrid.source.Position;
+      let dataSource = new qxl.datagrid.demo.biggrid.DummyDataSource(100, 100);
+      let manager = new qxl.datagrid.ui.SelectionManager();
+      manager.set({ dataSource, selectionStyle: "cell", selectionMode: "multi" });
+      const select = (row, modifiers) => manager.selectAt(new Position(row, 0), "move", modifiers);
+      const load = (fromRow, toRow) => dataSource.makeAvailable(new qxl.datagrid.source.Range([fromRow, 0], [toRow, 9]));
+
+      await load(0, 4);
+      select(0);
+      let selected = manager.getSelection().toArray();
+      await load(90, 99);
+      select(95, { shift: true });
+      this.assertArrayEquals(selected, manager.getSelection().toArray(), "a range from an anchor no longer loaded");
+      this.assertFalse(manager.selectAll());
+      this.assertArrayEquals(selected, manager.getSelection().toArray());
+      select(92);
+      select(94, { shift: true });
+      this.assertEquals(3, manager.getSelection().getLength(), "a range within the loaded rows");
+
+      manager.setSelectionStyle("area");
+      await load(0, 4);
+      select(0);
+      await load(90, 99);
+      select(95, { shift: true });
+      let range = manager.getSelectionRange();
+      this.assertTrue(range.getStart().equals(0, 0) && range.getEnd().equals(0, 0), `range ${range.getStart()} - ${range.getEnd()}`);
+      this.assertEquals(1, manager.getSelection().getLength());
+      this.assertFalse(manager.selectAll());
     }
   }
 });

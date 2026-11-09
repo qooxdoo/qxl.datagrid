@@ -788,19 +788,22 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     },
 
     /**
-     * Event handler for `keydown`: Ctrl+A selects everything, if the selection mode allows it
+     * Event handler for `keydown`: Ctrl+A selects everything, if the selection mode allows it; in an
+     * open editor it is left to the editor. After a click, qooxdoo sends the keys to the clicked cell
+     * widget, so the target is not checked.
      *
      * @param {qx.event.type.KeySequence} evt
      */
     __onKeyDown(evt) {
-      if (evt.getTarget() === this && evt.isCtrlOrCommandPressed() && evt.getKeyIdentifier() == "A" && this.selectAll()) {
+      if (!this.isEditing() && evt.isCtrlOrCommandPressed() && evt.getKeyIdentifier() == "A" && this.selectAll()) {
         evt.preventDefault();
         evt.stopPropagation();
       }
     },
 
     /**
-     * Selects all rows (or cells), if `selectionMode` allows more than one
+     * Selects all rows (or cells), if `selectionMode` allows more than one and the data source has
+     * loaded all cells (see `IDataSource.isAvailable`)
      *
      * @return {Boolean} true if everything has been selected
      */
