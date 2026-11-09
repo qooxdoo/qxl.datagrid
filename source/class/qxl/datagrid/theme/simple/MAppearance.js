@@ -41,6 +41,15 @@ qx.Theme.define("qxl.datagrid.theme.simple.MAppearance", {
       }
     },
 
+    // the caption of a number column is aligned right, like its cells
+    "qxl-datagrid-header-cell/label": {
+      style(states) {
+        return {
+          textAlign: states.number ? "right" : undefined
+        };
+      }
+    },
+
     "qxl-datagrid-widgetpane": {
       style(states) {
         return {
@@ -64,11 +73,12 @@ qx.Theme.define("qxl.datagrid.theme.simple.MAppearance", {
         if (states.invalid) {
           decorator = "qxl-datagrid-cell-invalid";
         }
-        return {
-          backgroundColor,
-          textColor,
-          decorator
-        };
+        let style = { backgroundColor, textColor, decorator };
+        // a number cell is a label; other cells need not have textAlign
+        if (states.number) {
+          style.textAlign = "right";
+        }
+        return style;
       }
     },
 

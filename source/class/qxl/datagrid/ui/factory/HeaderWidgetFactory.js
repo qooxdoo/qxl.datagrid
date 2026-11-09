@@ -92,8 +92,9 @@ qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
     /**
      * @override
      */
-    _createWidget() {
+    _createWidget(column) {
       let widget = new qxl.datagrid.ui.ColumnHeaderCell().set({ appearance: this.getWidgetAppearance() });
+      column.getWidgetStates().forEach(state => widget.addState(state));
       return widget;
     }
   }

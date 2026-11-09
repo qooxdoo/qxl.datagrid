@@ -137,6 +137,15 @@ qx.Class.define("qxl.datagrid.column.NumberColumn", {
     },
 
     /**
+     * The themes align numbers to the right
+     *
+     * @override
+     */
+    getWidgetStates() {
+      return ["number"];
+    },
+
+    /**
      * @override
      */
     _parseFromEditor(text) {

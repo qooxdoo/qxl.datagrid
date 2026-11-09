@@ -380,6 +380,16 @@ qx.Class.define("qxl.datagrid.column.Column", {
     },
 
     /**
+     * Returns the states which the widgets of this column always have, in the cells and in the header,
+     * so that the theme can style a kind of column; eg the themes align `number` to the right
+     *
+     * @return {String[]}
+     */
+    getWidgetStates() {
+      return [];
+    },
+
+    /**
      * Creates a widget for displaying a value for for a single cell
      * @returns {qx.ui.core.Widget}
      */

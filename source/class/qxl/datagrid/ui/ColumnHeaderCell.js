@@ -115,7 +115,9 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
     _forwardStates: {
       sortAsc: true,
       sortDesc: true,
-      sortable: true
+      sortable: true,
+      // a state of the column, see `qxl.datagrid.column.Column#getWidgetStates`
+      number: true
     },
 
     /** @type {Boolean} whether Shift was pressed with the click which executes */

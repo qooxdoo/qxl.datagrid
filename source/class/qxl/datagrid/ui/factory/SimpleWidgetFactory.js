@@ -68,7 +68,9 @@ qx.Class.define("qxl.datagrid.ui.factory.SimpleWidgetFactory", {
      * @override
      */
     _createWidget(column) {
-      return column.createWidgetForDisplay();
+      let widget = column.createWidgetForDisplay();
+      column.getWidgetStates().forEach(state => widget.addState(state));
+      return widget;
     }
   }
 });

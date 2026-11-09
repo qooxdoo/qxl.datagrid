@@ -109,6 +109,9 @@ For each theme, there are three available mixins; `*.MAppearance`, `*.MColor`, a
 
 Rows and cells use the appearances `qxl-datagrid-row` and `qxl-datagrid-cell`, with the states described under
 [Row and Cell States](#row-and-cell-states); the column button uses `table/column-button` of your theme.
+The cells and the header cell of a `NumberColumn` have the state `number`, which the themes align to the right
+(`textAlign` of `qxl-datagrid-cell` and `qxl-datagrid-header-cell/label`); a column names such states in
+`getWidgetStates()`.
 
 ## Key Concepts
 
