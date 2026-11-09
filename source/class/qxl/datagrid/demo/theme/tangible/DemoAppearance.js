@@ -29,6 +29,14 @@ qx.Theme.define("qxl.datagrid.demo.theme.tangible.DemoAppearance", {
       }
     },
 
+    // a BooleanColumn shows this icon instead of its check mark
+    "qxl-datagrid-cell/icon": {
+      base: true,
+      style(states) {
+        return { source: states.checked ? "@MaterialIcons/check/16" : undefined };
+      }
+    },
+
     "qxl-datagrid-row": {
       base: true,
       style(states) {

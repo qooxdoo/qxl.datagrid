@@ -70,15 +70,17 @@ qx.Class.define("qxl.datagrid.ui.IconCell", {
       } else {
         this.removeState("checked");
       }
-      let icon = this.getChildControl("icon");
-      if (value?.icon) {
-        icon.setSource(value.icon);
-      } else {
-        // the theme may give an icon
-        icon.resetSource();
+      // a cell shows either icons of its values or the icon of the theme; `resetSource` cannot give the
+      // icon back to the theme, in qooxdoo 8 it stores null as user value, which hides the theme's source
+      if (value?.icon || this.__hasValueIcons) {
+        this.__hasValueIcons = true;
+        this.getChildControl("icon").setSource(value?.icon ?? null);
       }
       this.__updateLabel();
     },
+
+    /** @type {Boolean} whether a value has given the icon a source */
+    __hasValueIcons: false,
 
     /**
      * Shows the label unless it is replaced by the icon of the theme; keeps a gap between icon and label

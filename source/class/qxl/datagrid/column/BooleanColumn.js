@@ -15,7 +15,10 @@
 
 /**
  * Displays a boolean as a check mark; the value is switched directly with Space, F2, Enter or a
- * click, without an editor, so that no widget beyond the label is needed per cell
+ * click, without an editor.
+ *
+ * A cell with true has the state `checked`; a theme which gives `qxl-datagrid-cell/icon` a source for
+ * it shows that icon instead of `checkMark`. A font icon takes the text color of the cell.
  */
 qx.Class.define("qxl.datagrid.column.BooleanColumn", {
   extend: qxl.datagrid.column.Column,
@@ -26,12 +29,12 @@ qx.Class.define("qxl.datagrid.column.BooleanColumn", {
   construct(path) {
     super(path);
     this.setBindingOptions((widget, model) => ({
-      converter: value => (value ? this.getCheckMark() : "")
+      converter: value => (value ? { label: this.getCheckMark(), checked: true } : null)
     }));
   },
 
   properties: {
-    /** The text shown for true */
+    /** The text shown for true, unless the theme gives an icon */
     checkMark: {
       init: "✓",
       check: "String",
@@ -40,6 +43,13 @@ qx.Class.define("qxl.datagrid.column.BooleanColumn", {
   },
 
   members: {
+    /**
+     * @override
+     */
+    createWidgetForDisplay() {
+      return new qxl.datagrid.ui.IconCell();
+    },
+
     /**
      * @override
      */

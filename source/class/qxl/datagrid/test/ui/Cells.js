@@ -122,6 +122,42 @@ qx.Class.define("qxl.datagrid.test.ui.Cells", {
       // sorting and the clipboard still use the label
       this.assertEquals("Bus", column.getSortValue(qx.data.marshal.Json.createModel({ kind: "bus" })));
       this.assertEquals("Bus", column.formatForClipboard("bus"));
+    },
+
+    async testCheckIconFromTheme() {
+      let column = new qxl.datagrid.column.BooleanColumn("ok").set({ caption: "OK" });
+      let grid = await this.__createGrid([column], [{ ok: true }, { ok: false }]);
+      // the theme of the tests gives the state checked an icon
+      const CHECK = "@MaterialIcons/check/16";
+      let checked = this.__getCell(0, 0);
+      let icon = checked.getChildControl("icon");
+      this.assertTrue(checked.hasState("checked"));
+      this.assertEquals(CHECK, icon.getSource());
+      this.assertEquals("", checked.getChildControl("label").getValue(), "the icon replaces the check mark");
+      this.assertEquals("✓", checked.getContentElement().getAttribute("aria-label"));
+      let unchecked = this.__getCell(1, 0);
+      this.assertFalse(unchecked.hasState("checked"));
+      this.assertNull(unchecked.getChildControl("icon").getSource() ?? null);
+      this.assertEquals("", unchecked.getChildControl("label").getValue());
+
+      // the font icon takes the text color of the cell, eg of a row state
+      checked.setTextColor("rgb(128, 128, 128)");
+      qx.ui.core.queue.Manager.flush();
+      this.assertEquals("rgb(128, 128, 128)", icon.getContentElement().getDomElement().style.color);
+
+      // switching the value follows the model
+      let model = grid.getDataSource().getModel();
+      model.getItem(0).setOk(false);
+      model.getItem(1).setOk(true);
+      qx.ui.core.queue.Manager.flush();
+      this.assertNull(icon.getSource() ?? null);
+      this.assertEquals(CHECK, unchecked.getChildControl("icon").getSource());
+
+      // without an icon the check mark is shown
+      unchecked.getChildControl("icon").setSource(null);
+      this.assertEquals("✓", unchecked.getChildControl("label").getValue());
+      this.assertNull(unchecked.getContentElement().getAttribute("aria-label") ?? null);
+      this.assertTrue(column.parseFromClipboard("✓"));
     }
   }
 });

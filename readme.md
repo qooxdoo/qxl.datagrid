@@ -245,6 +245,19 @@ the cell (`qxl.datagrid.ui.IconCell`) and the items of the select box show it, a
 The theme sizes the icons with the appearance `qxl-datagrid-cell/icon`; the themes of the package set `scale` and a
 `maxHeight` of 20 pixels, so an icon is scaled down within the row and keeps its proportions.
 
+A `BooleanColumn` shows `checkMark` (✓) for true. Its cells with true have the state `checked`: a theme which gives
+`qxl-datagrid-cell/icon` a `source` for it shows that icon instead (screen readers still get the check mark), a font
+icon takes the text color of the cell. The demo theme does so:
+
+```javascript
+"qxl-datagrid-cell/icon": {
+  base: true,
+  style(states) {
+    return { source: states.checked ? "@MaterialIcons/check/16" : undefined };
+  }
+}
+```
+
 #### Custom Editors
 
 The editor belongs to the column, so a custom editor is a subclass of `qxl.datagrid.column.Column` (or of one of the
