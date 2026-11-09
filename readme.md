@@ -326,8 +326,9 @@ The application can set states on row and cell widgets for its theme, eg to mark
 - `rowStates` - `(model) => String[]?`, states for the row widget
 - `cellStates` - `(model, column) => String[]?`, states for the cell widget
 
-When the result changes, call `scheduleUpdateWidgets()`. The grid sets `selected`, `focused`, `even` and `odd` on rows
-and `selected`, `focused` and `invalid` on cells itself. To style an own state without copying the appearance of the
+When the result changes, call `scheduleUpdateWidgets()`. The grid sets `selected`, `focused`, `hovered`, `even` and
+`odd` on rows and `selected`, `focused`, `hovered` and `invalid` on cells itself; `hovered` is on the cell under the
+mouse and its row, scrolling removes it until the mouse moves again. To style an own state without copying the appearance of the
 grid, extend your appearance with `base: true`, like [the demo theme](source/class/qxl/datagrid/demo/theme/tangible/DemoAppearance.js):
 
 ```js

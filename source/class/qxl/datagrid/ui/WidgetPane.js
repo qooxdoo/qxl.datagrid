@@ -47,6 +47,8 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     this.getContentElement().setStyles({ overflowX: "visible", overflowY: "visible" });
     this.addListener("tap", this.__onTap, this);
     this.addListener("dbltap", this.__onDoubleTap, this);
+    this.addListener("pointermove", this.__onPointerMove, this);
+    this.addListener("pointerout", this.__onPointerOut, this);
   },
 
   properties: {
@@ -91,7 +93,10 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     cellTap: "qx.event.type.Data",
 
     /** Fired when the user double clicks on a cell; data is `{row, column, model}` */
-    cellDoubleTap: "qx.event.type.Data"
+    cellDoubleTap: "qx.event.type.Data",
+
+    /** Fired when the pointer moves onto another row or off the cells; data is the row, null off the cells */
+    changeHoveredRow: "qx.event.type.Data"
   },
 
   members: {
@@ -127,6 +132,12 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     /** @type {Function?} `(model, column) => String[]?`, the grid's `cellStates` */
     __statesFn: null,
+
+    /** @type {Object?} the cell under the pointer, `{row, column}`, which has the state `hovered` */
+    __hovered: null,
+
+    /** @type {String?} first data row and column on display at the last update, to notice scrolling */
+    __firstCell: null,
 
     /**
      * Sets the function which tells whether a cell may be edited, for `aria-readonly`
@@ -215,6 +226,14 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
       let invalidateAll = this.__invalidateAll;
       this.__invalidateAll = false;
+
+      // after scrolling another cell lies under the pointer; the next pointer move finds it
+      let firstCell = minDataRowIndex + ":" + minColumnIndex;
+      if (this.__firstCell !== firstCell) {
+        this.__firstCell = firstCell;
+        this.__setHovered(null);
+      }
+      let hovered = this.__hovered;
 
       // Widgets of cells leaving the display are handed over to cells entering it, per column
       let reuseWidgets = this.getShouldDiscardWidgets();
@@ -393,6 +412,12 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           } else {
             child.removeState("focused");
           }
+          // a reused widget must not keep the state of its former cell
+          if (hovered && rowSizeData.rowIndex === hovered.row && columnSizeData.columnIndex === hovered.column) {
+            child.addState("hovered");
+          } else {
+            child.removeState("hovered");
+          }
           // states also without a function, to remove the states of a function set before
           let hasStates = statesFn || child.getUserData("qxl.datagrid.states");
           if (cellEditableFn || hasStates) {
@@ -569,15 +594,69 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
      * @return {Object?} the cell as `{row, column, model}`, null if not on a cell
      */
     __getCellForEvent(evt) {
-      let widget = qx.ui.core.Widget.getWidgetByElement(evt.getOriginalTarget());
+      let widget = this.__getCellWidget(evt.getOriginalTarget());
+      if (!widget) {
+        return null;
+      }
+      let cellData = widget.getUserData("qxl.datagrid.cellData");
+      return { row: cellData.row, column: cellData.column, model: this.__widgetFactory.getModelForWidget(widget) };
+    },
+
+    /**
+     * Finds the cell widget which contains a DOM element
+     *
+     * @param {Element?} element
+     * @return {qx.ui.core.Widget?} the cell widget, null if the element is not in a cell
+     */
+    __getCellWidget(element) {
+      let widget = element ? qx.ui.core.Widget.getWidgetByElement(element) : null;
       while (widget && widget.getLayoutParent() !== this) {
         widget = widget.getLayoutParent();
       }
-      let cellData = widget?.getUserData("qxl.datagrid.cellData");
-      if (!cellData) {
-        return null;
+      return widget?.getUserData("qxl.datagrid.cellData") ? widget : null;
+    },
+
+    /**
+     * Event handler for `pointermove`: the cell under the pointer and its row get the state `hovered`
+     *
+     * @param {qx.event.type.Pointer} evt
+     */
+    __onPointerMove(evt) {
+      let cellData = this.__getCellWidget(evt.getOriginalTarget())?.getUserData("qxl.datagrid.cellData");
+      this.__setHovered(cellData ? { row: cellData.row, column: cellData.column } : null);
+    },
+
+    /**
+     * Event handler for `pointerout`: leaving the cells removes the state `hovered`
+     *
+     * @param {qx.event.type.Pointer} evt
+     */
+    __onPointerOut(evt) {
+      if (!this.__getCellWidget(evt.getRelatedTarget())) {
+        this.__setHovered(null);
       }
-      return { row: cellData.row, column: cellData.column, model: this.__widgetFactory.getModelForWidget(widget) };
+    },
+
+    /**
+     * Moves the state `hovered` to another cell and announces a change of the row
+     *
+     * @param {Object?} cell `{row, column}`, null for none
+     */
+    __setHovered(cell) {
+      let old = this.__hovered;
+      if (old?.row === cell?.row && old?.column === cell?.column) {
+        return;
+      }
+      if (old) {
+        this.getChildAtPosition(old.row, old.column)?.removeState("hovered");
+      }
+      this.__hovered = cell;
+      if (cell) {
+        this.getChildAtPosition(cell.row, cell.column)?.addState("hovered");
+      }
+      if (old?.row !== cell?.row) {
+        this.fireDataEvent("changeHoveredRow", cell?.row ?? null, old?.row ?? null);
+      }
     },
 
     /**
@@ -816,10 +895,10 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     MAX_FIRST_TOP: 1000000,
 
     /** @type {String[]} states the grid sets on cell widgets itself, not available to `cellStates` */
-    RESERVED_CELL_STATES: ["selected", "focused", "invalid"],
+    RESERVED_CELL_STATES: ["selected", "focused", "invalid", "hovered"],
 
     /** @type {String[]} states the grid sets on row widgets itself, not available to `rowStates` */
-    RESERVED_ROW_STATES: ["selected", "focused", "even", "odd"],
+    RESERVED_ROW_STATES: ["selected", "focused", "even", "odd", "hovered"],
 
     /**
      * Gives a widget the states an application function returned for its model and removes the ones

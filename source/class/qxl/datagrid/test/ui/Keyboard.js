@@ -343,6 +343,41 @@ qx.Class.define("qxl.datagrid.test.ui.Keyboard", {
       openMenu().hide();
     },
 
+    testHoveredCellAndRow() {
+      const InputHelper = qxl.datagrid.test.util.InputHelper;
+      let grid = this.__grid;
+      let pane = grid.getQxObject("widgetPane");
+      let rows = grid.getQxObject("oddEvenRows");
+      const hovered = widget => widget._getChildren().filter(child => child.hasState("hovered")).map(child => child.getUserData("qxl.datagrid.cellData").row + ":" + (child.getUserData("qxl.datagrid.cellData").column ?? "row"));
+
+      InputHelper.hover(pane.getChildAtPosition(2, 1));
+      this.assertJsonEquals(["2:1"], hovered(pane));
+      this.assertJsonEquals(["2:row"], hovered(rows));
+      InputHelper.hover(pane.getChildAtPosition(3, 2));
+      this.assertJsonEquals(["3:2"], hovered(pane));
+      this.assertJsonEquals(["3:row"], hovered(rows));
+
+      // after scrolling another cell is under the pointer, reused widgets keep nothing
+      grid.setStartRowIndex(1);
+      qx.ui.core.queue.Manager.flush();
+      this.assertJsonEquals([], hovered(pane));
+      this.assertJsonEquals([], hovered(rows));
+      InputHelper.hover(pane.getChildAtPosition(5, 0));
+      grid.setStartRowIndex(100);
+      qx.ui.core.queue.Manager.flush();
+      this.assertJsonEquals([], hovered(pane));
+      this.assertJsonEquals([], hovered(rows));
+
+      // leaving the cells, and the header stays out
+      InputHelper.hover(pane.getChildAtPosition(101, 1));
+      InputHelper.leave(pane.getChildAtPosition(101, 1), grid.getQxObject("header").getCell(1).getContentElement().getDomElement());
+      this.assertJsonEquals([], hovered(pane));
+      this.assertJsonEquals([], hovered(rows));
+      InputHelper.hover(grid.getQxObject("header").getCell(1));
+      this.assertFalse(grid.getQxObject("header").getCell(1).hasState("hovered"));
+      this.assertJsonEquals([], hovered(pane));
+    },
+
     testClickFocusesCell() {
       let pane = this.__grid.getQxObject("widgetPane");
       qxl.datagrid.test.util.InputHelper.tap(pane.getChildAtPosition(3, 2));

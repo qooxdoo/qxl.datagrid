@@ -119,6 +119,34 @@ qx.Class.define("qxl.datagrid.test.util.InputHelper", {
     },
 
     /**
+     * Moves the mouse into the middle of a widget with native pointer events, without a button, and
+     * flushes the qooxdoo queues
+     *
+     * @param {qx.ui.core.Widget} widget a rendered widget
+     */
+    hover(widget) {
+      let element = widget.getContentElement().getDomElement();
+      let rect = element.getBoundingClientRect();
+      let init = { ...qxl.datagrid.test.util.InputHelper.__pointerInit(rect.left + rect.width / 2, rect.top + rect.height / 2), buttons: 0 };
+      element.dispatchEvent(new PointerEvent("pointerover", init));
+      element.dispatchEvent(new PointerEvent("pointermove", init));
+      qx.ui.core.queue.Manager.flush();
+    },
+
+    /**
+     * Moves the mouse out of a widget to an element outside of it, with a native pointer event, and
+     * flushes the qooxdoo queues
+     *
+     * @param {qx.ui.core.Widget} widget a rendered widget
+     * @param {Element} to where the mouse goes
+     */
+    leave(widget, to) {
+      let element = widget.getContentElement().getDomElement();
+      element.dispatchEvent(new PointerEvent("pointerout", { ...qxl.datagrid.test.util.InputHelper.__pointerInit(0, 0), buttons: 0, relatedTarget: to }));
+      qx.ui.core.queue.Manager.flush();
+    },
+
+    /**
      * Returns the init dictionary of a native pointer event with the left mouse button
      *
      * @param {Number} clientX

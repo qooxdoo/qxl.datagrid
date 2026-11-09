@@ -56,6 +56,7 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     // `editable` starts as false, its apply is not called for the init value
     this.getContentElement().setAttribute("aria-readonly", "true");
     this.getQxObject("oddEvenRows").setCellIdFunction((row, column) => this.getQxObject("widgetPane").getCellId(row, column));
+    this.getQxObject("widgetPane").addListener("changeHoveredRow", evt => this.getQxObject("oddEvenRows").setHoveredRow(evt.getData()));
     this.__selectionManager.addListener("changeFocusedPosition", () => {
       // a click into the data or setFocusedPosition leaves the header
       if (this.getFocusedPosition() && this.__headerColumn !== null) {

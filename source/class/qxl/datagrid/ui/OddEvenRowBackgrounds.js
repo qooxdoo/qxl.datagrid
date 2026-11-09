@@ -80,6 +80,25 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
     /** @type {Function?} `(model) => String[]?`, the grid's `rowStates` */
     __statesFn: null,
 
+    /** @type {Integer?} the row under the pointer, which has the state `hovered` */
+    __hoveredRow: null,
+
+    /**
+     * Moves the state `hovered` to the row under the pointer
+     *
+     * @param {Integer?} row row in the data source, null for none
+     */
+    setHoveredRow(row) {
+      const rowWidget = index => this._getChildren().find(child => child.getUserData("qxl.datagrid.cellData")?.row === index);
+      if (this.__hoveredRow !== null) {
+        rowWidget(this.__hoveredRow)?.removeState("hovered");
+      }
+      this.__hoveredRow = row;
+      if (row !== null) {
+        rowWidget(row)?.addState("hovered");
+      }
+    },
+
     /**
      * Sets the function which returns the states of a row widget from the model of the row
      * (`rowStates`)
@@ -210,6 +229,12 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
           child.addState("focused");
         } else {
           child.removeState("focused");
+        }
+        // a reused widget must not keep the state of its former row
+        if (rowSizeData.rowIndex === this.__hoveredRow) {
+          child.addState("hovered");
+        } else {
+          child.removeState("hovered");
         }
 
         if (rowSizeData.rowIndex % 2 == 0) {
