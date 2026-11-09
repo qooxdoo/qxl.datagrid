@@ -30,6 +30,7 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
     this.__sizeCalculator = sizeCalculator;
     this.__widgetFactory = widgetFactory;
     this._setLayout(new qxl.datagrid.ui.layout.Fixed());
+    this.getContentElement().setAttribute("role", "row");
   },
 
   properties: {
@@ -46,6 +47,46 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
     /** @type{qxl.datagrid.ui.factory.IWidgetFactory} */
     __widgetFactory: null,
 
+    /** @type {Integer?} the column whose header cell has the keyboard focus */
+    __focusedColumn: null,
+
+    /**
+     * Gives the header cell of a column the state `focused`, for the keyboard in the header
+     *
+     * @param {Integer?} column column index, null if no header cell has the focus
+     */
+    setFocusedColumn(column) {
+      this.getCell(this.__focusedColumn)?.removeState("focused");
+      this.__focusedColumn = column;
+      this.getCell(column)?.addState("focused");
+    },
+
+    /**
+     * Returns the DOM id of the header cell of a column, for `aria-activedescendant`
+     *
+     * @param {Integer} column column index
+     * @return {String}
+     */
+    getCellId(column) {
+      return "qxl-datagrid-" + this.toHashCode() + "-header-" + column;
+    },
+
+    /**
+     * Returns the header cell of a column in the last header row, if it is on display
+     *
+     * @param {Integer?} column column index
+     * @return {qx.ui.core.Widget?}
+     */
+    getCell(column) {
+      if (column === null || column === undefined) {
+        return null;
+      }
+      return this._getChildren().find(child => {
+        let cellData = child.getUserData("qxl.datagrid.cellData");
+        return cellData?.row == -1 && cellData.column == column;
+      }) ?? null;
+    },
+
     /**
      * @Override
      */
@@ -55,7 +96,6 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
       if (sizesData) {
         let height = 0;
         for (let rowSizeData of sizesData.rows) {
-          let left = 0;
           if (rowSizeData.rowIndex >= 0) {
             continue;
           }
@@ -83,15 +123,13 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
         return;
       }
       let numHeaderRows = styling.getNumHeaderRows();
-      let minColumnIndex = sizesData.columns[0]?.columnIndex ?? 0;
-      let maxColumnIndex = sizesData.columns[sizesData.columns.length - 1]?.columnIndex ?? 0;
 
       let children = {};
       qx.lang.Array.clone(this._getChildren()).forEach(child => {
         let cellData = child.getUserData("qxl.datagrid.cellData");
         let id = cellData.row + ":" + cellData.column;
-        // prettier-ignore
-        if (cellData.row > numHeaderRows || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
+        // a hidden column may lie between the columns laid out
+        if (cellData.row > numHeaderRows || !sizesData.columnIndexes.has(cellData.column)) {
           this.__fullDiscardWidget(child, id);
         } else {
           children[id] = child;
@@ -136,6 +174,16 @@ qx.Class.define("qxl.datagrid.ui.HeaderRows", {
             });
             this._add(child);
             this.__widgetFactory.bindWidget(child);
+            child.getContentElement().setAttribute("role", "columnheader");
+            child.getContentElement().setAttribute("aria-colindex", columnSizeData.columnIndex + 1);
+            if (rowIndex == -1) {
+              child.getContentElement().setAttribute("id", this.getCellId(columnSizeData.columnIndex));
+            }
+          }
+          if (rowIndex == -1 && columnSizeData.columnIndex === this.__focusedColumn) {
+            child.addState("focused");
+          } else {
+            child.removeState("focused");
           }
 
           let callbackArguments = [null, child, currentRelativePosition, currentAbsolutePosition];

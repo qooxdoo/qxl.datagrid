@@ -24,14 +24,41 @@ qx.Class.define("qxl.datagrid.demo.array.DummyModel", {
 
   construct() {
     super();
+    const genres = qxl.datagrid.demo.array.DummyModel.GENRES;
     this.set({
       title: this._randomTitle(),
       author: this._randomAuthor(),
-      date: this._randomDate()
+      date: this._randomDate(),
+      price: Math.round(Math.random() * 5000) / 100,
+      inStock: Math.random() < 0.7,
+      genre: genres[Math.floor(Math.random() * genres.length)]
     });
   },
 
+  statics: {
+    /** @type {String[]} the choices for `genre` */
+    GENRES: ["Novel", "Poetry", "Biography", "Science", "Travel", "Children"]
+  },
+
   properties: {
+    /** Price, empty if not known */
+    price: {
+      nullable: true,
+      init: null,
+      check: "Number",
+      event: "changePrice"
+    },
+    inStock: {
+      init: false,
+      check: "Boolean",
+      event: "changeInStock"
+    },
+    genre: {
+      nullable: true,
+      init: null,
+      check: "String",
+      event: "changeGenre"
+    },
     title: {
       nullable: false,
       check: "String",

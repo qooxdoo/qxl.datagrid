@@ -75,6 +75,13 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       this.add(comp);
     }
 
+    // no column menu and no sorting here: 10,000 columns would not fit into a menu, and the data
+    // source of this demo creates its rows on demand and cannot sort
+    this.add(
+      qxl.datagrid.demo.Demo.createKeyHint(
+        "Arrows, Page Up/Down and Ctrl+Home/End move; with Multi, Shift+arrows select a range, Ctrl+arrows only move the focus and Ctrl+Space switches a cell"
+      )
+    );
     this.add(grid, { flex: 1 });
   },
 
@@ -110,6 +117,7 @@ qx.Class.define("qxl.datagrid.demo.biggrid.BigGridDemo", {
       });
       grid.addListener("changeSelection", evt => {
         let sel = evt.getData();
+        // eslint-disable-next-line no-console
         console.log("Selection changed to " + sel.map(model => model.toString()).join(","));
       });
       return grid;

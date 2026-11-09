@@ -137,12 +137,16 @@ qx.Class.define("qxl.datagrid.util.Debounce", {
     async _onTimeout() {
       this.__timerId = null;
       let promise = this.__runPromise;
+      // a trigger from now on, eg from a listener called by the function, needs a run of its own
+      this.__runPromise = null;
       try {
-        let result = undefined;
+        let result;
         while (true) {
           result = await this._runImpl();
           if (this.__queuedRepeat) {
+            this.__queuedRepeat = false;
             if (this.getRepeatedTrigger() == "queue") {
+              this.__runPromise = promise;
               this._startTimer();
               return;
             }
@@ -150,7 +154,6 @@ qx.Class.define("qxl.datagrid.util.Debounce", {
             break;
           }
         }
-        this.__runPromise = null;
         promise.resolve(result);
       } catch (ex) {
         promise.reject(ex);

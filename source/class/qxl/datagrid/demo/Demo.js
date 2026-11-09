@@ -89,5 +89,17 @@ qx.Class.define("qxl.datagrid.demo.Demo", {
       });
       return bigGridPage;
     }
+  },
+
+  statics: {
+    /**
+     * Creates the line which tells the keys of a demo
+     *
+     * @param {String} text
+     * @return {qx.ui.basic.Label}
+     */
+    createKeyHint(text) {
+      return new qx.ui.basic.Label(text).set({ rich: true, wrap: true, textColor: "text-disabled-on-surface" });
+    }
   }
 });

@@ -51,8 +51,34 @@ qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
       bindings.add(widget, widget.bind("sortOrder", column, "sortOrder"));
       bindings.add(column, column.bind("caption", widget, "label"));
       bindings.add(column, column.bind("sortable", widget, "sortable"));
+      bindings.add(widget, widget.addListener("sortRequest", evt => this.__onSortRequest(column, evt.getData().add)), "listener");
+      bindings.add(widget, widget.addListener("resizeRequest", evt => column.resize(evt.getData().width)), "listener");
+      let columns = this.getColumns();
+      const updateRank = () => {
+        let sortColumns = columns.getSortColumns();
+        widget.setSortRank(sortColumns.length > 1 && sortColumns.includes(column) ? sortColumns.indexOf(column) + 1 : null);
+      };
+      bindings.add(columns, columns.addListener("changeSort", updateRank), "listener");
+      updateRank();
       bindingData.bindings = bindings;
     },
+
+    /**
+     * Sorts by a column when its header cell is clicked or gets Enter, via the grid so that
+     * `beforeSort` is fired; without a grid the column is sorted directly
+     *
+     * @param {qxl.datagrid.column.Column} column
+     * @param {Boolean} add whether the column is added to the other sorted columns (Shift)
+     */
+    __onSortRequest(column, add) {
+      let grid = column.getDataGrid();
+      if (grid) {
+        grid.toggleSort(column, add);
+      } else {
+        this.getColumns().toggleSort(column, add);
+      }
+    },
+
 
     /**
      * @override

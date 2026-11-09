@@ -90,6 +90,45 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
       this.assertTrue(widgets["2:2"].getValue() === "C2");
       assertMapEquals(widgets["2:2"].getLayoutProperties(), { top: 40, height: 40, left: 40, width: 40 });
       assertMapEquals(widgets["3:3"].getLayoutProperties(), { top: 80, height: 40, left: 80, width: 40 });
+    },
+
+    testComputeFocusMove() {
+      const move = (key, row, column, modifiers = {}, columns = [0, 1, 2, 3]) =>
+        qxl.datagrid.DataGrid.computeFocusMove(key, { shift: false, ctrl: false, ...modifiers }, { row, column }, 10, columns, 3);
+      // limited by the edges
+      this.assertJsonEquals({ row: 0, column: 2 }, move("Up", 0, 2));
+      this.assertJsonEquals({ row: 9, column: 2 }, move("Down", 9, 2));
+      this.assertJsonEquals({ row: 5, column: 0 }, move("Left", 5, 0));
+      this.assertJsonEquals({ row: 5, column: 3 }, move("Right", 5, 3));
+      this.assertJsonEquals({ row: 0, column: 1 }, move("PageUp", 2, 1));
+      this.assertJsonEquals({ row: 8, column: 1 }, move("PageDown", 5, 1));
+      this.assertJsonEquals({ row: 9, column: 1 }, move("PageDown", 8, 1));
+      // Home and End, with Ctrl over all rows
+      this.assertJsonEquals({ row: 5, column: 0 }, move("Home", 5, 2));
+      this.assertJsonEquals({ row: 5, column: 3 }, move("End", 5, 2));
+      this.assertJsonEquals({ row: 0, column: 0 }, move("Home", 5, 2, { ctrl: true }));
+      this.assertJsonEquals({ row: 9, column: 3 }, move("End", 5, 2, { ctrl: true }));
+      // Tab wraps into the next row and leaves the grid at the end
+      this.assertJsonEquals({ row: 5, column: 3 }, move("Tab", 5, 2));
+      this.assertJsonEquals({ row: 6, column: 0 }, move("Tab", 5, 3));
+      this.assertNull(move("Tab", 9, 3));
+      this.assertJsonEquals({ row: 4, column: 3 }, move("Tab", 5, 0, { shift: true }));
+      this.assertNull(move("Tab", 0, 0, { shift: true }));
+      // other keys do not move, without a focused cell the first one is taken
+      this.assertUndefined(move("Enter", 5, 2));
+      this.assertJsonEquals({ row: 0, column: 0 }, qxl.datagrid.DataGrid.computeFocusMove("Down", {}, null, 10, [0, 1, 2, 3], 3));
+      this.assertUndefined(qxl.datagrid.DataGrid.computeFocusMove("Tab", {}, null, 10, [0, 1, 2, 3], 3));
+
+      // hidden columns 0 and 2 are skipped; a hidden focused column counts as the next shown one
+      const shown = [1, 3];
+      this.assertJsonEquals({ row: 5, column: 3 }, move("Right", 5, 1, {}, shown));
+      this.assertJsonEquals({ row: 5, column: 1 }, move("Left", 5, 3, {}, shown));
+      this.assertJsonEquals({ row: 5, column: 1 }, move("Home", 5, 3, {}, shown));
+      this.assertJsonEquals({ row: 6, column: 1 }, move("Tab", 5, 3, {}, shown));
+      this.assertJsonEquals({ row: 4, column: 3 }, move("Tab", 5, 1, { shift: true }, shown));
+      this.assertJsonEquals({ row: 5, column: 3 }, move("Right", 5, 2, {}, shown), "from the hidden column 2 to 3");
+      this.assertJsonEquals({ row: 5, column: 1 }, move("Left", 5, 2, {}, shown), "from the hidden column 2 to 1");
+      this.assertJsonEquals({ row: 6, column: 3 }, move("Down", 5, 2, {}, shown));
     }
   }
 });

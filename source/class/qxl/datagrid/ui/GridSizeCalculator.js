@@ -37,6 +37,7 @@
  *
  * @typedef SizesData
  * @property {ColumnData[]} columns
+ * @property {Set<Integer>} columnIndexes the indexes of the columns laid out (hidden columns are not)
  * @property {RowData[]} rows
  * @property {Integer} horizontalScrollPosition
  * @property {Integer} verticalScrollPosition
@@ -139,6 +140,7 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
      * @param {Integer} startColumnIndex - an Absolute Column Index representing the first column to be included in the Visible Space
      * @param {Integer} left
      * @param {Integer} top
+     * @param overflow
      * @returns {Boolean} true if the widgets need to be redrawn because the previous data is invalid
      */
     setAvailableSize(width, height, startRowIndex, startColumnIndex, left, top, overflow = false) {
@@ -231,6 +233,15 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
     },
 
     /**
+     * Gets the space available for rows and columns, including the header rows
+     *
+     * @returns {{ width: Integer, height: Integer }} the size as last passed to `setAvailableSize`
+     */
+    getAvailableSize() {
+      return { width: this._width, height: this._height };
+    },
+
+    /**
      * Gets the left and top initial offsets
      *
      * @returns {{ left: Integer, top: Integer }} the offsets
@@ -291,6 +302,10 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
        */
       const calculateColumnWidth = absoluteColumnIndex => {
         let column = this._columns.getColumn(absoluteColumnIndex);
+        // hidden columns keep their index, they are just not laid out
+        if (!column.getVisible()) {
+          return;
+        }
         visibleColumnIndexes.push(absoluteColumnIndex);
 
         let flex = column.getFlex() && column.getWidth() === null ? column.getFlex() : 0;
@@ -342,16 +357,15 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
       if (flexColumnIndexes.length) {
         let flexColumns = flexColumnIndexes.map(index => ({ index, column: this._columns.getColumn(index) }));
-        flexColumns.sort((a, b) => {
-          return (
+        flexColumns.sort(
+          (a, b) =>
             // smallest minWidth
             (a.column.getMinWidth() ?? 0) - (b.column.getMinWidth() ?? 0) ||
             // smallest maxWidth
             (a.column.getMaxWidth() ?? 0) - (b.column.getMaxWidth() ?? 0) ||
             // smallest flex
             (a.column.getFlex() ?? 0) - (b.column.getFlex() ?? 0)
-          );
-        });
+        );
 
         for (let { column, index } of flexColumns) {
           let flexAmount = Math.floor((flexAvailable / totalFlex) * column.getFlex());
@@ -449,6 +463,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
       let sizesData = {
         columns: [],
+        // the indexes of the columns laid out, eg to remove the widgets of others
+        columnIndexes: new Set(visibleColumnIndexes),
         rows: [],
         horizontalScrollPosition: 0,
         verticalScrollPosition: 0
@@ -476,6 +492,8 @@ qx.Class.define("qxl.datagrid.ui.GridSizeCalculator", {
 
     /**
      * Apply for `styling`
+     * @param value
+     * @param oldValue
      */
     __applyStyling(value, oldValue) {
       if (oldValue) {

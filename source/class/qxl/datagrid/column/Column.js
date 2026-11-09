@@ -169,13 +169,31 @@ qx.Class.define("qxl.datagrid.column.Column", {
      * Defines the sort order for this column
      * This is changed when the user clicks on a column to sort it,
      * but can also be set programatically.
-     * Note: The code ensures that at most one column within an instance of qxl.datagrid.column.Columns has a sortOrder of "asc" or "desc"
+     * Note: Setting it in code unsorts the other columns; several sorted columns come from
+     * `qxl.datagrid.column.Columns.toggleSort` with `add` (Shift+click)
      */
     sortOrder: {
       init: null,
       nullable: true,
       check: ["asc", "desc"],
       event: "changeSortOrder"
+    },
+
+    /**
+     * Whether the column is shown; a hidden column keeps its index, its values and errors and may stay
+     * sorted, it is just not laid out. The user switches it in the column menu of the grid.
+     */
+    visible: {
+      init: true,
+      check: "Boolean",
+      event: "changeVisible"
+    },
+
+    /** Whether the user may hide the column in the column menu of the grid; in code `visible` still works */
+    hideable: {
+      init: true,
+      check: "Boolean",
+      event: "changeHideable"
     }
   },
 
@@ -200,10 +218,12 @@ qx.Class.define("qxl.datagrid.column.Column", {
     __widgetStateUpdaters: null,
 
     /**
-     * Event handler for `changeEffectivelyReadOnly` and `changeEffectivelyEnabled`
+     * Event handler for `changeEffectivelyReadOnly` and `changeEffectivelyEnabled`; the grid renders
+     * again, since `aria-readonly` of the cells depends on it
      */
     __updateWidgetStates() {
       this.__widgetStateUpdaters.forEach(update => update());
+      this.__datagrid?.scheduleUpdateWidgets();
     },
 
     /**
@@ -370,6 +390,161 @@ qx.Class.define("qxl.datagrid.column.Column", {
     },
 
     /**
+     * Creates the editor for a cell of this column; the grid creates it only for the cell being
+     * edited, never for every cell. Override for other editors, together with `setEditorValue` and
+     * `getEditorValue`.
+     *
+     * @return {qx.ui.core.Widget?} the editor, null if cells of this column have no editor (they
+     *  may still be changed with `getToggledValue`)
+     */
+    createWidgetForEdit() {
+      return new qx.ui.form.TextField();
+    },
+
+    /**
+     * Whether the user may change values of this column, taking into account `readOnly` and
+     * `enabled` of the column and the grid
+     *
+     * @return {Boolean}
+     */
+    isEditable() {
+      return !this.isEffectivelyReadOnly() && this.isEffectivelyEnabled();
+    },
+
+    /**
+     * Reads the value of this column from a model, following the path
+     *
+     * @param {qx.core.Object} model
+     * @return {*} the value, undefined if the path cannot be resolved
+     */
+    getModelValue(model) {
+      let path = this.getPath();
+      if (!model || !path) {
+        return undefined;
+      }
+      return path == "." ? model : qx.data.SingleValueBinding.resolvePropertyChain(model, path);
+    },
+
+    /**
+     * Writes the value of this column into a model, following the path
+     *
+     * @param {qx.core.Object} model
+     * @param {*} value the new value
+     */
+    setModelValue(model, value) {
+      let path = this.getPath();
+      let pos = path.lastIndexOf(".");
+      let target = pos < 0 ? model : qx.data.SingleValueBinding.resolvePropertyChain(model, path.substring(0, pos));
+      target.set(path.substring(pos + 1), value);
+    },
+
+    /**
+     * Changes the width like the user does (dragging the header edge, Shift+Left/Right in the header):
+     * within `minWidth`/`maxWidth`, and a flexible column gets this fixed width, like in `qx.ui.table`.
+     * A column with `minWidth` equal to `maxWidth` keeps its width.
+     *
+     * @param {Number} width the wanted width in pixels
+     * @return {Boolean} true if the column can be resized
+     */
+    resize(width) {
+      let minWidth = this.getMinWidth() ?? 0;
+      let maxWidth = this.getMaxWidth() ?? Infinity;
+      if (minWidth == maxWidth) {
+        return false;
+      }
+      this.setFlex(0);
+      this.setWidth(Math.round(Math.min(maxWidth, Math.max(minWidth, width))));
+      return true;
+    },
+
+    /**
+     * Returns the value a model is sorted by in this column, compared with
+     * `qxl.datagrid.column.Columns.compareValues`; by default the value of the model
+     *
+     * @param {qx.core.Object} model
+     * @return {*}
+     */
+    getSortValue(model) {
+      return this.getModelValue(model);
+    },
+
+    /**
+     * Puts a value into the editor
+     *
+     * @param {qx.ui.core.Widget} editor as created by `createWidgetForEdit`
+     * @param {*} value the value of the model
+     */
+    setEditorValue(editor, value) {
+      editor.setValue(this._formatForEdit(value));
+    },
+
+    /**
+     * Reads the value from the editor
+     *
+     * @param {qx.ui.core.Widget} editor as created by `createWidgetForEdit`
+     * @return {*} the value for the model
+     * @throws {Error} with a message for the user if the input is not valid
+     */
+    getEditorValue(editor) {
+      return this._parseFromEditor(editor.getValue());
+    },
+
+    /**
+     * Converts a value of the model into the text of a text editor
+     *
+     * @param {*} value
+     * @return {String}
+     */
+    _formatForEdit(value) {
+      return value === null || value === undefined ? "" : String(value);
+    },
+
+    /**
+     * Converts the text of a text editor into a value of the model
+     *
+     * @param {String?} text
+     * @return {*} the value
+     * @throws {Error} with a message for the user if the text is not valid
+     */
+    _parseFromEditor(text) {
+      return text ?? "";
+    },
+
+    /**
+     * Converts a value of the model into text for the clipboard (Ctrl+C); by default the text of the
+     * editor
+     *
+     * @param {*} value
+     * @return {String}
+     */
+    formatForClipboard(value) {
+      return this._formatForEdit(value);
+    },
+
+    /**
+     * Converts text from the clipboard (Ctrl+V) into a value of the model; by default like the text
+     * of the editor. An empty text is what Delete writes into the cell.
+     *
+     * @param {String} text
+     * @return {*} the value
+     * @throws {Error} with a message for the user if the text is not valid
+     */
+    parseFromClipboard(text) {
+      return this._parseFromEditor(text);
+    },
+
+    /**
+     * For columns without editor whose value is switched directly (eg a boolean with Space or a
+     * click): returns the value after switching
+     *
+     * @param {*} value the current value
+     * @return {*} the new value, undefined if the value cannot be switched
+     */
+    getToggledValue(value) {
+      return undefined;
+    },
+
+    /**
      * Called to allow the column to update the state of the widget based on the model;
      * this is typically used by the expansion column to show the correct icon for
      * expanding/collapsing
@@ -384,26 +559,31 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
     /**
      * Apply for `width` property
+     * @param value
      */
     _applyWidth(value) {},
 
     /**
      * Apply for `minWidth` property
+     * @param value
      */
     _applyMinWidth(value) {},
 
     /**
      * Apply for `maxWidth` property
+     * @param value
      */
     _applyMaxWidth(value) {},
 
     /**
      * Apply for `flex` property
+     * @param value
      */
     _applyFlex(value) {},
 
     /**
      * Apply for `readOnly` property
+     * @param value
      */
     _applyReadOnly(value) {
       this.__fireEffectiveChanges();
@@ -411,6 +591,7 @@ qx.Class.define("qxl.datagrid.column.Column", {
 
     /**
      * Apply for `enabled` property
+     * @param value
      */
     _applyEnabled(value) {
       this.__fireEffectiveChanges();

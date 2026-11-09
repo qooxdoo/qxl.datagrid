@@ -29,16 +29,10 @@ qx.Class.define("qxl.datagrid.source.tree.NodeInspector", {
   /**
    * Constructor
    *
-   * @param {(Boolean | CanHaveChildren) ? true} canHaveChildren default return value for `canHaveChildren()`
-   * @param {GetChildrenOf ? null} getChildrenOf function to get children of a node
-   *
-   * @callback CanHaveChildren
-   * @param {Object} node
-   * @returns {Boolean}
-   *
-   * @callback GetChildrenOf
-   * @param {Object} node
-   * @returns {Promise<qx.data.Array>}
+   * @param {(Boolean|Function)?} canHaveChildren default return value for `canHaveChildren()`, or a
+   *  function `(node) => Boolean`; defaults to true
+   * @param {Function?} getChildrenOf async function `(node) => qx.data.Array` returning the children of
+   *  a node; defaults to reading `childrenPath`
    */
   construct(canHaveChildren, getChildrenOf) {
     super();

@@ -90,6 +90,7 @@ qx.Class.define("qxl.datagrid.demo.biggrid.DummyDataSource", {
 
     /**
      * Apply for numRows and numColumns
+     * @param value
      */
     _applyNumXxx(value) {
       for (let id in this.__data) {

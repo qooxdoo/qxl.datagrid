@@ -39,6 +39,8 @@ qx.Class.define("qxl.datagrid.column.toolbar.Column", {
   members: {
     /**
      * Transform for the buttons property
+     * @param value
+     * @param oldValue
      */
     _transformButtons(value, oldValue) {
       if (oldValue) {

@@ -12,40 +12,61 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfModel", {
     super();
     const icons = qxl.datagrid.demo.perf.PerfModel.ICONS;
     this.set({
-      nr: index + 1,
-      strart: "Fahrzeugart " + (index + 1),
-      webfarbe: "#" + ((index * 2654435761) >>> 8).toString(16).padStart(6, "0").slice(-6),
+      number: index + 1,
+      name: "Vehicle type " + (index + 1),
+      webColor: "#" + ((index * 2654435761) >>> 8).toString(16).padStart(6, "0").slice(-6),
       icon: icons[index % icons.length],
-      wichtung: (index % 25) / 10,
-      maxspeed: 30 + (index % 12) * 10,
-      datacollectlaenge: index % 7,
-      inverkehrselemente: index % 2 === 0,
-      inkfz: index % 3 !== 0,
-      inlkw: index % 5 === 0,
-      inrad: index % 7 === 0,
-      bemerkung: index % 4 === 0 ? "Bemerkung zu Zeile " + (index + 1) : "",
-      gezaehlt: index % 3 === 0
+      weight: (index % 25) / 10,
+      maxSpeed: 30 + (index % 12) * 10,
+      collectLength: index % 7,
+      inTraffic: index % 2 === 0,
+      inMotorVehicles: index % 3 !== 0,
+      inTrucks: index % 5 === 0,
+      inBicycles: index % 7 === 0,
+      remark: index % 4 === 0 ? "Remark on row " + (index + 1) : "",
+      counted: index % 3 === 0
     });
   },
 
   statics: {
     /** Choices for the icon column */
-    ICONS: ["pkw", "lkw", "bus", "rad", "krad", "fuss", "tram", "zug", "lieferwagen", "sattelzug", "traktor", "roller", "lastenrad", "taxi", "wohnmobil", "anhaenger", "kehrmaschine", "muell", "notarzt", "polizei"]
+    ICONS: [
+      "car",
+      "truck",
+      "bus",
+      "bicycle",
+      "motorcycle",
+      "pedestrian",
+      "tram",
+      "train",
+      "van",
+      "semitrailer",
+      "tractor",
+      "scooter",
+      "cargoBike",
+      "taxi",
+      "camper",
+      "trailer",
+      "sweeper",
+      "garbageTruck",
+      "ambulance",
+      "police"
+    ]
   },
 
   properties: {
-    nr: { check: "Integer", init: 0, event: "changeNr" },
-    strart: { check: "String", init: "", event: "changeStrart" },
-    webfarbe: { check: "String", init: "", event: "changeWebfarbe" },
+    number: { check: "Integer", init: 0, event: "changeNumber" },
+    name: { check: "String", init: "", event: "changeName" },
+    webColor: { check: "String", init: "", event: "changeWebColor" },
     icon: { check: "String", init: "", event: "changeIcon" },
-    wichtung: { check: "Number", init: 0, event: "changeWichtung" },
-    maxspeed: { check: "Integer", init: 0, event: "changeMaxspeed" },
-    datacollectlaenge: { check: "Integer", init: 0, event: "changeDatacollectlaenge" },
-    inverkehrselemente: { check: "Boolean", init: false, event: "changeInverkehrselemente" },
-    inkfz: { check: "Boolean", init: false, event: "changeInkfz" },
-    inlkw: { check: "Boolean", init: false, event: "changeInlkw" },
-    inrad: { check: "Boolean", init: false, event: "changeInrad" },
-    bemerkung: { check: "String", init: "", event: "changeBemerkung" },
-    gezaehlt: { check: "Boolean", init: false, event: "changeGezaehlt" }
+    weight: { check: "Number", init: 0, event: "changeWeight" },
+    maxSpeed: { check: "Integer", init: 0, event: "changeMaxSpeed" },
+    collectLength: { check: "Integer", init: 0, event: "changeCollectLength" },
+    inTraffic: { check: "Boolean", init: false, event: "changeInTraffic" },
+    inMotorVehicles: { check: "Boolean", init: false, event: "changeInMotorVehicles" },
+    inTrucks: { check: "Boolean", init: false, event: "changeInTrucks" },
+    inBicycles: { check: "Boolean", init: false, event: "changeInBicycles" },
+    remark: { check: "String", init: "", event: "changeRemark" },
+    counted: { check: "Boolean", init: false, event: "changeCounted" }
   }
 });

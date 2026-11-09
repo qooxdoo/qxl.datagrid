@@ -64,6 +64,56 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
     /** @type{String} the appearance to set on each widget */
     __widgetAppearance: null,
 
+    /** @type{Function?} `(row, column) => String`, the DOM id of a cell, see `setCellIdFunction` */
+    __cellIdFunction: null,
+
+    /**
+     * Sets how to get the DOM id of a cell, so that each row can own its cells for screen readers
+     * (`aria-owns`); the cells are not children of the row widgets in the DOM
+     *
+     * @param {Function?} fn `(row, column) => String`, eg `qxl.datagrid.ui.WidgetPane#getCellId`
+     */
+    setCellIdFunction(fn) {
+      this.__cellIdFunction = fn;
+    },
+
+    /** @type {Function?} `(model) => String[]?`, the grid's `rowStates` */
+    __statesFn: null,
+
+    /**
+     * Sets the function which returns the states of a row widget from the model of the row
+     * (`rowStates`)
+     *
+     * @param {Function?} fn `(model) => String[]?`
+     */
+    setStatesFunction(fn) {
+      this.__statesFn = fn;
+    },
+
+    /**
+     * Sets role, index and owned cells of a row widget; only writes the attributes when the row or
+     * the columns on display have changed
+     *
+     * @param {qx.ui.core.Widget} widget the row widget
+     * @param {Integer} row row in the data source
+     * @param {Object[]} columns the columns on display (`ColumnData` of `GridSizeCalculator`)
+     * @param {Integer} headerRowCount number of header rows, which come first in `aria-rowindex`
+     */
+    __setRowAria(widget, row, columns, headerRowCount) {
+      if (!this.__cellIdFunction) {
+        return;
+      }
+      let key = row + ":" + (columns[0]?.columnIndex ?? 0) + ":" + columns.length;
+      if (widget.getUserData("qxl.datagrid.ariaKey") === key) {
+        return;
+      }
+      widget.setUserData("qxl.datagrid.ariaKey", key);
+      let element = widget.getContentElement();
+      element.setAttribute("role", "row");
+      element.setAttribute("aria-rowindex", row + headerRowCount + 1);
+      element.setAttribute("aria-owns", columns.map(column => this.__cellIdFunction(row, column.columnIndex)).join(" "));
+    },
+
     /**
      * Called to update the widgets and synchronise the sizes
      */
@@ -132,19 +182,30 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
             row: rowSizeData.rowIndex
           });
         }
+        this.__setRowAria(child, rowSizeData.rowIndex, sizesData.columns, styling.getNumHeaderRows());
 
         let isSelected = false;
         let isFocused = false;
-        if (this.__selectionManager.getSelectionStyle() == "row") {
-          let model = this.getDataSource().getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
+        let rowSelection = this.__selectionManager.getSelectionStyle() == "row";
+        let model = null;
+        if (rowSelection || this.__statesFn) {
+          model = this.getDataSource().getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
+        }
+        if (rowSelection) {
           isSelected = this.__selectionManager.isSelected(model);
           isFocused = this.__selectionManager.getFocused() === model;
+        }
+        // also without a function, to remove the states of a function set before
+        if (this.__statesFn || child.getUserData("qxl.datagrid.states")) {
+          qxl.datagrid.ui.WidgetPane.applyStates(child, model && this.__statesFn ? this.__statesFn(model) : null, qxl.datagrid.ui.WidgetPane.RESERVED_ROW_STATES);
         }
         if (isSelected) {
           child.addState("selected");
         } else {
           child.removeState("selected");
         }
+        // with cell selection, the cells carry aria-selected
+        child.getContentElement().setAttribute("aria-selected", rowSelection ? String(isSelected) : null);
         if (isFocused) {
           child.addState("focused");
         } else {
@@ -192,6 +253,7 @@ qx.Class.define("qxl.datagrid.ui.OddEvenRowBackgrounds", {
 
     /**
      * Allows row appearance to be set outside of the constructor
+     * @param appearance
      */
     setRowAppearance(appearance) {
       this.__widgetAppearance = appearance;

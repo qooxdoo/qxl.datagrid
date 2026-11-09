@@ -5,10 +5,13 @@
  * URL parameters:
  * - `perf`  : "virtual" (default), "clipped" or "table" (qx.ui.table as baseline)
  * - `rows`  : number of rows (default 1000)
- * - `cells` : "label" (default) or "editors" (an editor widget in every cell)
+ * - `cells` : "label" (default: labels in the cells, typed columns, an editor opens on demand),
+ *             "plain" (labels with the simple columns of the first measurements) or
+ *             "editors" (an editor widget in every cell)
  * - `dyn`   : "1" for `dynamicSizing: "rows"`
  *
- * In the console: `await perf.runAll()` returns the results as an object.
+ * In the console: `await perf.runAll()` returns the results as an object; `perf.focusLatency()` and
+ * `perf.editLatency()` measure keyboard focus and opening editors.
  */
 qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
   extend: qx.ui.container.Composite,
@@ -30,19 +33,19 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
   statics: {
     /** Columns like the vehicle type dialog: [path, kind] */
     COLUMNS: [
-      ["nr", "number"],
-      ["strart", "text"],
-      ["webfarbe", "text"],
+      ["number", "number"],
+      ["name", "text"],
+      ["webColor", "text"],
       ["icon", "select"],
-      ["wichtung", "number"],
-      ["maxspeed", "number"],
-      ["datacollectlaenge", "number"],
-      ["inverkehrselemente", "bool"],
-      ["inkfz", "bool"],
-      ["inlkw", "bool"],
-      ["inrad", "bool"],
-      ["bemerkung", "text"],
-      ["gezaehlt", "bool"]
+      ["weight", "number"],
+      ["maxSpeed", "number"],
+      ["collectLength", "number"],
+      ["inTraffic", "bool"],
+      ["inMotorVehicles", "bool"],
+      ["inTrucks", "bool"],
+      ["inBicycles", "bool"],
+      ["remark", "text"],
+      ["counted", "bool"]
     ]
   },
 
@@ -79,12 +82,18 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       } else {
         const columns = new qxl.datagrid.column.Columns();
         for (const [path, kind] of this.constructor.COLUMNS) {
-          columns.add(new qxl.datagrid.demo.perf.PerfColumn(path, kind, cfg.cells === "editors"));
+          // "editors" puts an editor into every cell, otherwise the grid opens one on demand;
+          // "plain" keeps the simple columns of the first measurements, for comparisons
+          if (cfg.cells === "label") {
+            columns.add(this.__createColumn(path, kind));
+          } else {
+            columns.add(new qxl.datagrid.demo.perf.PerfColumn(path, kind, cfg.cells === "editors"));
+          }
         }
         const dataSource = new qxl.datagrid.source.ArrayDataSource();
         dataSource.setColumns(columns);
-        const gridClass = cfg.grid === "clipped" ? qxl.datagrid.ClippedScrollDataGrid : qxl.datagrid.VirtualScrollDataGrid;
-        this.__grid = new gridClass(columns);
+        const GridClass = cfg.grid === "clipped" ? qxl.datagrid.ClippedScrollDataGrid : qxl.datagrid.VirtualScrollDataGrid;
+        this.__grid = new GridClass(columns).set({ editable: cfg.cells !== "editors" });
         if (cfg.dyn) {
           this.__grid.setDynamicSizing("rows");
         }
@@ -175,9 +184,9 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       await this.__settle();
       let t = performance.now();
       const first = this.__model.getItem(0);
-      first.setStrart(first.getStrart() + " geändert");
+      first.setName(first.getName() + " changed");
       if (this.__config.grid === "table") {
-        this.__grid.getTableModel().setValueById("strart", 0, first.getStrart());
+        this.__grid.getTableModel().setValueById("name", 0, first.getName());
       }
       qx.ui.core.queue.Manager.flush();
       const changeOneMs = performance.now() - t;
@@ -226,10 +235,110 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       const result = { config: this.__config, init: this.__initResult };
       result.lines = await this.scrollLines();
       result.jumps = await this.scrollJumps();
+      if (this.__config.grid === "table" || this.__grid.getEditable()) {
+        result.focus = await this.focusLatency();
+        result.edit = await this.editLatency();
+      }
       result.changes = await this.changes();
       result.afterPasses = await this.passes();
+      // eslint-disable-next-line no-console
       console.log("PERF " + JSON.stringify(result));
       return result;
+    },
+
+    /**
+     * Measures from an arrow key to the focus on the next cell, scrolling along beyond the rows on
+     * display; the key events take the way of real key strokes. The table moves its focus on the same
+     * keys itself.
+     *
+     * @param {Integer} steps number of key strokes
+     * @return {Promise<Object>} statistics of JS work and time to the next frame per key stroke
+     */
+    async focusLatency(steps = 60) {
+      const grid = this.__grid;
+      this.__scrollToRow(0);
+      grid.focus();
+      this.__setFocusedCell(0, 0);
+      await this.__settle();
+      const work = [];
+      const frames = [];
+      for (let i = 0; i < steps; i++) {
+        const t = performance.now();
+        qxl.datagrid.test.util.InputHelper.press(i % 10 == 9 ? "Right" : "Down");
+        work.push(performance.now() - t);
+        frames.push((await this.__nextFrame()) - t);
+      }
+      return { workMs: this.__stats(work), frameMs: this.__stats(frames) };
+    },
+
+    /**
+     * Measures from F2 to the editor on display, alternating text, number and select columns. The table
+     * opens its cell editor on F2 as well; Enter would also open it there, but in an open editor Enter
+     * commits, moves down and opens the next one, while the grid keeps the focus on the cell.
+     *
+     * @param {Integer} steps number of editors opened
+     * @return {Promise<Object>} statistics of JS work and time to the next frame per editor
+     */
+    async editLatency(steps = 30) {
+      const grid = this.__grid;
+      const helper = qxl.datagrid.test.util.InputHelper;
+      this.__scrollToRow(0);
+      grid.focus();
+      await this.__settle();
+      const work = [];
+      const frames = [];
+      const columns = [1, 5, 3];
+      for (let i = 0; i < steps; i++) {
+        this.__setFocusedCell(i % 20, columns[i % columns.length]);
+        await this.__nextFrame();
+        const t = performance.now();
+        helper.press("F2");
+        work.push(performance.now() - t);
+        frames.push((await this.__nextFrame()) - t);
+        if (!grid.isEditing()) {
+          throw new Error("No editor after F2");
+        }
+        helper.press("Escape");
+      }
+      return { workMs: this.__stats(work), frameMs: this.__stats(frames) };
+    },
+
+    /**
+     * Puts the keyboard focus on a cell of the grid or the table
+     *
+     * @param {Integer} row
+     * @param {Integer} column
+     */
+    __setFocusedCell(row, column) {
+      if (this.__config.grid === "table") {
+        this.__grid.setFocusedCell(column, row, true);
+      } else {
+        this.__grid.setFocusedPosition(row, column);
+      }
+    },
+
+    /**
+     * Creates a column for a kind of value, with the editor the column brings along
+     *
+     * @param {String} path property of the row model
+     * @param {"text"|"number"|"bool"|"select"} kind kind of value
+     * @return {qxl.datagrid.column.Column}
+     */
+    __createColumn(path, kind) {
+      let column;
+      if (kind == "number") {
+        column = new qxl.datagrid.column.NumberColumn(path);
+      } else if (kind == "bool") {
+        column = new qxl.datagrid.column.BooleanColumn(path);
+      } else if (kind == "select") {
+        column = new qxl.datagrid.column.SelectColumn(
+          path,
+          qxl.datagrid.demo.perf.PerfModel.ICONS.map(name => ({ label: name, model: name }))
+        );
+      } else {
+        column = new qxl.datagrid.column.TextColumn(path);
+      }
+      return column.set({ caption: path, minWidth: kind == "bool" ? 60 : 110 });
     },
 
     /**
@@ -249,7 +358,8 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
     },
 
     /**
-     * Creates the baseline table with the same columns
+     * Creates the baseline table with the same columns, all editable with the cell editors of the
+     * table: text fields (numbers stay numbers), check boxes and a select box for the icon
      *
      * @return {qx.ui.table.Table}
      */
@@ -262,9 +372,19 @@ qx.Class.define("qxl.datagrid.demo.perf.PerfDemo", {
       );
       const table = new qx.ui.table.Table(model);
       const columnModel = table.getTableColumnModel();
+      const selectEditor = new qx.ui.table.celleditor.SelectBox().set({
+        listData: qxl.datagrid.demo.perf.PerfModel.ICONS.map(name => [name, null, name])
+      });
       columns.forEach((column, i) => {
-        if (column[1] === "bool") {
+        const kind = column[1];
+        model.setColumnEditable(i, true);
+        if (kind === "bool") {
           columnModel.setDataCellRenderer(i, new qx.ui.table.cellrenderer.Boolean());
+          columnModel.setCellEditorFactory(i, new qx.ui.table.celleditor.CheckBox());
+        } else if (kind === "select") {
+          columnModel.setCellEditorFactory(i, selectEditor);
+        } else {
+          columnModel.setCellEditorFactory(i, new qx.ui.table.celleditor.TextField());
         }
       });
       return table;

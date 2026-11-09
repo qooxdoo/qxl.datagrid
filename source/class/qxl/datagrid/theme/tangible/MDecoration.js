@@ -48,6 +48,15 @@ qx.Theme.define("qxl.datagrid.theme.tangible.MDecoration", {
         color: "text-hint-on-surface",
         style: "dashed"
       }
+    },
+
+    "qxl-datagrid-cell-invalid": {
+      style: {
+        radius: 0,
+        width: 1,
+        color: "error",
+        style: "solid"
+      }
     }
   }
 });

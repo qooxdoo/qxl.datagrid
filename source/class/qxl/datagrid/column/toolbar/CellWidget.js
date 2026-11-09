@@ -51,6 +51,8 @@ qx.Class.define("qxl.datagrid.column.toolbar.CellWidget", {
 
     /**
      * Apply for the buttons property
+     * @param value
+     * @param oldValue
      */
     _applyButtons(value, oldValue) {
       if (oldValue) {

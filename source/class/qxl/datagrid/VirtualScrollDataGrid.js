@@ -138,6 +138,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
 
     /**
      * Apply for `startRowIndex`
+     * @param value
+     * @param oldValue
      */
     _applyStartRowIndex(value, oldValue) {
       this.__inApplyStartRowIndex = true;
@@ -148,6 +150,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
 
     /**
      * Apply for `startColumnIndex`
+     * @param value
+     * @param oldValue
      */
     _applyStartColumnIndex(value, oldValue) {
       this.__inApplyStartColumnIndex = true;
@@ -204,7 +208,6 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
      * Event handler for rolling
      *
      * @param {qx.event.type.Roll} e
-     * @returns
      */
     _onRoll(e) {
       // only wheel and touch
@@ -223,7 +226,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
       let rollDelta = e.getDelta();
 
       let sizeData = this.getSizeCalculator().getSizes();
-      let totalColumns = this.getColumns().getLength();
+      let totalColumns = this.getColumns().getVisibleIndexes().length;
       let totalRows = this.getDataSource().getSize().getRow() + this.getStyling().getNumHeaderRows();
 
       if (rollDelta.y !== 0 && sizeData.rows.length < totalRows) {
@@ -271,7 +274,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
     },
 
     /**
-     * @returns The number of maximum rows that the data grid can display in view.
+     * @returns {Integer} The number of maximum rows that the data grid can display in view.
      */
     getMaxRows() {
       let styling = this.getSizeCalculator().getStyling();
@@ -319,6 +322,74 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
     },
 
     /**
+     * Changes `startRowIndex` and `startColumnIndex` only as far as needed to show the cell completely.
+     * Widths of columns which are not on display are taken from their `width` or `minWidth`, so a flex
+     * column may end up partly visible.
+     *
+     * @override
+     */
+    scrollToPosition(row, column) {
+      let calculator = this.getSizeCalculator();
+      let sizes = calculator.getSizes();
+      if (!sizes) {
+        return;
+      }
+      let available = calculator.getAvailableSize();
+      let styling = this.getStyling();
+      let verticalSpacing = styling.getVerticalSpacing();
+      let horizontalSpacing = styling.getHorizontalSpacing();
+
+      // header rows take their space first, then count the data rows which are fully on display
+      let usedHeight = 0;
+      sizes.rows.filter(rowData => rowData.rowIndex < 0).forEach(rowData => (usedHeight += rowData.height + verticalSpacing));
+      let dataRows = sizes.rows.filter(rowData => rowData.rowIndex >= 0);
+      let fullRows = 0;
+      for (let rowData of dataRows) {
+        usedHeight += rowData.height;
+        if (usedHeight > available.height) {
+          break;
+        }
+        usedHeight += verticalSpacing;
+        fullRows++;
+      }
+      fullRows = Math.max(1, fullRows);
+      let firstRow = dataRows[0]?.rowIndex ?? this.getStartRowIndex();
+      if (row < firstRow) {
+        this.setStartRowIndex(row);
+      } else if (row >= firstRow + fullRows) {
+        this.setStartRowIndex(row - fullRows + 1);
+      }
+
+      let usedWidth = 0;
+      let fullColumns = 0;
+      for (let columnData of sizes.columns) {
+        usedWidth += columnData.width;
+        if (usedWidth > available.width) {
+          break;
+        }
+        usedWidth += horizontalSpacing;
+        fullColumns++;
+      }
+      let firstColumn = sizes.columns[0]?.columnIndex ?? 0;
+      if (column < firstColumn) {
+        this.setStartColumnIndex(column);
+      } else if (column >= firstColumn + Math.max(1, fullColumns)) {
+        // walk back from the target column for as long as the columns fit
+        const widthOf = index => {
+          let columnObject = this.getColumns().getColumn(index);
+          return columnObject.getWidth() ?? columnObject.getMinWidth() ?? styling.getMinColumnWidth() ?? 0;
+        };
+        let start = column;
+        let width = widthOf(column);
+        while (start > 0 && width + horizontalSpacing + widthOf(start - 1) <= available.width) {
+          width += horizontalSpacing + widthOf(start - 1);
+          start--;
+        }
+        this.setStartColumnIndex(start);
+      }
+    },
+
+    /**
      * Handles changes to the visibility of either scrollbar
      *
      * @param {String} side either "x" or "y"
@@ -331,10 +402,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
         if (!showX) {
           this.scrollToX(0);
         }
-      } else {
-        if (!showY) {
-          this.scrollToY(0);
-        }
+      } else if (!showY) {
+        this.scrollToY(0);
       }
 
       showX && showY ? this._showChildControl("corner") : this._excludeChildControl("corner");
@@ -413,8 +482,10 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
 
       let scrollbarX = this.getChildControl("scrollbar-x");
       let showX = this.getScrollbarX();
-      let totalColumns = columns.getLength();
-      let startColumnIndex = this.getStartColumnIndex();
+      // hidden columns do not count, the start is the number of shown columns before it
+      let visibleIndexes = columns.getVisibleIndexes();
+      let totalColumns = visibleIndexes.length;
+      let startColumnIndex = visibleIndexes.filter(index => index < this.getStartColumnIndex()).length;
       calculateScrollbar(showX, scrollbarX, sizeData.columns.length, totalColumns, startColumnIndex, () => Math.floor((startColumnIndex / (totalColumns + 1)) * 100));
 
       let scrollbarY = this.getChildControl("scrollbar-y");
@@ -435,9 +506,10 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
      * @override
      */
     _createChildControlImpl(id) {
+      let control;
       switch (id) {
         case "scrollbar-x":
-          var control = this._createScrollBar("horizontal").set({
+          control = this._createScrollBar("horizontal").set({
             minWidth: 0,
             maximum: 100
           });
@@ -448,11 +520,12 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
               return;
             }
             let position = e.getData();
-            let size = this.getDataSource().getSize();
             if (position == 100) {
               this.setStartColumnIndex(-1);
             } else {
-              let start = Math.round(size.getColumn() * (position / 100));
+              // the position counts shown columns only
+              let visibleIndexes = this.getColumns().getVisibleIndexes();
+              let start = visibleIndexes[Math.round(visibleIndexes.length * (position / 100))] ?? visibleIndexes[visibleIndexes.length - 1] ?? 0;
               this.setStartColumnIndex(start);
             }
           });
@@ -460,7 +533,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
           return control;
 
         case "scrollbar-y":
-          var control = this._createScrollBar("vertical").set({
+          control = this._createScrollBar("vertical").set({
             minHeight: 0,
             maximum: 100
           });
@@ -480,7 +553,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
           return control;
 
         case "corner":
-          var control = new qx.ui.core.Widget();
+          control = new qx.ui.core.Widget();
           control.setWidth(0);
           control.setHeight(0);
           control.exclude();
@@ -501,7 +574,7 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
         this.__updateScrollXStartIndex(0);
         this.__updateScrollYStartIndex(0);
       }
-      return super.updateWidgets();
+      super.updateWidgets();
     },
 
     onPaneUpdated() {

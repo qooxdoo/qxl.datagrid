@@ -126,6 +126,11 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       comp.add(fixedColumns);
       fixedColumns.setZIndex(200);
 
+      // the header scrolls with the cells, the column button stays at the right edge
+      let columnButton = this.getQxObject("columnButton");
+      comp.add(columnButton, { top: 0, right: 0 });
+      columnButton.setZIndex(300);
+
       return comp;
     },
 
@@ -166,7 +171,7 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
         return;
       }
       this._updateScrollbarVisibility();
-      return super.updateWidgets();
+      super.updateWidgets();
     },
 
     onPaneUpdated() {
@@ -279,6 +284,64 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       this.scrollToY(selectedBounds.top);
     },
 
+    /**
+     * Scrolls only as far as needed to show the cell completely
+     *
+     * @override
+     */
+    scrollToPosition(row, column) {
+      let cellBounds = this.getQxObject("widgetPane").getChildAtPosition(row, column)?.getBounds();
+      let viewBounds = this.getQxObject("dataPane").getBounds();
+      if (!cellBounds || !viewBounds) {
+        return;
+      }
+      let viewHeight = viewBounds.height - this.getQxObject("header").getSizeHint().height;
+      let viewWidth = viewBounds.width - this.getQxObject("fixedColumns").getSizeHint().width;
+      let scrollY = this.getChildControl("scrollbar-y").getPosition();
+      let scrollX = this.getChildControl("scrollbar-x").getPosition();
+      if (cellBounds.top < scrollY) {
+        this.scrollToY(cellBounds.top);
+      } else if (cellBounds.top + cellBounds.height > scrollY + viewHeight) {
+        this.scrollToY(cellBounds.top + cellBounds.height - viewHeight);
+      }
+      if (cellBounds.left < scrollX) {
+        this.scrollToX(cellBounds.left);
+      } else if (cellBounds.left + cellBounds.width > scrollX + viewWidth) {
+        this.scrollToX(cellBounds.left + cellBounds.width - viewWidth);
+      }
+    },
+
+    /**
+     * The clipped grid lays out all rows, so a page is the rows around the focused one which fit into
+     * the visible height (from the focused row downwards, near the end upwards), less one, like in
+     * `qx.ui.table`
+     *
+     * @override
+     */
+    _getPageRowCount() {
+      let sizes = this.getSizeCalculator().getSizes();
+      let viewBounds = this.getQxObject("dataPane").getBounds();
+      if (!sizes || !viewBounds) {
+        return 1;
+      }
+      let viewHeight = viewBounds.height - this.getQxObject("header").getSizeHint().height;
+      let dataRows = sizes.rows.filter(rowData => rowData.rowIndex >= 0);
+      let heights = dataRows.map(rowData => rowData.height);
+      let focusedRow = this.getFocusedPosition()?.getRow() ?? 0;
+      let first = dataRows.filter(rowData => rowData.rowIndex < focusedRow).length;
+      let ordered = heights.slice(first).concat(heights.slice(0, first).reverse());
+      let count = 0;
+      let height = 0;
+      for (let rowHeight of ordered) {
+        height += rowHeight;
+        if (height > viewHeight) {
+          break;
+        }
+        count++;
+      }
+      return Math.max(1, count - 1);
+    },
+
     _updateScrollbarVisibility() {
       if (this.__inUpdateScrollbarVisibility) {
         return;
@@ -331,6 +394,13 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
         left: -scrollX + fixedColumns.getSizeHint().width
       });
       this._updateScrollbarVisibility();
+
+      // the vertical scroll bar covers the right edge of the header, the column button stays left of it
+      let scrollbarY = this.getChildControl("scrollbar-y");
+      let overlaid = qx.core.Environment.get("os.scrollBarOverlayed");
+      let columnButton = this.getQxObject("columnButton");
+      columnButton.setLayoutProperties({ top: 0, right: !overlaid && scrollbarY.isVisible() ? scrollbarY.getSizeHint().width : 0 });
+      columnButton.setHeight(header.getSizeHint().height);
     },
 
     _updateSizes() {
@@ -355,11 +425,14 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
       paneLayers.setWidth(paneLayersSize.width);
       paneLayers.setHeight(paneLayersSize.height);
 
+      // scroll bars which are not overlaid take space from the visible part of the pane
       let scrollbarX = this.getChildControl("scrollbar-x");
-      scrollbarX.setMaximum(Math.max(0, paneLayersSize.width + fixedColumnsSize.width - thisSize.width));
-
       let scrollbarY = this.getChildControl("scrollbar-y");
-      scrollbarY.setMaximum(Math.max(0, paneLayersSize.height + headerSize.height - thisSize.height));
+      let overlaid = qx.core.Environment.get("os.scrollBarOverlayed");
+      let viewWidth = thisSize.width - (!overlaid && scrollbarY.isVisible() ? scrollbarY.getSizeHint().width : 0);
+      let viewHeight = thisSize.height - (!overlaid && scrollbarX.isVisible() ? scrollbarX.getSizeHint().height : 0);
+      scrollbarX.setMaximum(Math.max(0, paneLayersSize.width + fixedColumnsSize.width - viewWidth));
+      scrollbarY.setMaximum(Math.max(0, paneLayersSize.height + headerSize.height - viewHeight));
 
       this._updateScrollPositions();
     },
@@ -418,8 +491,8 @@ qx.Class.define("qxl.datagrid.ClippedScrollDataGrid", {
           scrollbarX.scrollBy(parseInt(deltaX, 10));
         }
 
-        var position = scrollbarX.getPosition();
-        var max = scrollbarX.getMaximum();
+        position = scrollbarX.getPosition();
+        max = scrollbarX.getMaximum();
         // pass the event to the parent if the scrollbar is at an edge
         if ((deltaX < 0 && position <= 0) || (deltaX > 0 && position >= max)) {
           endX = true;

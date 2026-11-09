@@ -37,11 +37,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         this.updateWidgets();
       }
     });
-    selectionManager.addListener("changeFocused", () => {
-      if (selectionManager.getSelectionStyle() == "cell") {
-        this.updateWidgets();
-      }
-    });
+    selectionManager.addListener("changeFocusedPosition", evt => this.__updateFocusState(evt.getData(), evt.getOldData()));
     if (dataSource) {
       this.setDataSource(dataSource);
     }
@@ -89,7 +85,13 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
     modelTap: "qx.event.type.Data",
 
     /** Fired when the user double clicks on a model item */
-    modelDoubleTap: "qx.event.type.Data"
+    modelDoubleTap: "qx.event.type.Data",
+
+    /** Fired when the user clicks on a cell, after the focus has moved there; data is `{row, column, model}` */
+    cellTap: "qx.event.type.Data",
+
+    /** Fired when the user double clicks on a cell; data is `{row, column, model}` */
+    cellDoubleTap: "qx.event.type.Data"
   },
 
   members: {
@@ -113,6 +115,36 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     /** @type {Integer} top of the first data row on display, ie how far the content is shifted up */
     __firstTop: 0,
+
+    /** @type {Object?} the editor over the cell being edited, `{widget, row, column, coveredCell}` */
+    __editor: null,
+
+    /** @type {Map<String, String>?} error messages by `cellErrorKey`, owned by the grid */
+    __cellErrors: null,
+
+    /** @type {Function?} `(model, column, columnEditable) => Boolean`, for `aria-readonly` of the cells */
+    __cellEditableFn: null,
+
+    /** @type {Function?} `(model, column) => String[]?`, the grid's `cellStates` */
+    __statesFn: null,
+
+    /**
+     * Sets the function which tells whether a cell may be edited, for `aria-readonly`
+     *
+     * @param {Function?} fn `(model, column, columnEditable) => Boolean`
+     */
+    setCellEditableFunction(fn) {
+      this.__cellEditableFn = fn;
+    },
+
+    /**
+     * Sets the function which returns the states of a cell widget from its model (`cellStates`)
+     *
+     * @param {Function?} fn `(model, column) => String[]?`
+     */
+    setStatesFunction(fn) {
+      this.__statesFn = fn;
+    },
 
     _applyWidgetsContextMenu(value, old) {
       for (let child of Object.values(this.__children)) {
@@ -140,18 +172,18 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
      * Widgets staying on display keep their bound model, so a data source which replaces the model at
      * a position must fire `changeSize`; the grid then rebinds all widgets via `invalidateAll`.
      *
-     * @return {Promise?}
+     * @return {Promise?} a promise if the data has to be made available first
      */
     updateWidgets() {
       if (!this.__widgetFactory.getColumns()) {
-        return;
+        return null;
       }
       let columns = this.__widgetFactory.getColumns();
       let dataSource = this.getDataSource();
       let styling = this.__sizeCalculator.getStyling();
       let sizesData = this.__sizeCalculator.getSizes();
       if (!sizesData) {
-        return;
+        return null;
       }
       let minColumnIndex = sizesData.columns[0]?.columnIndex ?? 0;
       let maxColumnIndex = sizesData.columns[sizesData.columns.length - 1]?.columnIndex ?? 0;
@@ -190,9 +222,13 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let spareWidgets = {};
 
       for (let child of qx.lang.Array.clone(this._getChildren())) {
+        if (child === this.__editor?.widget) {
+          continue;
+        }
         let cellData = child.getUserData("qxl.datagrid.cellData");
         let id = cellData.row + ":" + cellData.column;
-        if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || cellData.column < minColumnIndex || cellData.column > maxColumnIndex) {
+        // a hidden column may lie between the columns laid out
+        if (invalidateAll || cellData.row < minDataRowIndex || cellData.row > maxRowIndex || !sizesData.columnIndexes.has(cellData.column)) {
           if (reuseWidgets) {
             this.__widgetFactory.unbindWidget(child);
             delete this.__children[id];
@@ -232,7 +268,14 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
       let gridStyleColSpanFn = styling.getColSpan();
       let selectionStyle = this.__selectionManager.getSelectionStyle();
       let cellSelection = selectionStyle == "cell" || selectionStyle == "area";
-      let focusedModel = this.__selectionManager.getFocused();
+      let focusedPosition = this.__selectionManager.getFocusedPosition();
+      let focusedRow = focusedPosition?.getRow() ?? -1;
+      let focusedColumn = focusedPosition?.getColumn() ?? -1;
+      let cellErrors = this.__cellErrors;
+      let cellEditableFn = this.__cellEditableFn;
+      let statesFn = this.__statesFn;
+      // `column.isEditable()` once per column, not per cell
+      let editableColumns = [];
 
       let currentRelativePosition = new qxl.datagrid.source.Position();
       let currentAbsolutePosition = new qxl.datagrid.source.Position();
@@ -244,7 +287,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           continue;
         }
         rowTops[rowSizeData.rowIndex] = top;
-        let rowModel = undefined;
+        let rowModel;
 
         let fillFromColumnIndex = null;
         // exclusive endIndex
@@ -273,6 +316,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
               if (!child.getContextMenu()) {
                 child.setContextMenu(this.getWidgetsContextMenu());
               }
+              // a widget stays in its column, so role and column index are written once
+              child.getContentElement().setAttribute("role", "gridcell");
+              child.getContentElement().setAttribute("aria-colindex", columnSizeData.columnIndex + 1);
             }
             this.__children[id] = child;
             child.setUserData("qxl.datagrid.cellData", {
@@ -281,6 +327,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
               colSpan: 1
             });
             this.__widgetFactory.bindWidget(child, model);
+            this.__setCellId(child, rowSizeData.rowIndex, columnSizeData.columnIndex);
           } else {
             model = this.__widgetFactory.getModelForWidget(child);
             this.__widgetFactory.updateState(child, model);
@@ -325,10 +372,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           }
 
           let isSelected = false;
-          let isFocused = false;
+          let isFocused = rowSizeData.rowIndex === focusedRow && columnSizeData.columnIndex === focusedColumn;
           if (cellSelection) {
             isSelected = this.__selectionManager.isSelected(model);
-            isFocused = focusedModel === model;
           } else {
             if (rowModel === undefined) {
               rowModel = dataSource.getModelForPosition(new qxl.datagrid.source.Position(rowSizeData.rowIndex, 0));
@@ -340,10 +386,29 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
           } else {
             child.removeState("selected");
           }
+          // with row selection, the row carries aria-selected
+          child.getContentElement().setAttribute("aria-selected", cellSelection ? String(isSelected) : null);
           if (isFocused) {
             child.addState("focused");
           } else {
             child.removeState("focused");
+          }
+          // states also without a function, to remove the states of a function set before
+          let hasStates = statesFn || child.getUserData("qxl.datagrid.states");
+          if (cellEditableFn || hasStates) {
+            let columnIndex = columnSizeData.columnIndex;
+            let column = columns.getColumn(columnIndex);
+            if (cellEditableFn) {
+              editableColumns[columnIndex] ??= column.isEditable();
+              let editable = cellEditableFn(model, column, editableColumns[columnIndex]);
+              child.getContentElement().setAttribute("aria-readonly", editable ? null : "true");
+            }
+            if (hasStates) {
+              qxl.datagrid.ui.WidgetPane.applyStates(child, statesFn && model ? statesFn(model, column) : null, qxl.datagrid.ui.WidgetPane.RESERVED_CELL_STATES);
+            }
+          }
+          if (cellErrors?.size || child.hasState("invalid")) {
+            this.__applyCellError(child, model, columnSizeData.columnIndex);
           }
 
           // every change of layout properties invalidates the layout of the pane, so only for real changes
@@ -365,6 +430,8 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         widgets.forEach(widget => this.__discardSpareWidget(widget));
       }
       this.__applyFirstTop(firstTop);
+      this.__positionEditor();
+      return null;
     },
 
     /**
@@ -466,95 +533,334 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     /**
      * Event handler for tap events
+     * @param evt
      */
     __onTap(evt) {
-      let widget = qx.ui.core.Widget.getWidgetByElement(evt.getOriginalTarget());
-      let model = null;
-      while (widget && widget != this && !model) {
-        model = this.__widgetFactory.getModelForWidget(widget);
-        if (model) {
-          break;
-        }
-        widget = widget.getLayoutParent();
-      }
+      let cell = this.__getCellForEvent(evt);
+      let model = cell?.model;
       if (!model) {
         return;
       }
-      let manager = this.__selectionManager;
-      let style = manager.getSelectionStyle();
-      let mode = manager.getSelectionMode();
-
-      /**@type {Array<any>|qxl.datagrid.source.Range}*/
-      let selection;
-      if (style === "area") {
-        let widgetPosition = this.getDataSource().getPositionOfModel(model);
-        if (evt.getNativeEvent().shiftKey) {
-          let lastSelection = manager.getSelectionRange();
-          if (!(lastSelection instanceof qxl.datagrid.source.Range)) {
-            lastSelection = new qxl.datagrid.source.Range(widgetPosition, widgetPosition);
-          }
-          selection = new qxl.datagrid.source.Range(lastSelection.getStart(), widgetPosition);
-        } else {
-          selection = new qxl.datagrid.source.Range(widgetPosition, widgetPosition);
-        }
-      } else {
-        selection = qx.lang.Array.clone(manager.getSelection().toArray());
-        if (mode == "single") {
-          selection = model ? [model] : [];
-        } else if (mode == "one") {
-          if (model) {
-            selection = model ? [model] : [];
-          }
-        } else if (mode == "multi") {
-          if (model) {
-            if ((evt.getModifiers() & qx.event.type.Dom.CTRL_MASK) != 0) {
-              if (selection.indexOf(model) < 0) {
-                selection.push(model);
-              } else {
-                qx.lang.Array.remove(selection, model);
-              }
-            } else {
-              selection = model ? [model] : [];
-            }
-          }
-        } else if (mode == "additive") {
-          if (model) {
-            if (selection.indexOf(model) < 0) {
-              selection.push(model);
-            } else {
-              qx.lang.Array.remove(selection, model);
-            }
-          }
-        }
-        this.__selectionManager.setFocused(model);
-      }
-      this.__selectionManager.setSelection(selection);
+      let position = new qxl.datagrid.source.Position(cell.row, cell.column);
+      this.__selectionManager.setFocusedPosition(position);
+      this.__selectionManager.selectAt(position, "tap", { shift: evt.isShiftPressed(), ctrl: evt.isCtrlOrCommandPressed() });
       this.fireDataEvent("modelTap", model);
+      this.fireDataEvent("cellTap", cell);
     },
 
     /**
-     * Event handler for double taps (starts editing)
+     * Event handler for double taps
      *
-     * @param {*} evt
+     * @param {qx.event.type.Pointer} evt
      */
     __onDoubleTap(evt) {
+      let cell = this.__getCellForEvent(evt);
+      if (!cell?.model) {
+        return;
+      }
+      this.fireDataEvent("modelDoubleTap", cell.model);
+      this.fireDataEvent("cellDoubleTap", cell);
+    },
+
+    /**
+     * Finds the cell of the widget the pointer event happened on
+     *
+     * @param {qx.event.type.Pointer} evt
+     * @return {Object?} the cell as `{row, column, model}`, null if not on a cell
+     */
+    __getCellForEvent(evt) {
       let widget = qx.ui.core.Widget.getWidgetByElement(evt.getOriginalTarget());
-      while (widget && widget.isAnonymous()) {
+      while (widget && widget.getLayoutParent() !== this) {
         widget = widget.getLayoutParent();
       }
-      if (!widget) {
+      let cellData = widget?.getUserData("qxl.datagrid.cellData");
+      if (!cellData) {
+        return null;
+      }
+      return { row: cellData.row, column: cellData.column, model: this.__widgetFactory.getModelForWidget(widget) };
+    },
+
+    /**
+     * Moves the state `focused` from the previous to the new focused cell, without updating all cells
+     *
+     * @param {qxl.datagrid.source.Position?} value the focused cell
+     * @param {qxl.datagrid.source.Position?} oldValue the previously focused cell
+     */
+    __updateFocusState(value, oldValue) {
+      if (oldValue) {
+        this.getChildAtPosition(oldValue.getRow(), oldValue.getColumn())?.removeState("focused");
+      }
+      if (value) {
+        this.getChildAtPosition(value.getRow(), value.getColumn())?.addState("focused");
+      }
+    },
+
+    /**
+     * Shows an editor over a cell; the editor is a child of the pane but not a cell, it follows the
+     * cell while scrolling and is hidden while the cell is not on display
+     *
+     * @param {qx.ui.core.Widget} widget the editor
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     */
+    showEditor(widget, row, column) {
+      this.__editor = { widget, row, column };
+      this._add(widget);
+      this.__positionEditor();
+    },
+
+    /**
+     * Moves the editor to another row, eg after rows have been inserted above it
+     *
+     * @param {Integer} row row in the data source
+     */
+    moveEditor(row) {
+      if (this.__editor) {
+        this.__editor.row = row;
+        this.__positionEditor();
+      }
+    },
+
+    /**
+     * Removes the editor from the pane; disposing it is up to the caller
+     */
+    removeEditor() {
+      if (this.__editor) {
+        this.__setCoveredCell(null);
+        this._remove(this.__editor.widget);
+        this.__editor = null;
+      }
+    },
+
+    /**
+     * Hides the cell widget under the editor, because editors may have a transparent background;
+     * the widget hidden before is shown again, since cell widgets are reused for other cells
+     *
+     * @param {qx.ui.core.Widget?} cell the cell widget under the editor, null if there is none
+     */
+    __setCoveredCell(cell) {
+      let editor = this.__editor;
+      if (editor.coveredCell === cell) {
         return;
       }
-      let model = this.__widgetFactory.getModelForWidget(widget);
-      if (!model) {
+      if (editor.coveredCell && !editor.coveredCell.isDisposed()) {
+        editor.coveredCell.setOpacity(null);
+      }
+      editor.coveredCell = cell;
+      cell?.setOpacity(0);
+    },
+
+    /**
+     * Whether the editor is shown, ie its cell is on display
+     *
+     * @return {Boolean}
+     */
+    isEditorOnDisplay() {
+      return !!this.__editor && this.__editor.widget.getVisibility() === "visible";
+    },
+
+    /**
+     * Gives the editor the bounds of its cell, or hides it while the cell is not on display
+     */
+    __positionEditor() {
+      let editor = this.__editor;
+      if (!editor) {
         return;
       }
-      this.fireDataEvent("modelDoubleTap", model);
+      let cell = this.getChildAtPosition(editor.row, editor.column);
+      this.__setCoveredCell(cell);
+      if (!cell) {
+        editor.widget.exclude();
+        return;
+      }
+      let props = cell.getLayoutProperties();
+      let current = editor.widget.getLayoutProperties();
+      if (current.left !== props.left || current.top !== props.top || current.width !== props.width || current.height !== props.height) {
+        editor.widget.setLayoutProperties({ left: props.left, top: props.top, width: props.width, height: props.height });
+      }
+      editor.widget.show();
+    },
+
+    /**
+     * Sets the map of error messages per cell, which the grid owns and changes
+     *
+     * @param {Map<String, String>} cellErrors messages by `cellErrorKey`
+     */
+    setCellErrors(cellErrors) {
+      this.__cellErrors = cellErrors;
+    },
+
+    /**
+     * Shows the current error of one cell, if the cell is on display
+     *
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     */
+    updateCellError(row, column) {
+      let child = this.getChildAtPosition(row, column);
+      if (child) {
+        this.__applyCellError(child, this.__widgetFactory.getModelForWidget(child), column);
+      }
+    },
+
+    /**
+     * Shows the current errors of all cells on display
+     */
+    updateCellErrors() {
+      for (let child of Object.values(this.__children)) {
+        let cellData = child.getUserData("qxl.datagrid.cellData");
+        if (cellData) {
+          this.__applyCellError(child, this.__widgetFactory.getModelForWidget(child), cellData.column);
+        }
+      }
+    },
+
+    /**
+     * Gives a cell widget the state `invalid` and the message as tool tip, or removes both
+     *
+     * @param {qx.ui.core.Widget} child the cell widget
+     * @param {qx.core.Object?} model the model bound to it
+     * @param {Integer} column column in the data source
+     */
+    __applyCellError(child, model, column) {
+      let key = model ? qxl.datagrid.ui.WidgetPane.cellErrorKey(model, column) : null;
+      let message = key && this.__cellErrors?.get(key);
+      let element = child.getContentElement();
+      if (message) {
+        child.addState("invalid");
+        child.setToolTipText(message);
+        element.setAttribute("aria-invalid", "true");
+        element.setAttribute("aria-describedby", this.__getErrorTextId(key));
+      } else if (child.hasState("invalid")) {
+        child.removeState("invalid");
+        child.resetToolTipText();
+        element.setAttribute("aria-invalid", null);
+        element.setAttribute("aria-describedby", null);
+      }
+    },
+
+    /** @type {qx.html.Element?} hidden container of the error messages, which `aria-describedby` refers to */
+    __errorTexts: null,
+
+    /** @type {Map<String, qx.html.Element>} element with the message by `cellErrorKey` */
+    __errorTextElements: null,
+
+    /**
+     * Returns the id of the element with the error message of a cell
+     *
+     * @param {String} key `cellErrorKey` of the cell
+     * @return {String}
+     */
+    __getErrorTextId(key) {
+      return "qxl-datagrid-" + this.toHashCode() + "-error-" + key.replace(":", "-");
+    },
+
+    /**
+     * Keeps the error message of a cell as text for screen readers (`aria-describedby`), also while
+     * the cell is not on display; the container is hidden, which `aria-describedby` still reads
+     *
+     * @param {String} key `cellErrorKey` of the cell
+     * @param {String?} message the error, null to remove it
+     */
+    setErrorText(key, message) {
+      let element = this.__errorTextElements?.get(key);
+      if (!message) {
+        if (element) {
+          this.__errorTexts.remove(element);
+          this.__errorTextElements.delete(key);
+          element.dispose();
+        }
+        return;
+      }
+      if (!this.__errorTexts) {
+        this.__errorTexts = new qx.html.Element("div", { display: "none" });
+        this.__errorTextElements = new Map();
+        this.getContentElement().add(this.__errorTexts);
+      }
+      if (!element) {
+        element = new qx.html.Element("span", null, { id: this.__getErrorTextId(key) });
+        this.__errorTextElements.set(key, element);
+        this.__errorTexts.add(element);
+      }
+      element.setText(message);
+    },
+
+    /**
+     * Returns the DOM id of a cell, for ARIA attributes like `aria-activedescendant` and `aria-owns`;
+     * the element only exists while the cell is on display
+     *
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     * @return {String} the id
+     */
+    getCellId(row, column) {
+      return "qxl-datagrid-" + this.toHashCode() + "-" + row + "-" + column;
+    },
+
+    /**
+     * Sets the id of a cell widget which has been created or reused for a cell, for `aria-owns` of
+     * its row and `aria-activedescendant`; role and column index are set when the widget is created,
+     * the row index is on the row
+     *
+     * @param {qx.ui.core.Widget} widget
+     * @param {Integer} row row in the data source
+     * @param {Integer} column column in the data source
+     */
+    __setCellId(widget, row, column) {
+      widget.getContentElement().setAttribute("id", this.getCellId(row, column));
     }
   },
 
   statics: {
     /** @type {Integer} beyond this shift of the content in pixels, all rows are positioned from 0 again */
-    MAX_FIRST_TOP: 1000000
+    MAX_FIRST_TOP: 1000000,
+
+    /** @type {String[]} states the grid sets on cell widgets itself, not available to `cellStates` */
+    RESERVED_CELL_STATES: ["selected", "focused", "invalid"],
+
+    /** @type {String[]} states the grid sets on row widgets itself, not available to `rowStates` */
+    RESERVED_ROW_STATES: ["selected", "focused", "even", "odd"],
+
+    /**
+     * Gives a widget the states an application function returned for its model and removes the ones
+     * it returned last time but not now; reused widgets thus lose the states of their former row
+     *
+     * @param {qx.ui.core.Widget} widget a cell or row widget
+     * @param {String[]?} states the states to set
+     * @param {String[]} reserved states the grid sets itself, which are ignored
+     */
+    applyStates(widget, states, reserved) {
+      let previous = widget.getUserData("qxl.datagrid.states");
+      if (!previous && !states?.length) {
+        return;
+      }
+      if (qx.core.Environment.get("qx.debug")) {
+        states?.forEach(state => {
+          if (reserved.includes(state)) {
+            qx.log.Logger.warn(qxl.datagrid.ui.WidgetPane, `State "${state}" is set by the grid itself and ignored`);
+          }
+        });
+      }
+      let next = (states ?? []).filter(state => !reserved.includes(state));
+      previous?.forEach(state => {
+        if (!next.includes(state)) {
+          widget.removeState(state);
+        }
+      });
+      next.forEach(state => widget.addState(state));
+      widget.setUserData("qxl.datagrid.states", next.length ? next : null);
+    },
+
+    /**
+     * Returns the key of a cell in the map of error messages; a cell is identified by model and
+     * column, since all cells of a row can share one model
+     *
+     * @param {qx.core.Object} model the model of the cell
+     * @param {Integer} column column in the data source
+     * @return {String} the key
+     */
+    cellErrorKey(model, column) {
+      return model.toHashCode() + ":" + column;
+    }
   }
 });
