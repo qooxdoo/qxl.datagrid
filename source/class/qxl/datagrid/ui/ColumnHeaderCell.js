@@ -115,9 +115,7 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
     _forwardStates: {
       sortAsc: true,
       sortDesc: true,
-      sortable: true,
-      // a state of the column, see `qxl.datagrid.column.Column#getWidgetStates`
-      number: true
+      sortable: true
     },
 
     /** @type {Boolean} whether Shift was pressed with the click which executes */
@@ -203,7 +201,8 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
     },
 
     /**
-     * Apply for `sortable`
+     * Apply for `sortable`; a column which cannot be sorted gives no space to the sort icon and rank,
+     * so that the theme can align the caption like the cells
      *
      * @param {Boolean} value
      * @param old
@@ -215,7 +214,9 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
         this.removeState("sortable");
       }
 
-      this.getChildControl("sortIcon").setVisibility(value ? "visible" : "hidden");
+      let visibility = value ? "visible" : "excluded";
+      this.getChildControl("sortIcon").setVisibility(visibility);
+      this.getChildControl("sortRank").setVisibility(visibility);
       this.__updateAriaSort();
     },
 
@@ -263,10 +264,11 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
         }
 
         /**
-         * The sort icon, shown on the right.
+         * The sort icon, shown on the right; excluded until the column is sortable (`sortable` starts
+         * as false, its apply runs only on a change).
          */
         case "sortIcon": {
-          return new qx.ui.basic.Image();
+          return new qx.ui.basic.Image().set({ visibility: "excluded" });
         }
 
         /**
@@ -275,7 +277,7 @@ qx.Class.define("qxl.datagrid.ui.ColumnHeaderCell", {
          * whose size hint changes later would not be laid out again.
          */
         case "sortRank": {
-          return new qx.ui.basic.Label("").set({ width: 12, allowGrowX: false, textAlign: "center" });
+          return new qx.ui.basic.Label("").set({ width: 12, allowGrowX: false, textAlign: "center", visibility: "excluded" });
         }
       }
 

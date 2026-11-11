@@ -90,11 +90,18 @@ qx.Class.define("qxl.datagrid.ui.factory.HeaderWidgetFactory", {
     },
 
     /**
+     * The states of the column go to the cell and to its label, so that the theme can align the caption
+     * like the values (eg `number` to the right)
+     *
      * @override
      */
     _createWidget(column) {
       let widget = new qxl.datagrid.ui.ColumnHeaderCell().set({ appearance: this.getWidgetAppearance() });
-      column.getWidgetStates().forEach(state => widget.addState(state));
+      let label = widget.getChildControl("label");
+      column.getWidgetStates().forEach(state => {
+        widget.addState(state);
+        label.addState(state);
+      });
       return widget;
     }
   }
