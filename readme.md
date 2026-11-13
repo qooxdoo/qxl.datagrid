@@ -14,8 +14,6 @@ DataGrid is a Qooxdoo UI component that provides a virtual, scrolling, spreadshe
 - Screen reader support (ARIA)
 - Fully stylable using Qooxdoo themes, including states for rows and cells set by the application
 
-NOTE:: This is beta release, but will be in active use and development over the next few months.
-
 ## Trying the Demos
 
 Included in this repo is a demo application - it's running live at https://qooxdoo.org/qxl.datagrid/
