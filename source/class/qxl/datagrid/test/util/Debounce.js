@@ -53,6 +53,25 @@ qx.Class.define("qxl.datagrid.test.util.Debounce", {
       await promise;
       await new Promise(resolve => setTimeout(resolve, 20));
       this.assertEquals(0, runs, "the pending run is dropped and its promise resolves");
+    },
+
+    async testRepeatedTrigger() {
+      this.assertEquals("ignore", new qxl.datagrid.util.Debounce(null, 0).getRepeatedTrigger());
+      // a second trigger before the timeout
+      for (let [repeatedTrigger, expectedRuns] of [
+        ["ignore", 1],
+        ["immediate", 2],
+        ["queue", 2]
+      ]) {
+        let runs = 0;
+        let debounce = new qxl.datagrid.util.Debounce(() => runs++, 0);
+        debounce.setRepeatedTrigger(repeatedTrigger);
+        debounce.run();
+        debounce.run();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        this.assertEquals(expectedRuns, runs, repeatedTrigger);
+        debounce.dispose();
+      }
     }
   }
 });

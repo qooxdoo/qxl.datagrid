@@ -59,9 +59,9 @@ qx.Class.define("qxl.datagrid.util.Debounce", {
      *  "queue" means to schedule the function to run again
      */
     repeatedTrigger: {
-      init: "ignored",
+      init: "ignore",
       nullable: false,
-      check: ["ignore", "restart", "repeat", "queue"],
+      check: ["ignore", "restart", "immediate", "queue"],
       apply: "_applyRepeatedTrigger",
       event: "changeRepeatedTrgger"
     }

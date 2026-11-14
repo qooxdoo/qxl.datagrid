@@ -207,5 +207,12 @@ qx.Class.define("qxl.datagrid.source.ArrayDataSource", {
       let size = new qxl.datagrid.source.Position(this.getModel().getLength(), this.getColumns().getLength());
       return size;
     }
+  },
+
+  destruct() {
+    // the model array and the columns often outlive the data source
+    this.getModel()?.removeListener("change", this.__onModelChange, this);
+    this.getColumns()?.removeListener("changeSort", this.sort, this);
+    this._disposeObjects("__debounceChangeSize");
   }
 });
