@@ -166,5 +166,14 @@ qx.Class.define("qxl.datagrid.util.Debounce", {
     async _runImpl() {
       await this.__fn();
     }
+  },
+
+  destruct() {
+    this._cancelTimer();
+    // a run which is executing now must not start the timer again
+    this.__queuedRepeat = false;
+    // the pending run no longer happens, nobody may wait for it forever
+    this.__runPromise?.resolve();
+    this.__runPromise = null;
   }
 });

@@ -274,7 +274,8 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
     },
 
     /**
-     * @returns {Integer} The number of maximum rows that the data grid can display in view.
+     * @returns {Integer} The number of maximum rows that the data grid can display in view, 0 before
+     *  the first layout
      */
     getMaxRows() {
       let styling = this.getSizeCalculator().getStyling();
@@ -284,16 +285,15 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
         let verticalSpacing = styling.getVerticalSpacing();
         return Math.floor((oddEvenBounds.height + verticalSpacing) / ((styling.getMaxRowHeight() ?? styling.getMinRowHeight()) + verticalSpacing));
       }
-      if (qx.core.Environment.get("qx.debug")) {
-        this.warn(`${this.classname}.getMaxRows called too early, assuming maximum of zero rows`);
-      }
       return 0;
     },
 
+    /**
+     * Limits `startRowIndex` so that no empty space is left below the last row
+     */
     _constrainScrollPosition() {
       let maxRows = this.getMaxRows();
-      let size = this.getDataSource().getSize();
-      let rowCount = size.getRow();
+      let rowCount = this.getDataSource()?.getSize().getRow() ?? 0;
       let maxStartRowIndex = Math.max(0, rowCount - maxRows);
       let startRowIndex = this.getStartRowIndex();
       if (startRowIndex > maxStartRowIndex) {
@@ -582,6 +582,16 @@ qx.Class.define("qxl.datagrid.VirtualScrollDataGrid", {
     onPaneUpdated() {
       this._computeScrollbars();
       super.onPaneUpdated();
+    },
+
+    /**
+     * Before the first layout the number of rows on display is not known, and a resize changes it
+     *
+     * @override
+     */
+    renderLayout(left, top, width, height) {
+      super.renderLayout(left, top, width, height);
+      this._constrainScrollPosition();
     },
 
     _setAvailableSize(width, height) {

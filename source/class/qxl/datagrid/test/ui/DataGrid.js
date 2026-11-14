@@ -92,7 +92,12 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
       assertMapEquals(widgets["3:3"].getLayoutProperties(), { top: 80, height: 40, left: 80, width: 40 });
     },
 
-    async testScrollToAppendedRow() {
+    /**
+     * Creates a virtual grid with one text column on an array data source, not yet on display
+     *
+     * @return {{grid: qxl.datagrid.VirtualScrollDataGrid, dataSource: qxl.datagrid.source.ArrayDataSource, nextChangeSize: Function, createRows: Function}}
+     */
+    __createArrayGrid() {
       let columns = new qxl.datagrid.column.Columns();
       columns.add(new qxl.datagrid.column.TextColumn("name").set({ caption: "Name", width: 200 }));
       let dataSource = new qxl.datagrid.source.ArrayDataSource();
@@ -100,18 +105,26 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
       let grid = new qxl.datagrid.VirtualScrollDataGrid(columns).set({ width: 400, height: 480 });
       grid.getStyling().setHeaderRowHeight(22);
       grid.setDataSource(dataSource);
+      return {
+        grid,
+        dataSource,
+        nextChangeSize: () => new Promise(resolve => dataSource.addListenerOnce("changeSize", resolve)),
+        createRows: (count, first = 0) => Array.from({ length: count }, (_, i) => qx.data.marshal.Json.createModel({ name: "Row " + (first + i) }))
+      };
+    },
+
+    async testScrollToAppendedRow() {
+      let { grid, dataSource, nextChangeSize, createRows } = this.__createArrayGrid();
       qx.core.Init.getApplication().getRoot().add(grid, { left: 0, top: 0 });
-      const nextChangeSize = () => new Promise(resolve => dataSource.addListenerOnce("changeSize", resolve));
-      const createModel = name => qx.data.marshal.Json.createModel({ name });
       let sized = nextChangeSize();
-      let model = new qx.data.Array(Array.from({ length: 44 }, (_, i) => createModel("Row " + i)));
+      let model = new qx.data.Array(createRows(44));
       dataSource.setModel(model);
       await sized;
       qx.ui.core.queue.Manager.flush();
 
       // the size of the data source is reported after the grid has scrolled to the new row
       sized = nextChangeSize();
-      model.push(createModel("Row 44"));
+      model.push(createRows(1, 44)[0]);
       grid.setFocusedPosition(44, 0);
       await sized;
       qx.ui.core.queue.Manager.flush();
@@ -119,6 +132,62 @@ qx.Class.define("qxl.datagrid.test.ui.DataGrid", {
       let rows = grid.getSizeCalculator().getSizes().rows.map(rowData => rowData.rowIndex);
       grid.destroy();
       this.assertTrue(rows.includes(44), `row 44 not on display, rows ${rows}`);
+    },
+
+    async testFilledBeforeLayout() {
+      let { grid, dataSource, nextChangeSize, createRows } = this.__createArrayGrid();
+      let warnings = [];
+      grid.warn = (...args) => warnings.push(args.join(" "));
+      // like a dialog which fills its grid and scrolls to the end before it is shown
+      let sized = nextChangeSize();
+      dataSource.setModel(new qx.data.Array(createRows(44)));
+      await sized;
+      grid.setStartRowIndex(43);
+      qx.core.Init.getApplication().getRoot().add(grid, { left: 0, top: 0 });
+      qx.ui.core.queue.Manager.flush();
+
+      let rows = grid
+        .getSizeCalculator()
+        .getSizes()
+        .rows.map(rowData => rowData.rowIndex)
+        .filter(rowIndex => rowIndex >= 0);
+      let maxRows = grid.getMaxRows();
+      grid.destroy();
+      this.assertEquals(43, rows[rows.length - 1]);
+      this.assertEquals(maxRows, rows.length, `the last row is not at the bottom, rows ${rows}`);
+      this.assertArrayEquals([], warnings);
+    },
+
+    async testNoCallbacksAfterDestroy() {
+      let { grid, dataSource, nextChangeSize, createRows } = this.__createArrayGrid();
+      let destroyed = false;
+      let callsAfterDestroy = [];
+      const states = name => () => {
+        if (destroyed) {
+          callsAfterDestroy.push(name);
+        }
+        return null;
+      };
+      grid.set({ rowStates: states("rowStates"), cellStates: states("cellStates") });
+      let model = new qx.data.Array(createRows(5));
+      let sized = nextChangeSize();
+      dataSource.setModel(model);
+      await sized;
+      qx.core.Init.getApplication().getRoot().add(grid, { left: 0, top: 0 });
+      qx.ui.core.queue.Manager.flush();
+
+      // a change just before the dialog with the grid is closed
+      grid.scheduleUpdateWidgets();
+      grid.destroy();
+      qx.ui.core.queue.Manager.flush();
+      destroyed = true;
+      this.assertTrue(grid.isDisposed());
+
+      // the data source outlives the grid
+      model.push(createRows(1, 5)[0]);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      dataSource.dispose();
+      this.assertArrayEquals([], callsAfterDestroy);
     },
 
     testComputeFocusMove() {

@@ -1039,7 +1039,8 @@ qx.Class.define("qxl.datagrid.DataGrid", {
      * @async
      */
     scheduleUpdateWidgets() {
-      return this.__debounceUpdateWidgets.run();
+      // the selection manager still reports changes of the data source after the grid is disposed
+      return this.__debounceUpdateWidgets?.run();
     },
 
     /**
@@ -1208,7 +1209,9 @@ qx.Class.define("qxl.datagrid.DataGrid", {
   destruct() {
     qx.bom.Event.removeNativeListener(document, "copy", this.__onClipboard);
     qx.bom.Event.removeNativeListener(document, "paste", this.__onClipboard);
-    this._disposeObjects("__editingController", "__columnMenu");
+    // the data source often outlives the grid
+    this.getDataSource()?.removeListener("changeSize", this._onDataSourceChangeSize, this);
+    this._disposeObjects("__debounceUpdateWidgets", "__editingController", "__columnMenu");
   },
 
   statics: {

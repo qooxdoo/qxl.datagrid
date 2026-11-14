@@ -43,6 +43,16 @@ qx.Class.define("qxl.datagrid.test.util.Debounce", {
       await debounce.run().catch(() => null);
       await debounce.run();
       this.assertEquals(2, runs);
+    },
+
+    async testDisposeDropsPendingRun() {
+      let runs = 0;
+      let debounce = new qxl.datagrid.util.Debounce(() => runs++, 0);
+      let promise = debounce.run();
+      debounce.dispose();
+      await promise;
+      await new Promise(resolve => setTimeout(resolve, 20));
+      this.assertEquals(0, runs, "the pending run is dropped and its promise resolves");
     }
   }
 });
