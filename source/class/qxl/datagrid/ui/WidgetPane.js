@@ -836,7 +836,9 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
 
     /**
      * Keeps the error message of a cell as text for screen readers (`aria-describedby`), also while
-     * the cell is not on display; the container is hidden, which `aria-describedby` still reads
+     * the cell is not on display; the container is hidden, which `aria-describedby` still reads.
+     * It is hidden with the `hidden` attribute: a `display: none` style would be reset by
+     * `qx.html.Element`, which sets `display` from its own visibility when it renders the element
      *
      * @param {String} key `cellErrorKey` of the cell
      * @param {String?} message the error, null to remove it
@@ -852,7 +854,7 @@ qx.Class.define("qxl.datagrid.ui.WidgetPane", {
         return;
       }
       if (!this.__errorTexts) {
-        this.__errorTexts = new qx.html.Element("div", { display: "none" });
+        this.__errorTexts = new qx.html.Element("div", null, { hidden: "hidden" });
         this.__errorTextElements = new Map();
         this.getContentElement().add(this.__errorTexts);
       }

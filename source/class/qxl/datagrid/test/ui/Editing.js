@@ -412,6 +412,8 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       let describedBy = cell.getContentElement().getDomElement().getAttribute("aria-describedby");
       this.assertEquals("true", cell.getContentElement().getDomElement().getAttribute("aria-invalid"));
       this.assertEquals("from the server", document.getElementById(describedBy).textContent);
+      // the message is for screen readers only, it must not be visible on the page
+      this.assertEquals(0, document.getElementById(describedBy).getClientRects().length);
 
       grid.resetCellErrors();
       qx.ui.core.queue.Manager.flush();
