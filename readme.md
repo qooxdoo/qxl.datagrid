@@ -233,6 +233,8 @@ Cells can be changed when `editable` is set on the grid; a column with `readOnly
 - `cellValidator` - `(model, column, value, oldValue) => String?`, returns an error message to reject a value; the
   editor stays open and the cell shows the message. `setCellError`/`getCellError` report errors from elsewhere
 - the event `cellValueChanged` - `{model, column, row, columnIndex, value, oldValue}`, after a value has been written
+- the event `cellErrorChanged` - `{model, column, message}` when the error of a cell is set, changed or removed (also
+  for a rejected value, which leaves the model unchanged), null after `resetCellErrors`; eg to lock a "save" button
 
 The grid creates an editor only for the cell being edited: a text field by default (`TextColumn`, `NumberColumn` with
 parsing), a select box for `SelectColumn` (`options`); a `BooleanColumn` has no editor, Space or a click switches it.

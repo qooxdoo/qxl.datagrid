@@ -287,6 +287,14 @@ qx.Class.define("qxl.datagrid.DataGrid", {
     cellValueChanged: "qx.event.type.Data",
 
     /**
+     * Fired when the error of a cell is set, changed or removed, also for a value rejected by
+     * `cellValidator`, which leaves the model as it is; data is `{model, column, message}` with `message`
+     * null when the error is gone, or null after `resetCellErrors` has removed errors. Errors stay by
+     * model and column, so a listener checks the rows it still has, eg to lock a "save" button
+     */
+    cellErrorChanged: "qx.event.type.Data",
+
+    /**
      * Fired before the user sorts by a click or a key on the header; data is
      * `{column, sortOrder, add}` with the new sort order of the column and whether it is added to the
      * other sorted columns (Shift). `preventDefault()` cancels the sorting. Setting `sortOrder` in code

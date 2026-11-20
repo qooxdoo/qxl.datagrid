@@ -609,7 +609,7 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
     /**
      * Sets or removes the error message of a cell, eg from a check on the server; the cell shows the
      * state `invalid` and the message as tool tip while it is on display. Accepting a new value for
-     * the cell removes its error.
+     * the cell removes its error. A change of the error fires `cellErrorChanged` on the grid.
      *
      * @param {qx.core.Object} model the model of the cell
      * @param {qxl.datagrid.column.Column} column the column of the cell
@@ -618,6 +618,8 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
     setCellError(model, column, message) {
       let columnIndex = this.__grid.getColumns().indexOf(column);
       let key = qxl.datagrid.ui.WidgetPane.cellErrorKey(model, columnIndex);
+      message = message || null;
+      let changed = (this.__cellErrors.get(key) ?? null) !== message;
       if (message) {
         this.__cellErrors.set(key, message);
       } else {
@@ -627,6 +629,9 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
       let row = this.__grid.getDataSource()?.getPositionOfModel(model)?.getRow();
       if (row !== undefined && row >= 0) {
         this.__grid.getQxObject("widgetPane").updateCellError(row, columnIndex);
+      }
+      if (changed) {
+        this.__grid.fireDataEvent("cellErrorChanged", { model, column, message });
       }
     },
 
@@ -642,13 +647,17 @@ qx.Class.define("qxl.datagrid.ui.EditingController", {
     },
 
     /**
-     * Removes the error messages of all cells
+     * Removes the error messages of all cells; fires `cellErrorChanged` with null if there were any
      */
     resetCellErrors() {
       let pane = this.__grid.getQxObject("widgetPane");
+      let hadErrors = this.__cellErrors.size > 0;
       this.__cellErrors.forEach((message, key) => pane.setErrorText(key, null));
       this.__cellErrors.clear();
       this.__grid.getQxObject("widgetPane").updateCellErrors();
+      if (hadErrors) {
+        this.__grid.fireDataEvent("cellErrorChanged", null);
+      }
     }
   }
 });

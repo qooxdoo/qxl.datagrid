@@ -148,6 +148,8 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       let grid = this.__grid;
       let first = this.__model.getItem(0);
       let speedColumn = grid.getColumns().getColumn(5);
+      let errors = [];
+      grid.addListener("cellErrorChanged", evt => errors.push(evt.getData()?.message));
 
       // a number column rejects text and keeps the editor open
       let editor = this.__openEditor(0, 5);
@@ -157,12 +159,18 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertEquals(30, first.getMaxSpeed());
       this.assertNotNull(grid.getCellError(first, speedColumn));
       this.assertFalse(editor.getValid());
+      this.assertEquals(0, this.__changes.length, "a rejected value changes nothing in the model");
+      this.assertEquals(1, errors.length, "but the error is reported");
+      press("Enter");
+      this.assertEquals(1, errors.length, "the same error again is no change");
       editor.setValue("120");
       press("Enter");
       this.assertTrue(grid.getFocusedPosition().equals(1, 5), "the accepted value goes on with the row below");
       press("Escape");
       this.assertEquals(120, first.getMaxSpeed());
       this.assertNull(grid.getCellError(first, speedColumn));
+      this.assertEquals(2, errors.length);
+      this.assertNull(errors[1], "accepting removes the error");
 
       // the validator of the dialog rejects an empty name
       grid.setCellValidator((model, column, value) => (column.getPath() == "name" && !value ? "required" : null));
@@ -175,6 +183,7 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertFalse(grid.isEditing());
       this.assertNull(grid.getCellError(first, grid.getColumns().getColumn(1)));
       this.assertEquals("Vehicle type 1", first.getName());
+      this.assertJsonEquals(["required", null], errors.slice(2), "Escape removes the error of the rejected value");
     },
 
     testTabGoesOnToNextEditableCell() {
@@ -395,7 +404,14 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       let grid = this.__grid;
       let pane = grid.getQxObject("widgetPane");
       let model = this.__model.getItem(2);
+      let events = [];
+      grid.addListener("cellErrorChanged", evt => events.push(evt.getData()));
       grid.setCellError(model, grid.getColumns().getColumn(1), "from the server");
+      grid.setCellError(model, grid.getColumns().getColumn(1), "from the server");
+      grid.setCellError(model, grid.getColumns().getColumn(2), null);
+      this.assertEquals(1, events.length, "only a real change is reported");
+      this.assertIdentical(model, events[0].model);
+      this.assertEquals("from the server", events[0].message);
       this.assertTrue(pane.getChildAtPosition(2, 1).hasState("invalid"));
       this.assertFalse(pane.getChildAtPosition(2, 2).hasState("invalid"));
 
@@ -416,6 +432,9 @@ qx.Class.define("qxl.datagrid.test.ui.Editing", {
       this.assertEquals(0, document.getElementById(describedBy).getClientRects().length);
 
       grid.resetCellErrors();
+      grid.resetCellErrors();
+      this.assertEquals(2, events.length, "reset is reported once, and only with errors");
+      this.assertNull(events[1]);
       qx.ui.core.queue.Manager.flush();
       this.assertFalse(cell.hasState("invalid"));
       this.assertNull(cell.getContentElement().getDomElement().getAttribute("aria-describedby"));
