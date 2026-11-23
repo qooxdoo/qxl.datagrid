@@ -41,8 +41,8 @@ qx.Class.define("qxl.datagrid.ui.CellToolTip", {
 
     /**
      * Finds the text which is cut off in the cell the tooltip is opened for; the innermost element
-     * whose content is wider than the element, so that eg the label of an `IconCell` or of a tree cell
-     * is found
+     * whose content is wider or higher than the element, so that eg the label of an `IconCell` or of a
+     * tree cell is found
      *
      * @return {String?} the whole text, null if all fits or the grid has the tooltips switched off
      */
@@ -56,7 +56,9 @@ qx.Class.define("qxl.datagrid.ui.CellToolTip", {
       if (!grid?.getTruncatedTextToolTips() || !element) {
         return null;
       }
-      let truncated = [element, ...element.querySelectorAll("*")].filter(el => el.scrollWidth > el.clientWidth && el.textContent.trim());
+      // a label with `wrap` (eg in a tree cell) overflows downwards instead of sideways
+      const isCutOff = el => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight;
+      let truncated = [element, ...element.querySelectorAll("*")].filter(el => isCutOff(el) && el.textContent.trim());
       return truncated.length ? truncated[truncated.length - 1].textContent : null;
     }
   }

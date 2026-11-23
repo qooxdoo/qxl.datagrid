@@ -58,6 +58,23 @@ qx.Class.define("qxl.datagrid.test.ui.Cells", {
       return this.__grid.getQxObject("widgetPane").getChildAtPosition(row, column);
     },
 
+    /**
+     * Does what the tooltip manager does when the pointer rests on a cell: picks the tooltip and shows it
+     *
+     * @param {qx.ui.core.Widget} cell
+     * @return {String?} the text of the tooltip, null if it stays hidden
+     */
+    __shownToolTipText(cell) {
+      let manager = qx.ui.tooltip.Manager.getInstance();
+      manager.showToolTip(cell);
+      let tooltip = manager.getCurrent();
+      tooltip.exclude();
+      tooltip.show();
+      let text = tooltip.isVisible() ? tooltip.getLabel() : null;
+      manager.resetCurrent();
+      return text;
+    },
+
     tearDown() {
       this.__grid?.destroy();
       this.__grid = null;
@@ -169,30 +186,42 @@ qx.Class.define("qxl.datagrid.test.ui.Cells", {
         ],
         [{ name: "Car", kind: "long" }, { name: LONG, kind: "long" }]
       );
-      let manager = qx.ui.tooltip.Manager.getInstance();
-      // like the manager on pointerover: the tooltip it picks, and what show() makes of it
-      const shownText = cell => {
-        manager.showToolTip(cell);
-        let tooltip = manager.getCurrent();
-        tooltip.exclude();
-        tooltip.show();
-        let text = tooltip.isVisible() ? tooltip.getLabel() : null;
-        manager.resetCurrent();
-        return text;
-      };
-
-      this.assertNull(shownText(this.__getCell(0, 0)), "the text fits");
-      this.assertEquals(LONG, shownText(this.__getCell(1, 0)));
-      this.assertEquals(LONG, shownText(this.__getCell(0, 1)), "the label within an IconCell");
+      this.assertNull(this.__shownToolTipText(this.__getCell(0, 0)), "the text fits");
+      this.assertEquals(LONG, this.__shownToolTipText(this.__getCell(1, 0)));
+      this.assertEquals(LONG, this.__shownToolTipText(this.__getCell(0, 1)), "the label within an IconCell");
 
       // cells of a read only grid are disabled
       grid.setReadOnly(true);
       qx.ui.core.queue.Manager.flush();
       this.assertFalse(this.__getCell(1, 0).isEnabled());
-      this.assertEquals(LONG, shownText(this.__getCell(1, 0)));
+      this.assertEquals(LONG, this.__shownToolTipText(this.__getCell(1, 0)));
 
       grid.setTruncatedTextToolTips(false);
-      this.assertNull(shownText(this.__getCell(1, 0)));
+      this.assertNull(this.__shownToolTipText(this.__getCell(1, 0)));
+    },
+
+    async testToolTipForTruncatedTreeText() {
+      const LONG = "A node name much too long for the narrow tree column";
+      let root = qx.data.marshal.Json.createModel({ name: "root", children: [{ name: "Car" }, { name: LONG }] });
+      let columns = new qxl.datagrid.column.Columns();
+      columns.add(new qxl.datagrid.column.tree.ExpansionColumn("name").set({ caption: "Name", width: 120 }));
+      let inspector = new qxl.datagrid.source.tree.NodeInspector().set({ childrenPath: "children" });
+      let dataSource = new qxl.datagrid.source.tree.TreeDataSource(() => inspector, columns);
+      dataSource.setRoot(root);
+      await dataSource.flushQueue();
+      await dataSource.expandNode(root);
+      await dataSource.flushQueue();
+      let grid = (this.__grid = new qxl.datagrid.VirtualScrollDataGrid(columns).set({ width: 500, height: 200 }));
+      grid.setDataSource(dataSource);
+      qx.core.Init.getApplication().getRoot().add(grid, { left: 0, top: 0 });
+      qx.ui.core.queue.Manager.flush();
+      grid.updateWidgets();
+      qx.ui.core.queue.Manager.flush();
+
+      // the label of a tree cell wraps, a long name overflows downwards
+      this.assertEquals("Car", this.__getCell(0, 0).getChildControl("label").getValue());
+      this.assertNull(this.__shownToolTipText(this.__getCell(0, 0)), "the text fits");
+      this.assertEquals(LONG, this.__shownToolTipText(this.__getCell(1, 0)));
     }
   }
 });
