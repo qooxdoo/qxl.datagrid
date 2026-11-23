@@ -360,6 +360,11 @@ keeps it out of the menu.
 The user changes the width of a column by dragging the right edge of its header or with Shift+Left/Right in the header,
 within `minWidth` and `maxWidth`; `Column.resize(width)` does the same in code.
 
+### Tooltips for Cut Off Text
+
+A cell whose text does not fit shows the whole text as a tooltip when the pointer rests on it, also in a read only grid;
+`truncatedTextToolTips: false` switches this off for a grid. A cell widget with a tooltip of its own keeps it.
+
 ### Context Menu
 
 `widgetsContextMenu` is the context menu of the cells; it also opens with the menu key and Shift+F10, for the focused cell.

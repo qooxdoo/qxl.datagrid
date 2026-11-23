@@ -206,6 +206,16 @@ qx.Class.define("qxl.datagrid.DataGrid", {
       apply: "_applyColumnVisibilityButtonVisible"
     },
 
+    /**
+     * Whether a cell whose text is cut off shows the whole text as a tooltip when the pointer rests on
+     * it (`qxl.datagrid.ui.CellToolTip`); a cell whose widget has its own tooltip keeps it
+     */
+    truncatedTextToolTips: {
+      init: true,
+      check: "Boolean",
+      event: "changeTruncatedTextToolTips"
+    },
+
     widgetsContextMenu: {
       check: "qx.ui.menu.Menu",
       init: null,

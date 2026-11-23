@@ -158,6 +158,41 @@ qx.Class.define("qxl.datagrid.test.ui.Cells", {
       this.assertEquals("✓", unchecked.getChildControl("label").getValue());
       this.assertNull(unchecked.getContentElement().getAttribute("aria-label") ?? null);
       this.assertTrue(column.parseFromClipboard("✓"));
+    },
+
+    async testToolTipForTruncatedText() {
+      const LONG = "A name much too long for the narrow column";
+      let grid = await this.__createGrid(
+        [
+          new qxl.datagrid.column.TextColumn("name").set({ caption: "Name", width: 80 }),
+          new qxl.datagrid.column.SelectColumn("kind", [{ label: LONG, model: "long" }]).set({ caption: "Kind", width: 80 })
+        ],
+        [{ name: "Car", kind: "long" }, { name: LONG, kind: "long" }]
+      );
+      let manager = qx.ui.tooltip.Manager.getInstance();
+      // like the manager on pointerover: the tooltip it picks, and what show() makes of it
+      const shownText = cell => {
+        manager.showToolTip(cell);
+        let tooltip = manager.getCurrent();
+        tooltip.exclude();
+        tooltip.show();
+        let text = tooltip.isVisible() ? tooltip.getLabel() : null;
+        manager.resetCurrent();
+        return text;
+      };
+
+      this.assertNull(shownText(this.__getCell(0, 0)), "the text fits");
+      this.assertEquals(LONG, shownText(this.__getCell(1, 0)));
+      this.assertEquals(LONG, shownText(this.__getCell(0, 1)), "the label within an IconCell");
+
+      // cells of a read only grid are disabled
+      grid.setReadOnly(true);
+      qx.ui.core.queue.Manager.flush();
+      this.assertFalse(this.__getCell(1, 0).isEnabled());
+      this.assertEquals(LONG, shownText(this.__getCell(1, 0)));
+
+      grid.setTruncatedTextToolTips(false);
+      this.assertNull(shownText(this.__getCell(1, 0)));
     }
   }
 });

@@ -70,6 +70,10 @@ qx.Class.define("qxl.datagrid.ui.factory.SimpleWidgetFactory", {
     _createWidget(column) {
       let widget = column.createWidgetForDisplay();
       column.getWidgetStates().forEach(state => widget.addState(state));
+      // a cell of a read only column is disabled, its text may still be cut off
+      if (!widget.getToolTip() && !widget.getToolTipText()) {
+        widget.set({ toolTip: qxl.datagrid.ui.CellToolTip.getInstance(), showToolTipWhenDisabled: true });
+      }
       return widget;
     }
   }
